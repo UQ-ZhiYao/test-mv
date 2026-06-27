@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MV Test</title>
+<style>
+  body  { font-family: monospace; padding: 24px; max-width: 920px; background:#f8f9fa; }
+  #log  { background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px;
+          white-space:pre; font-size:13px; line-height:1.7; overflow-x:auto; min-height:100px; }
+  .ok   { color:#2e7d32; } .err { color:#c62828; } .dim { color:#9e9e9e; }
+  .row  { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px; }
+  label { font-size:13px; color:#444; display:flex; flex-direction:column; gap:3px; }
+  input { padding:8px 10px; border:1.5px solid #ccc; border-radius:6px; font-size:14px; font-family:monospace; }
+  button{ padding:10px 28px; background:#1565c0; color:#fff; border:none; border-radius:6px; font-size:15px; cursor:pointer; }
+  button:disabled { background:#90a4ae; }
+</style>
+</head>
+<body>
+<h2>Daily MV Test — Yahoo Finance</h2>
+<div class="row">
+  <label>Code  <input id="code"  value="0138.KL" style="width:100px"></label>
+  <label>Units <input id="units" value="1000000" style="width:110px"></label>
+  <label>From  <input id="from"  value="2026-06-01" type="date"></label>
+  <button onclick="run()">▶ Run</button>
+</div>
+<div id="log">Click Run…</div>
+
+<script>
+function addDay(d){var dt=new Date(d+'T00:00:00Z');dt.setUTCDate(dt.getUTCDate()+1);return dt.toISOString().slice(0,10);}
+function log(m,c){var e=document.getElementById('log'),s=document.createElement('span');if(c)s.className=c;s.textContent=m+'\n';e.appendChild(s);}
+
+async function run(){
+  document.getElementById('log').innerHTML='';
+  var btn=document.getElementById('btn');
+
+  var code  = document.getElementById('code').value.trim();
+  var units = parseInt(document.getElementById('units').value.replace(/,/g,''));
+  var start = document.getElementById('from').value;
+  var today = new Date().toISOString().slice(0,10);
+  var from  = Math.floor(new Date(start+'T00:00:00Z').getTime()/1000);
+  var to    = Math.floor(new Date(today+'T23:59:59Z').getTime()/1000);
+
+  // Call our own Supabase fetch-prices edge function which already bypasses Yahoo CORS
+  // But we need historical — so call Yahoo directly via the chart API
+  // Since this page is on GitHub Pages (https), CORS proxies will work
+  var yahooUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(code)+
+                 '?period1='+from+'&period2='+to+'&interval=1d';
+
+  log('Fetching '+code+' | units='+units.toLocaleString()+' | '+start+' → '+today);
+  log('Yahoo: '+yahooUrl,'dim');
+  log('');
+
+  var proxies=[
+    {name:'query1 direct',  url:yahooUrl},
+    {name:'query2 direct',  url:'https://query2.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(code)+'?period1='+from+'&period2='+to+'&interval=1d'},
+    {name:'corsproxy.io',   url:'https://corsproxy.io/?'+encodeURIComponent(yahooUrl)},
+    {name:'api.allorigins', url:'https://api.allorigins.win/get?url='+encodeURIComponent(yahooUrl), unwrap:true},
+  ];
+
+  var json=null;
+  for(var p of proxies){
+    log('Trying '+p.name+' …','dim');
+    try{
+      var r=await fetch(p.url,{headers:{'Accept':'application/json'}});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      var d=await r.json();
+      if(p.unwrap&&d.contents) d=JSON.parse(d.contents);
+      if(!d?.chart?.result?.[0]) throw new Error('no chart');
+      json=d; log('  ✓ success','ok'); break;
+    }catch(e){ log('  ✗ '+e.message,'err'); }
+  }
+
+  if(!json){ log('\nAll failed. Open Yahoo URL in browser to verify:','err'); log(yahooUrl,'dim'); return; }
+
+  var chart=json.chart.result[0];
+  var ts=chart.timestamp||[];
+  var cl=(chart.indicators?.quote?.[0]?.close)||[];
+  log('Got '+ts.length+' data points\n','ok');
+
+  var pm={};
+  for(var i=0;i<ts.length;i++){
+    if(cl[i]!=null&&cl[i]>0){
+      pm[new Date(ts[i]*1000).toISOString().slice(0,10)]=cl[i];
+    }
+  }
+
+  log('Trading days ('+Object.keys(pm).length+'):');
+  Object.keys(pm).sort().forEach(function(d){log('  '+d+'  RM '+pm[d].toFixed(4),'ok');});
+  log('');
+  log('  Date         P(i,t)        MV(i,t)               Note');
+  log('  '+'-'.repeat(66));
+
+  var cur=start,last=0,lastd='—';
+  while(cur<=today){
+    if(pm[cur]!=null){last=pm[cur];lastd=cur;}
+    var mv=last*units, isTd=pm[cur]!=null;
+    log('  '+cur+'  RM '+(last>0?last.toFixed(4).padStart(8):'       —')+'  RM '+
+        (last>0?mv.toLocaleString('en-MY',{minimumFractionDigits:2}).padStart(15):'              —')+
+        '  '+(isTd?'trading day':'non-trading (← '+lastd+')'), isTd?'ok':'dim');
+    cur=addDay(cur);
+  }
+  log('\nDone ✓','ok');
+}
+</script>
+</body>
+</html>
