@@ -2625,9 +2625,8 @@ document.addEventListener('mousemove',function(e){var t=document.getElementById(
     navigate(hash); renderNotifs(); return;
   }
 
-  // Show loading overlay
   var lscreen = document.getElementById('lscreen');
-  if(lscreen){ lscreen.innerHTML='<div style="text-align:center;color:#0F172A"><div style="font-size:1.1rem;font-weight:700;margin-bottom:8px;color:#1565C0">Loading your portfolio...</div><div style="font-size:.84rem;color:#64748B">Fetching latest data</div></div>'; lscreen.style.display='flex'; }
+  if(lscreen) lscreen.style.display='none';
 
   try {
     // 2. Load profile to get investor_id
@@ -2665,7 +2664,6 @@ document.addEventListener('mousemove',function(e){var t=document.getElementById(
     }
 
     // 8. Navigate to saved/hash page
-    if(lscreen) lscreen.style.display='none';
     var hash = window.location.hash.replace('#','');
     var savedPage = hash || (function(){try{return localStorage.getItem('zy-page');}catch(e){return '';}})() || 'dashboard';
     navigate(savedPage);
@@ -2674,7 +2672,6 @@ document.addEventListener('mousemove',function(e){var t=document.getElementById(
   } catch(e) {
     // Fallback to demo data on API error
     console.warn('API load failed, using demo data:', e.message);
-    if(lscreen) lscreen.style.display='none';
     try{var hash2=window.location.hash.replace('#','')||'dashboard';navigate(hash2);}catch(e2){navigate('dashboard');}
     renderNotifs();
   }
