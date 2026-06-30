@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Member Login — ZY-Invest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="manifest" href="ui_kits/member_portal/manifest.webmanifest">
+<meta name="theme-color" content="#1565C0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ZY-Invest">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<style>
+.pwa-btn{display:none;align-items:center;gap:10px;margin-top:18px;padding:11px 18px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:.88rem;font-weight:600;cursor:pointer;transition:.2s;backdrop-filter:blur(4px);}
+.pwa-btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.45);}
+.pwa-btn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+.pwa-btn.visible{display:flex;}
+.pwa-installed{font-size:.76rem;color:rgba(255,255,255,.6);margin-top:10px;display:none;}
+.pwa-installed.show{display:block;}
+</style>
+</head>
+<body class="motion">
+
+<!-- ===================== INTRO LOADER ===================== -->
+<div id="loader">
+  <div class="ld-panel ld-left"></div>
+  <div class="ld-panel ld-right"></div>
+  <div class="ld-glow"></div>
+  <div class="ld-line"></div>
+  <div class="ld-center">
+    <div class="ld-row">
+      <span class="ld-pct" id="ldPct">0%</span>
+      <div class="ld-mark">
+        <svg class="ld-ring" width="128" height="128" viewBox="0 0 128 128">
+          <circle class="trk" cx="64" cy="64" r="58" fill="none" stroke-width="2"/>
+          <circle class="prg" id="ldProg" cx="64" cy="64" r="58" fill="none" stroke-width="2" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/>
+        </svg>
+        <img src="assets/img/logo.png" alt="ZY-Invest">
+      </div>
+      <span class="ld-load" id="ldLoad">loading</span>
+    </div>
+  </div>
+  <div class="ld-brand">ZY-Invest · Smart Investing, Simply Done</div>
+  <div class="ld-skip">Click to skip</div>
+</div>
+
+<!-- ===================== NAV ===================== -->
+<nav class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">
+      <img src="assets/img/logo.png" alt="ZY-Invest">
+      <span class="lt"><b>ZY-Invest</b><span>Smart Investing, Simply Done</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="team.html">Team</a>
+      <a href="about.html">About</a>
+      <a href="login.html" class="nav-cta current">Member Login</a>
+    </div>
+    <button class="nav-burger" id="navBurger" aria-label="Open menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-top">
+    <span style="display:flex;align-items:center;"><img src="assets/img/logo.png" alt="ZY-Invest"><b>ZY-Invest</b></span>
+    <button class="mm-close" id="mmClose" aria-label="Close menu">✕</button>
+  </div>
+  <nav class="mm-links">
+    <a href="index.html">Home</a>
+    <a href="team.html">Team</a>
+    <a href="about.html">About</a>
+    <a href="login.html" class="mm-cta">Member Login</a>
+  </nav>
+</div>
+
+<!-- ===================== LIVING BACKGROUND ===================== -->
+<div class="hero" style="position:fixed;inset:0;min-height:100vh;z-index:0;">
+  <canvas id="wp"></canvas>
+  <svg class="skyline" viewBox="0 0 1440 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="skyG" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#1B3A6B" stop-opacity="0.26"/>
+        <stop offset="0.55" stop-color="#1565C0" stop-opacity="0.12"/>
+        <stop offset="1" stop-color="#1E88E5" stop-opacity="0.03"/>
+      </linearGradient>
+      <linearGradient id="skyG2" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#13294D" stop-opacity="0.34"/>
+        <stop offset="1" stop-color="#1565C0" stop-opacity="0.10"/>
+      </linearGradient>
+      <style>
+        .lit{fill:#FFD79A;} .litc{fill:#BFE2FF;}
+        body.motion .tw{animation:tw 3.4s ease-in-out infinite;}
+        body.motion .tw2{animation:tw 4.6s ease-in-out infinite .8s;}
+        body.motion .tw3{animation:tw 2.8s ease-in-out infinite 1.4s;}
+        @keyframes tw{0%,100%{opacity:.25;}50%{opacity:.9;}}
+      </style>
+    </defs>
+    <g fill="url(#skyG)">
+      <rect x="20" y="180" width="70" height="120"/><rect x="96" y="150" width="48" height="150"/>
+      <rect x="150" y="200" width="60" height="100"/><path d="M218 300 V120 l24 -14 24 14 V300 Z"/>
+      <rect x="276" y="168" width="40" height="132"/><rect x="1120" y="160" width="52" height="140"/>
+      <rect x="1178" y="196" width="64" height="104"/><rect x="1248" y="146" width="46" height="154"/>
+      <rect x="1300" y="190" width="60" height="110"/><rect x="1366" y="166" width="74" height="134"/>
+    </g>
+    <g fill="url(#skyG2)">
+      <path d="M338 300 L344 96 L356 40 L362 18 L368 40 L380 96 L386 300 Z"/>
+      <rect x="404" y="150" width="46" height="150"/><rect x="456" y="186" width="40" height="114"/><rect x="506" y="120" width="40" height="180"/>
+      <path d="M584 300 L596 150 L606 78 L632 78 L642 150 L654 300 Z"/><path d="M615 78 L619 36 L623 78 Z"/>
+      <rect x="654" y="118" width="52" height="9"/>
+      <path d="M706 300 L718 150 L728 78 L754 78 L764 150 L776 300 Z"/><path d="M737 78 L741 36 L745 78 Z"/>
+      <rect x="800" y="170" width="44" height="130"/>
+      <rect x="876" y="120" width="12" height="180"/><ellipse cx="882" cy="116" rx="20" ry="13"/><rect x="880" y="58" width="4" height="48"/>
+      <rect x="924" y="156" width="42" height="144"/>
+      <rect x="982" y="86" width="52" height="214"/><rect x="996" y="66" width="24" height="22"/><rect x="1004" y="48" width="8" height="20"/>
+      <rect x="1052" y="172" width="46" height="128"/>
+    </g>
+    <g>
+      <rect class="lit tw" x="610" y="170" width="3" height="3"/><rect class="lit tw2" x="624" y="200" width="3" height="3"/>
+      <rect class="litc tw3" x="616" y="230" width="3" height="3"/><rect class="lit tw2" x="732" y="178" width="3" height="3"/>
+      <rect class="litc tw" x="746" y="212" width="3" height="3"/><rect class="lit tw3" x="724" y="250" width="3" height="3"/>
+      <rect class="litc tw" x="998" y="120" width="3" height="3"/><rect class="lit tw2" x="1014" y="150" width="3" height="3"/>
+    </g>
+  </svg>
+  <div class="hero-fade"></div>
+</div>
+
+<!-- ===================== LOGIN ===================== -->
+<div class="login-wrapper">
+  <div class="login-card reveal in">
+
+    <!-- Left: branding panel -->
+    <div class="login-left">
+      <div class="login-brand">
+        <img src="assets/img/logo.png" alt="ZY-Invest">
+        <h2>Welcome Back</h2>
+        <p>Access your personalised investment dashboard, track your portfolio performance, and view your distributions.</p>
+      </div>
+      <div class="login-features">
+        <div class="login-feature"><span class="fdot"></span><span>Real-time portfolio valuation</span></div>
+        <div class="login-feature"><span class="fdot"></span><span>Daily NTA updates</span></div>
+        <div class="login-feature"><span class="fdot"></span><span>Personal IRR computation</span></div>
+        <div class="login-feature"><span class="fdot"></span><span>Distribution history &amp; documents</span></div>
+        <div class="login-feature"><span class="fdot"></span><span>Fund performance analytics</span></div>
+      </div>
+
+      <!-- Web App Install -->
+      <button class="pwa-btn" id="pwaInstallBtn">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Install as Web App
+      </button>
+      <div class="pwa-installed" id="pwaInstalled">✓ App installed — open from your home screen</div>
+      <div class="login-foot">Secured with JWT authentication · Data encrypted in transit</div>
+    </div>
+
+    <!-- Right: login form -->
+    <div class="login-right">
+      <h3>Member Login</h3>
+      <p class="subtitle">Enter your credentials to access the investor portal.</p>
+
+      <div class="login-note" id="loginNote"></div>
+
+      <form id="loginForm" autocomplete="on">
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" id="email" name="email" class="form-input" placeholder="your@email.com" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" autocomplete="current-password" required>
+            <span class="password-toggle" id="pwToggle">Show</span>
+          </div>
+        </div>
+        <button type="submit" class="form-submit" id="submitBtn">
+          <span id="btnText">Sign In</span>
+          <div class="spinner" id="spinner"></div>
+        </button>
+      </form>
+
+      <div class="login-back">
+        New to ZY-Invest? <a href="register.html">Create an account</a>
+        &nbsp;·&nbsp;
+        <a href="index.html">← Back to Home</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/site.js"></script>
+<script>
+(function(){
+  var pw=document.getElementById('password'), tog=document.getElementById('pwToggle');
+  tog.addEventListener('click',function(){
+    if(pw.type==='password'){ pw.type='text'; tog.textContent='Hide'; }
+    else { pw.type='password'; tog.textContent='Show'; }
+  });
+
+  // Already logged in? Check Supabase session — not stale localStorage token.
+  (async function(){
+    try{
+      if(sb){
+        var s=await sb.auth.getSession();
+        if(s.data.session){ window.location.href='members/dashboard.html'; return; }
+      }
+    }catch(e){}
+  })();
+
+  var form=document.getElementById('loginForm'), btn=document.getElementById('submitBtn'),
+      btnText=document.getElementById('btnText'), spin=document.getElementById('spinner'),
+      note=document.getElementById('loginNote');
+
+  function showError(msg){ if(note){ note.textContent=msg; note.classList.add('show','error'); } }
+  function hideError(){ if(note){ note.classList.remove('show','error'); } }
+
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    hideError();
+    var email=document.getElementById('email').value.trim();
+    var password=document.getElementById('password').value;
+    btn.disabled=true; btnText.textContent='Signing in...'; spin.style.display='block';
+    try{
+      if(!sb) throw new Error('Auth service not configured.');
+      var res=await sb.auth.signInWithPassword({ email:email, password:password });
+      if(res.error) throw res.error;
+      authSave({
+        access_token: res.data.session.access_token,
+        role:         res.data.user.user_metadata?.role || 'member',
+        name:         res.data.user.user_metadata?.full_name || email,
+        investor_id:  res.data.user.user_metadata?.investor_id || ''
+      });
+      window.zyEnterDashboard('members/dashboard.html');
+    }catch(err){
+      var m=(err && err.message) || 'Login failed. Please try again.';
+      if(/invalid credentials/i.test(m)) m='Incorrect email or password. Please try again.';
+      showError(m);
+      btn.disabled=false; btnText.textContent='Sign In'; spin.style.display='none';
+    }
+  });
+})();
+</script>
+</body>
+<script>
+// ── PWA: service worker + install prompt ─────────────────────────────────
+(function(){
+  // Register SW
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('ui_kits/member_portal/sw.js',{scope:'ui_kits/member_portal/'}).catch(function(){});
+  }
+  // Capture install prompt
+  var deferredPrompt=null;
+  var btn=document.getElementById('pwaInstallBtn');
+  var installed=document.getElementById('pwaInstalled');
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();
+    deferredPrompt=e;
+    if(btn) btn.classList.add('visible');
+  });
+  if(btn){
+    btn.addEventListener('click',function(){
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(r){
+        if(r.outcome==='accepted'){
+          btn.classList.remove('visible');
+          if(installed) installed.classList.add('show');
+        }
+        deferredPrompt=null;
+      });
+    });
+  }
+  window.addEventListener('appinstalled',function(){
+    if(btn) btn.classList.remove('visible');
+    if(installed) installed.classList.add('show');
+  });
+  // If already installed (standalone), show installed state
+  if(window.matchMedia('(display-mode: standalone)').matches){
+    if(installed) installed.classList.add('show');
+  }
+})();
+</script>
+</html>
