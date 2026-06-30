@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/site.css">
-<link rel="manifest" href="ui_kits/member_portal/manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1565C0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,12 +16,14 @@
 <meta name="apple-mobile-web-app-title" content="ZY-Invest">
 <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
 <style>
-.pwa-btn{display:none;align-items:center;gap:10px;margin-top:18px;padding:11px 18px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:.88rem;font-weight:600;cursor:pointer;transition:.2s;backdrop-filter:blur(4px);}
+.pwa-btn{display:flex;align-items:center;gap:10px;margin-top:18px;padding:11px 18px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:.88rem;font-weight:600;cursor:pointer;transition:.2s;backdrop-filter:blur(4px);}
 .pwa-btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.45);}
 .pwa-btn svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
 .pwa-btn.visible{display:flex;}
 .pwa-installed{font-size:.76rem;color:rgba(255,255,255,.6);margin-top:10px;display:none;}
 .pwa-installed.show{display:block;}
+.pwa-ios{display:none;font-size:.78rem;color:rgba(255,255,255,.8);margin-top:10px;padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);line-height:1.6;}
+.pwa-ios.show{display:block;}
 </style>
 </head>
 <body class="motion">
@@ -154,7 +156,8 @@
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Install as Web App
       </button>
-      <div class="pwa-installed" id="pwaInstalled">✓ App installed — open from your home screen</div>
+      <div class="pwa-installed" id="pwaInstalled">✓ App installed — launch from your home screen</div>
+      <div class="pwa-ios" id="pwaIos">📲 To install on iPhone: tap <b>Share</b> then <b>Add to Home Screen</b></div>
       <div class="login-foot">Secured with JWT authentication · Data encrypted in transit</div>
     </div>
 
@@ -253,16 +256,20 @@
 (function(){
   // Register SW
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('ui_kits/member_portal/sw.js',{scope:'ui_kits/member_portal/'}).catch(function(){});
+    navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(function(e){console.warn('SW reg:',e);});
   }
   // Capture install prompt
+  // Hide button initially — show only when browser supports install
   var deferredPrompt=null;
   var btn=document.getElementById('pwaInstallBtn');
+  if(btn&&!isIos) btn.style.display='none';
   var installed=document.getElementById('pwaInstalled');
   window.addEventListener('beforeinstallprompt',function(e){
     e.preventDefault();
     deferredPrompt=e;
-    if(btn) btn.classList.add('visible');
+    if(btn){btn.style.display='flex';}
+    // Hide manual instructions since browser handles it natively
+    var iosEl2=document.getElementById('pwaIos');if(iosEl2)iosEl2.classList.remove('show');
   });
   if(btn){
     btn.addEventListener('click',function(){
@@ -281,9 +288,25 @@
     if(btn) btn.classList.remove('visible');
     if(installed) installed.classList.add('show');
   });
-  // If already installed (standalone), show installed state
-  if(window.matchMedia('(display-mode: standalone)').matches){
-    if(installed) installed.classList.add('show');
+  // Show platform-specific install instructions if no prompt available
+  var ua=navigator.userAgent;
+  var isIos=/iphone|ipad|ipod/i.test(ua)&&!window.MSStream;
+  var isAndroid=/android/i.test(ua);
+  var isWindows=/windows/i.test(ua);
+  var iosEl=document.getElementById('pwaIos');
+  if(isIos&&!window.navigator.standalone){
+    if(iosEl){iosEl.innerHTML='📲 <b>iPhone/iPad:</b> Tap the Share button (↑) then <b>Add to Home Screen</b>';iosEl.classList.add('show');}
+  } else if(isAndroid){
+    // Android shows beforeinstallprompt — show instructions as fallback only
+    setTimeout(function(){if(!deferredPrompt&&iosEl){iosEl.innerHTML='📱 <b>Android:</b> Tap ⋮ menu → <b>Add to Home Screen</b> or <b>Install App</b>';iosEl.classList.add('show');}},2500);
+  } else if(isWindows||(!isIos&&!isAndroid)){
+    // Desktop Windows/Mac — show after delay if no prompt
+    setTimeout(function(){if(!deferredPrompt&&iosEl){iosEl.innerHTML='🖥️ <b>Desktop:</b> Click the install icon (⬇) in the address bar, or use browser menu → <b>Install ZY-Invest</b>';iosEl.classList.add('show');}},2500);
+  }
+  // Already installed (standalone mode)
+  if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone){
+    var instEl=document.getElementById('pwaInstalled');
+    if(instEl){instEl.classList.add('show');instEl.textContent='✓ Running as installed app';}
   }
 })();
 </script>
