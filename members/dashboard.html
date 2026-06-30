@@ -818,7 +818,7 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
 <div class="toast" id="toast"></div>
 
 <!-- LOGIN SCREEN -->
-<div class="lscreen" id="lscreen" style="background:rgba(21,65,192,.92)">
+<div class="lscreen" id="lscreen" style="background:rgba(255,255,255,.92);backdrop-filter:blur(6px)">
   <div style="background:transparent">
     <div style="text-align:center;margin-bottom:26px">
       <img src="../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
@@ -2590,9 +2590,10 @@ function showToast(msg,type){
 // ── LOGIN ────────────────────────────────────────────────────────────────────
 function doLogout(){
   document.getElementById('userMenu').classList.remove('open');
-  try{localStorage.removeItem('zy-page');}catch(e){}
-  if(typeof sb!=='undefined'&&sb){sb.auth.signOut().catch(function(){});}
-  window.location.href='../login.html';
+  try{localStorage.removeItem('zy-page');localStorage.removeItem('zy_token');localStorage.removeItem('zy_role');}catch(e){}
+  if(typeof sb!=='undefined'&&sb){
+    sb.auth.signOut().then(function(){window.location.href='../login.html';}).catch(function(){window.location.href='../login.html';});
+  } else { window.location.href='../login.html'; }
 }
 function doLogin(){
   var e=document.getElementById('lemail').value, p=document.getElementById('lpwd').value;
@@ -2612,14 +2613,21 @@ document.addEventListener('mousemove',function(e){var t=document.getElementById(
   // 1. Check Supabase auth
   var user = await mpCheckAuth();
   if(!user){
-    // Not logged in — redirect to login
-    window.location.href = '../login.html';
-    return;
+    // No active session — check if we have a demo/dev override
+    var devMode = localStorage.getItem('zy-dev-mode');
+    if(!devMode){
+      window.location.href = '../login.html';
+      return;
+    }
+    // Dev mode: proceed with demo data
+    if(lscreen) lscreen.style.display='none';
+    var hash=window.location.hash.replace('#','')||'dashboard';
+    navigate(hash); renderNotifs(); return;
   }
 
   // Show loading overlay
   var lscreen = document.getElementById('lscreen');
-  if(lscreen){ lscreen.innerHTML='<div style="text-align:center;color:#fff"><div style="font-size:1.2rem;font-weight:700;margin-bottom:8px">Loading your portfolio...</div><div style="opacity:.6;font-size:.88rem">Fetching latest data</div></div>'; lscreen.style.display='flex'; }
+  if(lscreen){ lscreen.innerHTML='<div style="text-align:center;color:#0F172A"><div style="font-size:1.1rem;font-weight:700;margin-bottom:8px;color:#1565C0">Loading your portfolio...</div><div style="font-size:.84rem;color:#64748B">Fetching latest data</div></div>'; lscreen.style.display='flex'; }
 
   try {
     // 2. Load profile to get investor_id
@@ -2667,9 +2675,7 @@ document.addEventListener('mousemove',function(e){var t=document.getElementById(
     // Fallback to demo data on API error
     console.warn('API load failed, using demo data:', e.message);
     if(lscreen) lscreen.style.display='none';
-    var hash = window.location.hash.replace('#','');
-    var savedPage = hash || 'dashboard';
-    navigate(savedPage);
+    try{var hash2=window.location.hash.replace('#','')||'dashboard';navigate(hash2);}catch(e2){navigate('dashboard');}
     renderNotifs();
   }
 })();
