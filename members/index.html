@@ -1,13 +1,19 @@
+<!-- @dsCard group="Member Portal" viewport="1280x720" name="Dashboard" subtitle="Member portal — full interactive SPA" -->
+<!-- @startingPoint section="UI Kits" subtitle="ZY-Invest member portal — full interactive" viewport="1280x720" -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <meta name="theme-color" content="#1565C0">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest">
-<title>Dashboard — ZY-Invest</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ZY-Invest">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<title>Member Portal — ZY-Invest</title>
 <link rel="stylesheet" href="../styles.css">
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -323,13 +329,13 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
 .ftabs{display:flex;gap:6px;}
 .ftab{padding:5px 13px;border-radius:99px;border:1.5px solid var(--border);background:#fff;color:var(--fg-3);font-size:.78rem;font-weight:600;cursor:pointer;transition:.15s;}
 .ftab.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);}
-.sb-item{text-decoration:none;}
 </style>
 </head>
 <body>
+
 <!-- TOPNAV -->
 <header class="topnav" id="topnav">
-  <a href="../../index.html" class="brand">
+  <a href="../index.html" class="brand">
     <img src="../assets/img/logo.png" alt="ZY-Invest">
     <span class="bt"><b>ZY-Invest</b><span>Member Portal</span></span>
   </a>
@@ -337,23 +343,23 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
     <div class="nav-group">
       <button class="nav-top">Fund <span class="caret">▾</span></button>
       <div class="dropdown"><div class="dd-card">
-        <a class="dd-item" href="fund-overview.html"><b>Fund Overview</b><span>Mandate, objective &amp; key facts</span></a>
-        <a class="dd-item" href="factsheet.html"><b>Factsheet</b><span>Holdings allocation each financial year</span></a>
-        <a class="dd-item" href="shareholders.html"><b>Shareholder List</b><span>Unitholders, units held &amp; ownership</span></a>
+        <a class="dd-item" onclick="navigate('fundoverview');return false;"><b>Fund Overview</b><span>Mandate, objective &amp; key facts</span></a>
+        <a class="dd-item" onclick="navigate('factsheet');return false;"><b>Factsheet</b><span>Holdings allocation each financial year</span></a>
+        <a class="dd-item" onclick="navigate('shareholders');return false;"><b>Shareholder List</b><span>Unitholders, units held &amp; ownership</span></a>
       </div></div>
     </div>
     <div class="nav-group">
       <button class="nav-top">Performance <span class="caret">▾</span></button>
       <div class="dropdown"><div class="dd-card">
-        <a class="dd-item" href="nta-history.html"><b>NTA History</b><span>Chart &amp; daily NTA / NAV history</span></a>
-        <a class="dd-item" href="comparison.html"><b>Comparison</b><span>Fund performance vs indices</span></a>
-        <a class="dd-item" href="financial-results.html"><b>Financial Results</b><span>Income, balance sheet &amp; cash flow</span></a>
+        <a class="dd-item" onclick="navigate('ntahistory');return false;"><b>NTA History</b><span>Chart &amp; daily NTA / NAV history</span></a>
+        <a class="dd-item" onclick="navigate('comparison');return false;"><b>Comparison</b><span>Fund performance vs indices</span></a>
+        <a class="dd-item" onclick="navigate('financialresults');return false;"><b>Financial Results</b><span>Income, balance sheet &amp; cash flow</span></a>
       </div></div>
     </div>
     <div class="nav-group">
       <button class="nav-top">Documents <span class="caret">▾</span></button>
       <div class="dropdown"><div class="dd-card">
-        <a class="dd-item" href="statements.html"><b>Statement Download</b><span>Factsheets &amp; annual reports</span></a>
+        <a class="dd-item" onclick="navigate('statements');return false;"><b>Statement Download</b><span>Factsheets &amp; annual reports</span></a>
       </div></div>
     </div>
   </nav>
@@ -376,15 +382,15 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
           <div class="avatar" style="width:38px;height:38px;font-size:.88rem">HM</div>
           <div><div class="um-name">Tan Hui Mei</div><div class="um-mail">huimei.tan@gmail.com</div></div>
         </div>
-        <a class="um-item" href="#" onclick="window.location.href='settings.html';toggleUserMenu();return false;">
+        <a class="um-item" href="#" onclick="navigate('profile');toggleUserMenu();return false;">
           <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>
           <span><b>Profile</b><span>Personal &amp; account details</span></span>
         </a>
-        <a class="um-item" href="#" onclick="window.location.href='settings.html';toggleUserMenu();return false;">
+        <a class="um-item" href="#" onclick="navigate('password');toggleUserMenu();return false;">
           <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></span>
           <span><b>Password</b><span>Sign-in &amp; security</span></span>
         </a>
-        <a class="um-item" href="#" onclick="window.location.href='settings.html';toggleUserMenu();return false;">
+        <a class="um-item" href="#" onclick="navigate('nominee');toggleUserMenu();return false;">
           <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3 2.5-4.6 5.5-4.6S14.5 17 14.5 20"/><circle cx="17" cy="9" r="2.6"/><path d="M16 15.6c2.6.2 4.5 1.7 4.5 4.4"/></svg></span>
           <span><b>Nominee</b><span>Beneficiary nomination</span></span>
         </a>
@@ -397,7 +403,6 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
     </div>
   </div>
 </header>
-
 
 <!-- TICKER -->
 <div class="ticker">
@@ -418,52 +423,51 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
 </div>
 
 <!-- SHELL -->
-
 <div class="shell">
-  <aside class="sidebar" id="sidebar">
+  <aside class="sidebar">
     <div class="sb-group">Account</div>
-    <a class="sb-item active" href="dashboard.html" data-page="dashboard">
+    <button class="sb-item active" data-page="dashboard" onclick="navigate('dashboard')">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>
       <span class="sb-label">Dashboard</span>
-    </a>
-    <a class="sb-item" href="holdings.html" data-page="holdings">
+    </button>
+    <button class="sb-item" data-page="holdings" onclick="navigate('holdings')">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12V3"/><path d="M12 12l7.5 5"/></svg></span>
       <span class="sb-label">Holdings</span>
-    </a>
-    <a class="sb-item" href="transactions.html" data-page="transactions">
+    </button>
+    <button class="sb-item" data-page="transactions" onclick="navigate('transactions')">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M4 8h14l-3-3"/><path d="M20 16H6l3 3"/></svg></span>
       <span class="sb-label">Transactions</span>
-    </a>
-    <a class="sb-item" href="distributions.html" data-page="distributions">
+    </button>
+    <button class="sb-item" data-page="distributions" onclick="navigate('distributions')">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span>
       <span class="sb-label">Distributions</span>
-    </a>
-    <a class="sb-item" href="statements.html" data-page="statements">
+    </button>
+    <button class="sb-item" data-page="statements" onclick="navigate('statements')">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span>
       <span class="sb-label">Statements</span>
-    </a>
+    </button>
     <div class="sb-group">Markets</div>
-    <a class="sb-item" href="indices.html" data-page="indices">
+    <button class="sb-item" data-page="indices" onclick="navigate('indices')">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
       <span class="sb-label">Indices</span>
-    </a>
-    <a class="sb-item" href="watchlist.html" data-page="watchlist">
+    </button>
+    <button class="sb-item" data-page="watchlist" onclick="navigate('watchlist')">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
       <span class="sb-label">Watchlist</span>
-    </a>
-    <a class="sb-item" href="instruments.html" data-page="instruments">
+    </button>
+    <button class="sb-item" data-page="instruments" onclick="navigate('instruments')">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
       <span class="sb-label">Instruments</span>
-    </a>
+    </button>
     <div class="sb-spacer"></div>
-    <a class="sb-item logout" href="../../login.html" onclick="doLogout();return false;">
+    <button class="sb-item logout" onclick="doLogout()">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
       <span class="sb-label">Sign out</span>
-    </a>
+    </button>
   </aside>
-
   <main class="main" id="mainContent"></main>
 </div>
+
 <!-- MODAL (legacy, unused) -->
 <div class="moverlay" id="moverlay"></div>
 
@@ -598,15 +602,8 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
     <p style="text-align:center;font-size:.74rem;color:var(--fg-3);margin:16px 0 0">Access by invitation only · Private fund</p>
   </div>
 </div>
-<div class="toast" id="toast"></div>
-<script>
-if(!localStorage.getItem('zy-session')){window.location.href='../../login.html';}
-function navigate(pg){
-  var map={fundoverview:'fund-overview',ntahistory:'nta-history',financialresults:'financial-results'};
-  var file=map[pg]||pg;
-  window.location.href=file+'.html';
-}
 
+<script>
 // ── DATA ─────────────────────────────────────────────────────────────────────
 const NTA = {
   max: { v:[1.000,0.985,0.972,0.958,0.942,0.918,0.935,0.958,0.972,0.984,0.995,1.008,1.015,1.008,1.002,1.015,1.024,1.018,1.012,0.998,0.992,0.984,0.992,1.008,1.021,1.025,1.032,1.041,1.038,1.029,1.035,1.028,1.035,1.042,1.051,1.058,1.064,1.059,1.065,1.072,1.078,1.082,1.075,1.068,1.062,1.072,1.080,1.085,1.065,1.045,1.032,1.0245],
@@ -2674,7 +2671,7 @@ function pgComingSoon(){
     watchlist:'Track your favourite securities in one place. Coming soon.',
     instruments:'Fundamental data and analytics for individual instruments. Coming soon.'
   };
-  var pg=window._csPage||S.page;
+  var pg=S.page;
   return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:48px 32px;">'
     +'<div style="width:72px;height:72px;border-radius:20px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;margin-bottom:24px;">'
     +'<svg width="32" height="32" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round">'+icons[pg]+'</svg>'
@@ -2861,7 +2858,22 @@ function doLogin(){
 function showPieTip(e,txt){var t=document.getElementById('pieTip');if(!t)return;t.textContent=txt;t.style.opacity='1';var x=e.clientX+14,y=e.clientY-36;t.style.left=x+'px';t.style.top=y+'px';}
 function hidePieTip(){var t=document.getElementById('pieTip');if(t)t.style.opacity='0';}
 document.addEventListener('mousemove',function(e){var t=document.getElementById('pieTip');if(t&&t.style.opacity!=='0'){t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-36)+'px';}});
-// [init removed for standalone page]
+// ── INIT ─────────────────────────────────────────────────────────────────────
+setTimeout(function(){
+  try{
+    var sess=localStorage.getItem('zy-session');
+    if(!sess){window.location.href='../login.html';return;}
+    var hash=window.location.hash.replace('#','');
+    var savedPage=hash||localStorage.getItem('zy-page')||'dashboard';
+    navigate(savedPage);
+  }catch(e){navigate('dashboard');}
+  renderNotifs();
+},0);
+
+window.addEventListener('hashchange',function(){
+  var pg=window.location.hash.replace('#','')||'dashboard';
+  if(pg!==S.page) navigate(pg);
+});
 document.addEventListener('click',function(e){
   if(!e.target.closest('#npanel')&&!e.target.closest('#notifBtn'))document.getElementById('npanel').classList.remove('open');
   if(!e.target.closest('#userMenu')&&!e.target.closest('#userBtn'))document.getElementById('userMenu').classList.remove('open');
@@ -2872,7 +2884,23 @@ var tk=document.querySelector('.ticker-track');
 if(tk){tk.addEventListener('mouseenter',function(){tk.style.animationPlayState='paused';});tk.addEventListener('mouseleave',function(){tk.style.animationPlayState='running';});}
 window.addEventListener('scroll',function(){document.getElementById('topnav').classList.toggle('scrolled',window.scrollY>5);},{passive:true});
 
-// [init removed for standalone page]
+// ── INIT ─────────────────────────────────────────────────────────────────────
+setTimeout(function(){
+  try{
+    var sess=localStorage.getItem('zy-session');
+    if(!sess){window.location.href='../login.html';return;}
+    var hash=window.location.hash.replace('#','');
+    var savedPage=hash||localStorage.getItem('zy-page')||'dashboard';
+    navigate(savedPage);
+  }catch(e){renderMain(true);}
+  renderNotifs();
+},0);
+window.addEventListener('hashchange',function(){
+  var pg=window.location.hash.replace('#','')||'dashboard';
+  if(pg!==S.page) navigate(pg);
+});
+
+
 // ── COMPARISON ────────────────────────────────────────────────────────────────
 function pgComparison(){
   var seriesData=[
@@ -3443,7 +3471,22 @@ function doLogin(){
 function showPieTip(e,txt){var t=document.getElementById('pieTip');if(!t)return;t.textContent=txt;t.style.opacity='1';var x=e.clientX+14,y=e.clientY-36;t.style.left=x+'px';t.style.top=y+'px';}
 function hidePieTip(){var t=document.getElementById('pieTip');if(t)t.style.opacity='0';}
 document.addEventListener('mousemove',function(e){var t=document.getElementById('pieTip');if(t&&t.style.opacity!=='0'){t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-36)+'px';}});
-// [init removed for standalone page]
+// ── INIT ─────────────────────────────────────────────────────────────────────
+setTimeout(function(){
+  try{
+    var sess=localStorage.getItem('zy-session');
+    if(!sess){window.location.href='../login.html';return;}
+    var hash=window.location.hash.replace('#','');
+    var savedPage=hash||localStorage.getItem('zy-page')||'dashboard';
+    navigate(savedPage);
+  }catch(e){navigate('dashboard');}
+  renderNotifs();
+},0);
+
+window.addEventListener('hashchange',function(){
+  var pg=window.location.hash.replace('#','')||'dashboard';
+  if(pg!==S.page) navigate(pg);
+});
 document.addEventListener('click',function(e){
   if(!e.target.closest('#npanel')&&!e.target.closest('#notifBtn'))document.getElementById('npanel').classList.remove('open');
   if(!e.target.closest('#userMenu')&&!e.target.closest('#userBtn'))document.getElementById('userMenu').classList.remove('open');
@@ -3454,11 +3497,22 @@ var tk=document.querySelector('.ticker-track');
 if(tk){tk.addEventListener('mouseenter',function(){tk.style.animationPlayState='paused';});tk.addEventListener('mouseleave',function(){tk.style.animationPlayState='running';});}
 window.addEventListener('scroll',function(){document.getElementById('topnav').classList.toggle('scrolled',window.scrollY>5);},{passive:true});
 
-// [init removed for standalone page]
-document.getElementById('mainContent').innerHTML=pgDashboard();renderNotifs();setTimeout(function(){initChart(S.period||'1d');},60);
+// ── INIT ─────────────────────────────────────────────────────────────────────
+setTimeout(function(){
+  try{
+    var sess=localStorage.getItem('zy-session');
+    if(!sess){window.location.href='../login.html';return;}
+    var hash=window.location.hash.replace('#','');
+    var savedPage=hash||localStorage.getItem('zy-page')||'dashboard';
+    navigate(savedPage);
+  }catch(e){renderMain(true);}
+  renderNotifs();
+},0);
+window.addEventListener('hashchange',function(){
+  var pg=window.location.hash.replace('#','')||'dashboard';
+  if(pg!==S.page) navigate(pg);
+});
 
-// Page init
-document.getElementById('mainContent').innerHTML=pgDashboard();renderNotifs();setTimeout(function(){initChart(S.period||'1d');},60);
 </script>
 </body>
 </html>

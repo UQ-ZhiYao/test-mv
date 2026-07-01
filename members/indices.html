@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#1565C0">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="./manifest.webmanifest">
-<title>Dashboard — ZY-Invest</title>
+<title>Indices — ZY-Invest</title>
 <link rel="stylesheet" href="../styles.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;}
@@ -422,7 +422,7 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
 <div class="shell">
   <aside class="sidebar" id="sidebar">
     <div class="sb-group">Account</div>
-    <a class="sb-item active" href="dashboard.html" data-page="dashboard">
+    <a class="sb-item" href="dashboard.html" data-page="dashboard">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>
       <span class="sb-label">Dashboard</span>
     </a>
@@ -443,7 +443,7 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
       <span class="sb-label">Statements</span>
     </a>
     <div class="sb-group">Markets</div>
-    <a class="sb-item" href="indices.html" data-page="indices">
+    <a class="sb-item active" href="indices.html" data-page="indices">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
       <span class="sb-label">Indices</span>
     </a>
@@ -678,7 +678,7 @@ const NOTIFS=[
 ];
 
 // ── STATE ────────────────────────────────────────────────────────────────────
-var S = { page:'dashboard', period:'3y', txf:'all' };
+var S = { page:'indices', period:'3y', txf:'all' };
 
 // ── CHART ────────────────────────────────────────────────────────────────────
 function makePath(vals, W, H, px, py) {
@@ -3455,10 +3455,10 @@ if(tk){tk.addEventListener('mouseenter',function(){tk.style.animationPlayState='
 window.addEventListener('scroll',function(){document.getElementById('topnav').classList.toggle('scrolled',window.scrollY>5);},{passive:true});
 
 // [init removed for standalone page]
-document.getElementById('mainContent').innerHTML=pgDashboard();renderNotifs();setTimeout(function(){initChart(S.period||'1d');},60);
+window._csPage='indices';
 
 // Page init
-document.getElementById('mainContent').innerHTML=pgDashboard();renderNotifs();setTimeout(function(){initChart(S.period||'1d');},60);
+window._csPage='indices';document.getElementById('mainContent').innerHTML=pgComingSoon();renderNotifs();
 </script>
 </body>
 </html>

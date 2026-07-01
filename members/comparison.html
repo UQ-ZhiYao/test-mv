@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#1565C0">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="./manifest.webmanifest">
-<title>Dashboard — ZY-Invest</title>
+<title>Fund Comparison — ZY-Invest</title>
 <link rel="stylesheet" href="../styles.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;}
@@ -422,7 +422,7 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
 <div class="shell">
   <aside class="sidebar" id="sidebar">
     <div class="sb-group">Account</div>
-    <a class="sb-item active" href="dashboard.html" data-page="dashboard">
+    <a class="sb-item" href="dashboard.html" data-page="dashboard">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>
       <span class="sb-label">Dashboard</span>
     </a>
@@ -912,7 +912,7 @@ function profHero(){
     +'<div class="prof-meta"><span>huimei.tan@gmail.com</span></div>'
     +'</div>'
     +'<span class="prof-badge">Verified Investor</span>'
-    +'</div>';
+    +'</div></div>';
 }
 
 function profTabs(){
@@ -2902,11 +2902,11 @@ function pgComparison(){
   var paths=seriesData.map(function(s){
     var d=s.v.map(function(v,i){return (i?'L':'M')+px(i).toFixed(1)+','+py(v).toFixed(1);}).join('');
     var dot='<circle cx="'+px(n-1).toFixed(1)+'" cy="'+py(s.v[n-1]).toFixed(1)+'" r="3" fill="#fff" stroke="'+s.color+'" stroke-width="2"/>';
-    return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'+dot;
+    return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>'+dot;
   }).join('');
   // viewBox aspect: 800x200 → no stretch, full width
   var chart='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">'+grid+baseline+paths+xLabels+'</svg>';
-  var legend='<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;">'
+  var legend='<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;justify-content:center;width:100%;">'
     +seriesData.map(function(s){
       var ret=(s.v[n-1]-100).toFixed(1);var up=parseFloat(ret)>=0;
       return '<div style="display:flex;align-items:center;gap:8px">'
@@ -2944,25 +2944,22 @@ function pgComparison(){
       +m.slice(1).map(function(v,j){return '<td style="padding:10px 16px;font-size:.84rem;font-weight:'+(j===0?'700':'500')+';color:'+(j===0?'var(--blue)':'var(--fg-1)')+';">'+v+'</td>';}).join('')
       +'</tr>';
   }).join('');
-  return '<div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1><p>ZY-Invest vs major indices — indexed to 100 at inception (Mar 2022) · Weekly data.</p></div>'
-    +'<div class="mrow" style="margin-bottom:20px">'
+  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1><p>ZY-Invest vs major indices — indexed to 100 at inception (Mar 2022) · Weekly data.</p></div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:28px;border-top:1px solid var(--border)">'
     +'<div class="mc"><div class="lbl">ZY-Invest Return</div><div class="val b" style="color:var(--blue)">+2.45%</div><div class="sub">Since inception</div></div>'
     +'<div class="mc"><div class="lbl">vs FBM KLCI</div><div class="val" style="color:var(--red)">-2.65%</div><div class="sub">Underperformed</div></div>'
     +'<div class="mc"><div class="lbl">vs S&P 500</div><div class="val" style="color:var(--red)">-16.45%</div><div class="sub">Underperformed</div></div>'
     +'<div class="mc"><div class="lbl">Volatility</div><div class="val" style="color:var(--green)">2.1%</div><div class="sub">vs 8.4% KLCI</div></div>'
     +'</div>'
-    +'<div class="panel" style="margin-bottom:16px">'
-    +'<div class="ph"><h3>Indexed Performance (Base 100)</h3><span style="font-size:.8rem;color:var(--fg-3)">Mar 2022 — Mar 2026 · Weekly</span></div>'
-    +'<div style="padding:8px 16px 4px">'+chart+'</div>'
-    +'<div style="padding:0 16px 16px">'+legend+'</div>'
-    +'</div>'
+    +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">Indexed Performance (Base 100)</h3><span style="font-size:.8rem;color:var(--fg-3)">Mar 2022 — Mar 2026 · Weekly</span></div>'
+    +chart+legend+'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
-    +'<div class="panel"><div class="ph"><h3>Annual Returns</h3></div>'
+    +'<div><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:10px">Annual Returns</h3>'
     +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)">'
     +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Fund</th>'
     +years.map(function(y){return '<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">'+y+'</th>';}).join('')
     +'</tr></thead><tbody>'+annualRows+'</tbody></table></div>'
-    +'<div class="panel"><div class="ph"><h3>Risk Metrics</h3><span style="font-size:.78rem;color:var(--fg-3)">Since inception</span></div>'
+    +'<div><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:10px">Risk Metrics <span style="font-size:.78rem;font-weight:400;color:var(--fg-3)">Since inception</span></h3>'
     +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)">'
     +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Metric</th>'
     +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue)">ZY-Invest</th>'
@@ -3455,10 +3452,9 @@ if(tk){tk.addEventListener('mouseenter',function(){tk.style.animationPlayState='
 window.addEventListener('scroll',function(){document.getElementById('topnav').classList.toggle('scrolled',window.scrollY>5);},{passive:true});
 
 // [init removed for standalone page]
-document.getElementById('mainContent').innerHTML=pgDashboard();renderNotifs();setTimeout(function(){initChart(S.period||'1d');},60);
 
 // Page init
-document.getElementById('mainContent').innerHTML=pgDashboard();renderNotifs();setTimeout(function(){initChart(S.period||'1d');},60);
+document.getElementById('mainContent').innerHTML=pgComparison();renderNotifs();
 </script>
 </body>
 </html>
