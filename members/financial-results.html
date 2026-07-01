@@ -329,7 +329,7 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
 <body>
 <!-- TOPNAV -->
 <header class="topnav" id="topnav">
-  <a href="../../index.html" class="brand">
+  <a href="../index.html" class="brand">
     <img src="../assets/img/logo.png" alt="ZY-Invest">
     <span class="bt"><b>ZY-Invest</b><span>Member Portal</span></span>
   </a>
@@ -456,7 +456,7 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
       <span class="sb-label">Instruments</span>
     </a>
     <div class="sb-spacer"></div>
-    <a class="sb-item logout" href="../../login.html" onclick="doLogout();return false;">
+    <a class="sb-item logout" href="../login.html" onclick="doLogout();return false;">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
       <span class="sb-label">Sign out</span>
     </a>
@@ -600,7 +600,7 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
 </div>
 <div class="toast" id="toast"></div>
 <script>
-if(!localStorage.getItem('zy-session')){window.location.href='../../login.html';}
+if(!localStorage.getItem('zy-session')){window.location.href='../login.html';}
 function navigate(pg){
   var map={fundoverview:'fund-overview',ntahistory:'nta-history',financialresults:'financial-results'};
   var file=map[pg]||pg;
