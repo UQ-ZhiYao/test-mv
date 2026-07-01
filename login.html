@@ -212,7 +212,7 @@
     try{
       if(sb){
         var s=await sb.auth.getSession();
-        if(s.data.session){ window.location.href='members/dashboard.html'; return; }
+        if(s.data.session){ window.location.href='members/index.html'; return; }
       }
     }catch(e){}
   })();
