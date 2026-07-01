@@ -212,7 +212,7 @@
     try{
       if(sb){
         var s=await sb.auth.getSession();
-        if(s.data.session){ window.location.href='members/index.html'; return; }
+        if(s.data.session){ window.location.href='members/desktop/dashboard.html'; return; }
       }
     }catch(e){}
   })();
@@ -240,7 +240,8 @@
         name:         res.data.user.user_metadata?.full_name || email,
         investor_id:  res.data.user.user_metadata?.investor_id || ''
       });
-      window.zyEnterDashboard('members/dashboard.html');
+      try{ localStorage.setItem('zy-session','1'); }catch(e){}
+      window.zyEnterDashboard('members/desktop/dashboard.html');
     }catch(err){
       var m=(err && err.message) || 'Login failed. Please try again.';
       if(/invalid credentials/i.test(m)) m='Incorrect email or password. Please try again.';
