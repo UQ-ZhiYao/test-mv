@@ -145,6 +145,7 @@ async function mpLoadNominees(investorId) {
   if (error) throw error;
   return (data || []).map(function(n) {
     return {
+      id:    n.id,
       name:  n.full_name,
       rel:   n.relationship,
       nric:  n.nric_passport,

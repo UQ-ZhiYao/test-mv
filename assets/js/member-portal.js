@@ -25,6 +25,7 @@ let FUND_OVERVIEW = null;
 let LIVE_DATA_READY = false;
 let PROFILE = null;
 let AUTH_USER = null;
+let INVESTOR_ID = null;
 
 function mpInitials(name){
   if(!name) return '—';
@@ -60,6 +61,7 @@ async function loadLiveData(){
     PROFILE = profile;
     populateNav();
     var investorId = (profile && profile.investor_id) || localStorage.getItem('zy_investor_id') || authUser.id;
+    INVESTOR_ID = investorId;
 
     var results = await Promise.allSettled([
       mpLoadNTA(),
@@ -77,6 +79,10 @@ async function loadLiveData(){
       TXS = all.transactions || [];
       DISTS = all.distributions || [];
       DOCS = all.documents || [];
+      if(all.nominees && all.nominees.length){
+        NOM_DATA = all.nominees;
+        NOM_SEL = 0;
+      }
       NOTIFS = (all.notifications || []).map(function(n){
         return {
           title: n.title || n.subject || 'Notification',
@@ -109,6 +115,8 @@ async function loadLiveData(){
     if(results[3].status === 'fulfilled') FUND_OVERVIEW = results[3].value;
     else console.warn('Fund overview load failed:', results[3].reason && results[3].reason.message);
 
+    refreshLiveConstants();
+    populateSRModal();
     LIVE_DATA_READY = true;
   }catch(e){
     console.error('loadLiveData failed, page will show empty/fallback state:', e.message);
@@ -175,6 +183,27 @@ function initChart(period) {
 // ── PAGE RENDERS ─────────────────────────────────────────────────────────────
 function segBtn(lbl,p){return '<button class="'+(S.period===p?'on':'')+'" onclick="switchPeriod('+JSON.stringify(p)+')">'+lbl+'</button>';}
 
+// ── Live-computed aggregates (real data only — "—" when nothing to compute) ──
+function holdingsTotals(){
+  var totalVal=0, totalCost=0, any=false;
+  HOLDINGS.forEach(function(h){
+    if(typeof h.units==='number' && typeof h.px==='number'){ totalVal += h.units*h.px; any=true; }
+    if(typeof h.units==='number' && typeof h.cost==='number'){ totalCost += h.units*h.cost; }
+  });
+  return any ? { value: totalVal, cost: totalCost, pnl: totalVal-totalCost } : { value:null, cost:null, pnl:null };
+}
+function distTotals(){
+  if(!DISTS.length) return null;
+  var total=0, byType={};
+  DISTS.forEach(function(d){
+    var amt = parseFloat(d.amt)||0;
+    total += amt;
+    byType[d.type] = (byType[d.type]||0) + amt;
+  });
+  return { total:total, count:DISTS.length, byType:byType, latestFY: DISTS[0] && DISTS[0].fy };
+}
+function fmtMoneyOrDash(n){ return (n===null||n===undefined||isNaN(n)) ? '—' : 'RM '+n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
 function pgDashboard() {
   var txRows=TXS.slice(0,3).map(function(t){
     var ic=t.type==='Distribution'?'dist':t.type==='Redemption'?'red-ic':'sub';
@@ -185,17 +214,29 @@ function pgDashboard() {
     var w=Math.round(h.al/14.2*100);
     return '<tr><td class="hn"><b>'+h.n+'</b><span>'+h.t+'</span></td><td>'+h.sec+'</td><td><div class="ac"><div class="ac-bar"><span style="width:'+w+'%;background:var(--blue)"></span></div><span class="ac-pct">'+h.al+'%</span></div></td></tr>';
   }).join('');
-  return '<div class="ph-xl"><h1>My <span class="acc">Portfolio</span></h1><p>Welcome back, Hui Mei. Here\'s your investment with ZY-Invest as of 19 Mar 2026.</p></div>'
+  var moreCount = Math.max(0, HOLDINGS.length-5);
+  var moreRow = moreCount>0 ? '<tr><td colspan="3" style="padding:10px 20px;font-size:.8rem;color:var(--blue);cursor:pointer" onclick="navigate(\'holdings\')">+ '+moreCount+' more positions →</td></tr>' : '';
+  var memberName = (PROFILE && (PROFILE.preferred_name || PROFILE.full_name)) || (AUTH_USER && AUTH_USER.email) || '—';
+  var todayStr = new Date().toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});
+  var ht = holdingsTotals();
+  var dt = distTotals();
+  var portfolioValLbl = fmtMoneyOrDash(ht.value);
+  var portfolioRetLbl = (ht.value!==null && ht.cost) ? ('▲ '+((ht.pnl/ht.cost)*100).toFixed(2)+'% total return') : '—';
+  var distCard = dt
+    ? ('<div class="dbig">'+fmtMoneyOrDash(dt.total)+'</div><div class="dsub">'+dt.count+' payment'+(dt.count===1?'':'s')+'</div>'
+      +'<div class="dleg">'+Object.keys(dt.byType).map(function(k){return '<div class="dr"><span class="dl">'+k+'</span><span class="dv">'+fmtMoneyOrDash(dt.byType[k])+'</span></div>';}).join('')+'</div>')
+    : ('<div class="dbig">—</div><div class="dsub">No distributions on record</div>');
+  return '<div class="ph-xl"><h1>My <span class="acc">Portfolio</span></h1><p>Welcome back, '+memberName+'. Here\'s your investment with ZY-Invest as of '+todayStr+'.</p></div>'
     +'<div class="split"><div class="col-main">'
-    +'<div class="mrow"><div class="mc"><div class="lbl">Units Held</div><div class="val">59,763.79</div><div class="sub">Total cost RM 56,224.00</div></div><div class="mc"><div class="lbl">Current NTA</div><div class="val b">RM 1.0245</div><div class="sub">Avg cost RM 0.9408 per unit</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val g">+RM 5,004.00</div><div class="sub">Realised +RM 1,295.90</div></div><div class="mc"><div class="lbl">Annualised IRR</div><div class="val">+14.8%</div><div class="sub">Total P&L +RM 6,299.90</div></div></div>'
+    +'<div class="mrow"><div class="mc"><div class="lbl">Units Held</div><div class="val">—</div><div class="sub">Total cost —</div></div><div class="mc"><div class="lbl">Current NTA</div><div class="val b">'+(NTA_PRICE>0?('RM '+NTA_PRICE.toFixed(4)):'—')+'</div><div class="sub">Avg cost —</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val'+(ht.pnl>0?' g':'')+'">'+fmtMoneyOrDash(ht.pnl)+'</div><div class="sub">Realised —</div></div><div class="mc"><div class="lbl">Annualised IRR</div><div class="val">—</div><div class="sub">Total P&L —</div></div></div>'
     +'<div class="panel"><div class="ph"><h3>NTA per Unit</h3><div class="seg">'+segBtn('1D','1d')+segBtn('1Y','1y')+segBtn('3Y','3y')+segBtn('Max','max')+'</div></div>'
-    +'<div class="chart-wrap"><div class="chart-main">'+chartHTML(S.period)+'</div><div class="chart-side"><div><div class="ck">Annualised IRR</div><div class="cv g">+14.8%</div></div><div><div class="ck">Total Return</div><div class="cv b">+8.90%</div></div><div><div class="ck">Cost Basis</div><div class="cv">RM 1.0003</div></div></div></div></div>'
-    +'<div class="panel"><div class="ph"><h3>Your Holdings</h3><button class="lnk" onclick="navigate(\'holdings\')">View all →</button></div><table class="tbl"><thead><tr><th>Holding</th><th>Sector</th><th style="width:44%">Allocation</th></tr></thead><tbody>'+hl+'<tr><td colspan="3" style="padding:10px 20px;font-size:.8rem;color:var(--blue);cursor:pointer" onclick="navigate(\'holdings\')">+ 7 more positions →</td></tr></tbody></table></div>'
-    +'<div class="panel"><div class="ph"><h3>Recent Activity</h3><button class="lnk" onclick="navigate(\'transactions\')">View all →</button></div>'+txRows+'</div>'
+    +'<div class="chart-wrap"><div class="chart-main">'+chartHTML(S.period)+'</div><div class="chart-side"><div><div class="ck">Annualised IRR</div><div class="cv">—</div></div><div><div class="ck">Total Return</div><div class="cv">—</div></div><div><div class="ck">Cost Basis</div><div class="cv">—</div></div></div></div></div>'
+    +'<div class="panel"><div class="ph"><h3>Your Holdings</h3><button class="lnk" onclick="navigate(\'holdings\')">View all →</button></div><table class="tbl"><thead><tr><th>Holding</th><th>Sector</th><th style="width:44%">Allocation</th></tr></thead><tbody>'+(hl||'<tr><td colspan="3" style="padding:16px 20px;color:var(--fg-3)">No holdings on record</td></tr>')+moreRow+'</tbody></table></div>'
+    +'<div class="panel"><div class="ph"><h3>Recent Activity</h3><button class="lnk" onclick="navigate(\'transactions\')">View all →</button></div>'+(txRows||'<div style="padding:16px 20px;color:var(--fg-3)">No recent activity</div>')+'</div>'
     +'</div><div class="col-rail">'
-    +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="vc"><div class="vc-lbl">Total Portfolio Value</div><div class="gw"><svg viewBox="0 0 300 162" width="100%"><defs><linearGradient id="aG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1565C0"/><stop offset="1" stop-color="#2E7D32"/></linearGradient></defs><path d="M22,148 A128,128 0 0 1 278,148" fill="none" stroke="#F3F4F6" stroke-width="8" stroke-linecap="round"/><path d="M22,148 A128,128 0 0 1 278,148" fill="none" stroke="url(#aG)" stroke-width="8" stroke-linecap="round" stroke-dasharray="401" stroke-dashoffset="100"/><circle cx="240" cy="60" r="6" fill="#fff" stroke="#2E7D32" stroke-width="3"/></svg><div class="gc"><div class="gv">RM 61,228.00</div><div class="gd">▲ 8.90% total return</div></div></div><div class="vact"><button class="bf" onclick="openSR(\'subscribe\')">Subscribe</button><button class="bl" onclick="openSR(\'redeem\')">Redeem</button></div></div></div>'
-    +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="ph"><h3>Distributions · FY25</h3><button class="lnk" onclick="navigate(\'distributions\')">Details →</button></div><div class="dov"><div class="dbig">RM 752.20</div><div class="dsub">3 payments · <em>6.11 sen DPS</em></div><div class="dstack"><span style="width:69.7%;background:var(--blue)"></span><span style="width:18%;background:var(--green)"></span><span style="width:12.3%;background:var(--orange)"></span></div><div class="dleg"><div class="dr"><span class="dl"><span class="dd" style="background:var(--blue)"></span>Interim</span><span class="dv">RM 524.00</span></div><div class="dr"><span class="dl"><span class="dd" style="background:var(--green)"></span>Final</span><span class="dv">RM 135.70</span></div><div class="dr"><span class="dl"><span class="dd" style="background:var(--orange)"></span>Special</span><span class="dv">RM 92.50</span></div></div><div class="dnxt"><span class="dl">Next ex-date · FY26</span><span class="dv">30 Nov 2026</span></div></div></div>'
-    +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="ph"><h3>Fund Resources</h3></div><div class="res-list"><a class="res-item" onclick="navigate(\'statements\')"><span class="ri-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h4"/></svg></span><span class="ri-t"><b>Latest Factsheet</b><span>Mar 2026 · PDF</span></span><span class="ri-arr">→</span></a><a class="res-item" onclick="navigate(\'distributions\')"><span class="ri-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span class="ri-t"><b>Distribution History</b><span>All FY payments</span></span><span class="ri-arr">→</span></a><a class="res-item" onclick="navigate(\'holdings\')"><span class="ri-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 15l5-5 4 3 7-8"/></svg></span><span class="ri-t"><b>NTA &amp; Holdings</b><span>Portfolio breakdown</span></span><span class="ri-arr">→</span></a></div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="vc"><div class="vc-lbl">Total Portfolio Value</div><div class="gw"><svg viewBox="0 0 300 162" width="100%"><defs><linearGradient id="aG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1565C0"/><stop offset="1" stop-color="#2E7D32"/></linearGradient></defs><path d="M22,148 A128,128 0 0 1 278,148" fill="none" stroke="#F3F4F6" stroke-width="8" stroke-linecap="round"/><path d="M22,148 A128,128 0 0 1 278,148" fill="none" stroke="url(#aG)" stroke-width="8" stroke-linecap="round" stroke-dasharray="401" stroke-dashoffset="100"/><circle cx="240" cy="60" r="6" fill="#fff" stroke="#2E7D32" stroke-width="3"/></svg><div class="gc"><div class="gv">'+portfolioValLbl+'</div><div class="gd">'+portfolioRetLbl+'</div></div></div><div class="vact"><button class="bf" onclick="openSR(\'subscribe\')">Subscribe</button><button class="bl" onclick="openSR(\'redeem\')">Redeem</button></div></div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="ph"><h3>Distributions'+(dt&&dt.latestFY?(' · '+dt.latestFY):'')+'</h3><button class="lnk" onclick="navigate(\'distributions\')">Details →</button></div><div class="dov">'+distCard+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="ph"><h3>Fund Resources</h3></div><div class="res-list"><a class="res-item" onclick="navigate(\'statements\')"><span class="ri-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h4"/></svg></span><span class="ri-t"><b>Latest Factsheet</b><span>PDF</span></span><span class="ri-arr">→</span></a><a class="res-item" onclick="navigate(\'distributions\')"><span class="ri-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span class="ri-t"><b>Distribution History</b><span>All FY payments</span></span><span class="ri-arr">→</span></a><a class="res-item" onclick="navigate(\'holdings\')"><span class="ri-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 15l5-5 4 3 7-8"/></svg></span><span class="ri-t"><b>NTA &amp; Holdings</b><span>Portfolio breakdown</span></span><span class="ri-arr">→</span></a></div></div>'
     +'</div></div>';
 }
 
@@ -234,6 +275,7 @@ function piePanel(title, entries, colMap) {
 }
 
 function pgHoldings() {
+  var htHold = holdingsTotals();
   var secs={},insts={};
   HOLDINGS.forEach(function(h){
     secs[h.sec]=(secs[h.sec]||0)+h.al;
@@ -252,11 +294,11 @@ function pgHoldings() {
       +'<td><div class="ac"><div class="ac-bar"><span style="width:'+Math.round(h.al/14.2*100)+'%;background:'+(h.inst==='Cash'?'var(--orange)':'var(--blue)')+'"></span></div><span class="ac-pct">'+h.al+'%</span></div></td>'
       +'</tr>';
   }).join('');
-  return '<div class="ph-xl"><h1>My <span class="acc">Holdings</span></h1><p>Full portfolio breakdown as of 19 Mar 2026 · Total value RM 61,228</p></div>'
+  return '<div class="ph-xl"><h1>My <span class="acc">Holdings</span></h1><p>Full portfolio breakdown as of '+new Date().toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})+' · Total value '+fmtMoneyOrDash(htHold.value)+'</p></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr 220px;gap:14px;margin-bottom:16px;align-items:start">'
     +piePanel('Sector Allocation',secEntries,SC)
     +piePanel('Instrument Type',instEntries,INST_COL)
-    +'<div style="display:flex;flex-direction:column;gap:12px"><div class="mc"><div class="lbl">Total Value</div><div class="val">RM 61,228</div><div class="sub">59,763.79 units held</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val g">+RM 5,004</div><div class="sub">+8.90% total return</div></div><div class="mc"><div class="lbl">Positions</div><div class="val">11</div><div class="sub">+ cash &amp; money market</div></div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:12px"><div class="mc"><div class="lbl">Total Value</div><div class="val">'+fmtMoneyOrDash(htHold.value)+'</div><div class="sub">—</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val'+(htHold.pnl>0?' g':'')+'">'+fmtMoneyOrDash(htHold.pnl)+'</div><div class="sub">'+((htHold.value!==null&&htHold.cost)?('▲ '+((htHold.pnl/htHold.cost)*100).toFixed(2)+'% total return'):'—')+'</div></div><div class="mc"><div class="lbl">Positions</div><div class="val">'+HOLDINGS.length+'</div><div class="sub">Across all instruments</div></div></div>'
     +'</div>'
     +'<div class="panel"><div class="ph"><h3>All Positions</h3></div>'
     +'<table class="tbl"><thead><tr><th>Holding</th><th>Instrument</th><th>Sector</th><th>Product</th><th style="width:160px">Allocation</th></tr></thead><tbody>'+hRows+'</tbody></table></div>';
@@ -297,29 +339,32 @@ function pgTransactions() {
 }
 
 function pgDistributions() {
+  var totalReceived = DISTS.reduce(function(a,d){return a+(d.amt||0);},0);
+  var uniqueFys = DISTS.map(function(d){return d.fy;}).filter(Boolean).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
+  var periodLbl = uniqueFys.length ? (uniqueFys.length===1?uniqueFys[0]:(uniqueFys[0]+' – '+uniqueFys[uniqueFys.length-1])) : '—';
   var mc4=[
-    '<div class="mc"><div class="lbl">Total Received</div><div class="val g">RM 867.20</div><div class="sub">Since inception FY23</div></div>',
-    '<div class="mc"><div class="lbl">No. of Distributions</div><div class="val b">6</div><div class="sub">Across 3 financial years</div></div>',
-    '<div class="mc"><div class="lbl">Distribution Period</div><div class="val">FY23 – FY25</div><div class="sub">Financial Year End: 31 Aug</div></div>',
-    '<div class="mc"><div class="lbl">Payout Ratio</div><div class="val">10.8%</div><div class="sub">Of net income distributed</div></div>'
+    '<div class="mc"><div class="lbl">Total Received</div><div class="val'+(totalReceived>0?' g':'')+'">'+(DISTS.length?fmtMoneyOrDash(totalReceived):'—')+'</div><div class="sub">Since inception</div></div>',
+    '<div class="mc"><div class="lbl">No. of Distributions</div><div class="val b">'+(DISTS.length||'—')+'</div><div class="sub">'+(uniqueFys.length?('Across '+uniqueFys.length+' financial year'+(uniqueFys.length===1?'':'s')):'—')+'</div></div>',
+    '<div class="mc"><div class="lbl">Distribution Period</div><div class="val">'+periodLbl+'</div><div class="sub">—</div></div>',
+    '<div class="mc"><div class="lbl">Payout Ratio</div><div class="val">—</div><div class="sub">Of net income distributed</div></div>'
   ].join('');
   var tBg={Final:'var(--blue-bg)',Interim:'var(--green-bg)',Special:'var(--orange-bg)'};
   var tC={Final:'var(--blue)',Interim:'var(--green)',Special:'var(--orange)'};
   var rows=DISTS.map(function(d){
-    var u=Math.round(d.amt/parseFloat(d.dps)*100).toLocaleString();
+    var u=(d.amt&&d.dps)?Math.round(d.amt/parseFloat(d.dps)*100).toLocaleString():'—';
     return '<tr><td style="font-weight:700">'+d.fy+'</td>'
       +'<td><span class="pill" style="background:'+tBg[d.type]+';color:'+tC[d.type]+'">'+d.type+'</span></td>'
       +'<td>'+d.ex+'</td><td>'+d.pay+'</td>'
       +'<td style="text-align:right;font-weight:600">'+d.dps+'</td>'
-      +'<td style="text-align:right">~'+u+'</td>'
+      +'<td style="text-align:right">'+(u!=='—'?'~'+u:'—')+'</td>'
       +'<td style="text-align:right;font-weight:700;color:var(--green)">+RM '+d.amt.toFixed(2)+'</td>'
       +'<td><span class="pill" style="background:var(--green-bg);color:var(--green)">Paid</span></td></tr>';
   }).join('');
-  return '<div class="ph-xl"><h1>My <span class="acc">Distributions</span></h1><p>All cash distributions since inception · Total received: RM 867.20</p></div>'
+  return '<div class="ph-xl"><h1>My <span class="acc">Distributions</span></h1><p>All cash distributions since inception · Total received: '+(DISTS.length?fmtMoneyOrDash(totalReceived):'—')+'</p></div>'
     +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">'+mc4+'</div>'
-    +'<div class="panel"><div class="ph"><h3>Distribution History</h3><span style="font-size:.8rem;color:var(--fg-3)">Next ex-date: 30 Nov 2026</span></div>'
-    +'<table class="tbl"><thead><tr><th>FY</th><th>Type</th><th>Ex-Date</th><th>Pay Date</th><th style="text-align:right">DPS (sen)</th><th style="text-align:right">Units</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>'+rows
-    +'<tr style="background:var(--gray-50)"><td colspan="6" style="font-weight:700;color:var(--fg-1);padding:12px 20px">Total received</td><td style="text-align:right;font-weight:700;color:var(--green);padding:12px 20px">+RM 867.20</td><td></td></tr>'
+    +'<div class="panel"><div class="ph"><h3>Distribution History</h3><span style="font-size:.8rem;color:var(--fg-3)">Next ex-date: —</span></div>'
+    +'<table class="tbl"><thead><tr><th>FY</th><th>Type</th><th>Ex-Date</th><th>Pay Date</th><th style="text-align:right">DPS (sen)</th><th style="text-align:right">Units</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8" style="padding:20px;color:var(--fg-3)">No distributions on record</td></tr>')
+    +(DISTS.length?('<tr style="background:var(--gray-50)"><td colspan="6" style="font-weight:700;color:var(--fg-1);padding:12px 20px">Total received</td><td style="text-align:right;font-weight:700;color:var(--green);padding:12px 20px">+'+fmtMoneyOrDash(totalReceived)+'</td><td></td></tr>'):'')
     +'</tbody></table></div>';
 }
 
@@ -468,7 +513,7 @@ function secPane(){
 }
 
 // ── NOMINEE DATA & LOGIC (mirrors live version) ────────────────────────────
-var NOM_DATA=[{name:'Tan Ah Kow',rel:'Parent',nric:'590512-07-1234',dob:'12 May 1959',mob:'+60 11-234 5678',alloc:100}];
+var NOM_DATA=[{name:'',rel:'Spouse',nric:'',dob:'',mob:'',alloc:100}];
 var NOM_SEL=0;
 var NOM_COLORS=['var(--blue)','var(--green)','var(--orange)','#7E57C2'];
 
@@ -576,31 +621,60 @@ function nomAdd(){
   showToast('New nominee added — set allocation then Save','orange');
 }
 
-function saveNominee(){
+async function saveNominee(){
   var getV=function(id){var el=document.getElementById(id);return el?el.value.trim():'';};
   var n=NOM_DATA[NOM_SEL];
   n.name=getV('nf-name'); n.nric=getV('nf-nric'); n.dob=getV('nf-dob'); n.mob=getV('nf-mob');
   var relEl=document.getElementById('nf-rel'); if(relEl) n.rel=relEl.value;
   var total=NOM_DATA.reduce(function(a,x){return a+x.alloc;},0);
   if(total!==100){showToast('Total allocation must equal 100% (currently '+total+'%)','error');return;}
-  refreshNomUI();
-  showToast((n.name||'Nominee')+' saved successfully','success');
+  if(!n.name){showToast('Nominee name is required','error');return;}
+  if(!INVESTOR_ID){showToast('Not signed in','error');return;}
+  if(typeof mpSaveNominee!=='function'){showToast('Nominee save service unavailable','error');return;}
+  var payload={
+    full_name:      n.name,
+    relationship:   n.rel,
+    nric_passport:  n.nric || null,
+    date_of_birth:  n.dob || null,
+    mobile:         n.mob || null,
+    allocation_pct: n.alloc
+  };
+  if(n.id) payload.id = n.id;
+  try{
+    await mpSaveNominee(INVESTOR_ID, payload);
+    try{
+      var fresh = await mpLoadNominees(INVESTOR_ID);
+      if(fresh && fresh.length){ NOM_DATA=fresh; if(NOM_SEL>=NOM_DATA.length) NOM_SEL=0; }
+    }catch(e){}
+    refreshNomUI();
+    showToast((n.name||'Nominee')+' saved successfully','success');
+  }catch(e){
+    showToast('Save failed: '+e.message,'error');
+  }
 }
 
-function deleteNominee(){
+async function deleteNominee(){
   if(NOM_DATA.length<=1){showToast('At least one nominee required','error');return;}
-  var name=NOM_DATA[NOM_SEL].name||'Nominee';
-  NOM_DATA.splice(NOM_SEL,1);
-  NOM_SEL=0;
-  // Redistribute to make total 100%
-  var tot=NOM_DATA.reduce(function(a,n){return a+n.alloc;},0);
-  if(tot>0&&tot!==100){NOM_DATA.forEach(function(n){n.alloc=Math.round(n.alloc/tot*100);}); nomFixRounding();}
-  else if(!tot){NOM_DATA[0].alloc=100;}
-  refreshNomUI(); nomSelect(0);
-  showToast(name+' removed','success');
+  var cur=NOM_DATA[NOM_SEL];
+  var name=cur.name||'Nominee';
+  try{
+    if(cur.id && typeof mpDeleteNominee==='function'){ await mpDeleteNominee(cur.id); }
+    NOM_DATA.splice(NOM_SEL,1);
+    NOM_SEL=0;
+    // Redistribute to make total 100%
+    var tot=NOM_DATA.reduce(function(a,n){return a+n.alloc;},0);
+    if(tot>0&&tot!==100){NOM_DATA.forEach(function(n){n.alloc=Math.round(n.alloc/tot*100);}); nomFixRounding();}
+    else if(!tot){NOM_DATA[0].alloc=100;}
+    refreshNomUI(); nomSelect(0);
+    showToast(name+' removed','success');
+  }catch(e){
+    showToast('Remove failed: '+e.message,'error');
+  }
 }
 
 function nomPane(){
+  var curN = NOM_DATA[NOM_SEL] || {};
+  var rels=['Parent','Spouse','Child','Sibling','Other'];
   return fcard('Current Nominees','Click a nominee to edit, or add a new one.',
     '<div id="nom-bar-area">'+nomBarHTML()+'</div>'
     +'<div id="nom-list-area">'+nomListHTML()+'</div>',
@@ -608,13 +682,15 @@ function nomPane(){
   )
   +fcard('Nominee Details','<span id="nom-prim-lbl">Primary</span> nominee',
     '<div class="fgrid">'
-    +ff('Full Name','nf-name','text','Tan Ah Kow','Nominee full name')
-    +'<div class="ffield"><label>Relationship</label><select id="nf-rel" style="font:inherit;font-size:.92rem;color:var(--fg-1);background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-md);padding:9px 12px;outline:none;transition:.2s;width:100%;box-sizing:border-box"><option>Parent</option><option>Spouse</option><option>Child</option><option>Sibling</option><option>Other</option></select></div>'
-    +ff('NRIC / Passport','nf-nric','text','590512-07-1234','NRIC or passport no.')
-    +ff('Date of Birth','nf-dob','text','12 May 1959','DD Mmm YYYY')
-    +ff('Mobile','nf-mob','tel','+60 11-234 5678','+60 1X-XXX XXXX')
-    +'<div class="ffield"><label>Allocation <span id="nf-pct-lbl" style="color:var(--blue);font-weight:700">100%</span></label>'
-    +'<input type="range" id="nf-alloc" min="0" max="100" step="5" value="100" oninput="nomSlide(this)" style="width:100%;accent-color:var(--blue);margin-top:6px">'
+    +ff('Full Name','nf-name','text',(curN.name||''),'Nominee full name')
+    +'<div class="ffield"><label>Relationship</label><select id="nf-rel" style="font:inherit;font-size:.92rem;color:var(--fg-1);background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-md);padding:9px 12px;outline:none;transition:.2s;width:100%;box-sizing:border-box">'
+    +rels.map(function(r){return '<option'+(curN.rel===r?' selected':'')+'>'+r+'</option>';}).join('')
+    +'</select></div>'
+    +ff('NRIC / Passport','nf-nric','text',(curN.nric||''),'NRIC or passport no.')
+    +ff('Date of Birth','nf-dob','text',(curN.dob||''),'DD Mmm YYYY')
+    +ff('Mobile','nf-mob','tel',(curN.mob||''),'+60 1X-XXX XXXX')
+    +'<div class="ffield"><label>Allocation <span id="nf-pct-lbl" style="color:var(--blue);font-weight:700">'+(curN.alloc||0)+'%</span></label>'
+    +'<input type="range" id="nf-alloc" min="0" max="100" step="5" value="'+(curN.alloc||0)+'" oninput="nomSlide(this)" style="width:100%;accent-color:var(--blue);margin-top:6px">'
     +'<div class="fhint">Adjust allocation — must total 100% across all nominees</div></div>'
     +'</div>'
     +'<div style="margin-top:14px;padding:12px 14px;background:var(--orange-bg);border-radius:var(--radius-md);font-size:.78rem;color:var(--fg-2);line-height:1.6">'
@@ -2216,13 +2292,35 @@ function renderMain(instant) {
 
 // ── MODALS ───────────────────────────────────────────────────────────────────
 // ── SUBSCRIBE / REDEEM MODALS ────────────────────────────────────────────────
-var NTA_PRICE=1.0245, UNITS_HELD=59763.79, MAX_VAL=61228;
+var NTA_PRICE=0, UNITS_HELD=0, MAX_VAL=0;
+// Called after live data loads — NTA_PRICE comes from real NTA history.
+// UNITS_HELD / MAX_VAL have no live per-investor capital-account source in
+// this portal yet, so they stay 0 and the UI shows "—" instead of a fake number.
+function refreshLiveConstants(){
+  var v = NTA && NTA.max && NTA.max.v;
+  NTA_PRICE = (v && v.length) ? v[v.length-1] : 0;
+}
 function fmtMYR(n){return n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function parseMYR(s){return parseFloat((s||'').replace(/,/g,''))||0;}
 var subFileSet=false;
 
+function populateSRModal(){
+  var name = (PROFILE && (PROFILE.preferred_name || PROFILE.full_name)) || (AUTH_USER && AUTH_USER.email) || '—';
+  setText('srSubRef',        (PROFILE && PROFILE.investor_id) || '—');
+  setText('srMemberName',    name);
+  setText('srMemberId',      (PROFILE && PROFILE.investor_id) || '—');
+  setText('srUnitsHeld',     UNITS_HELD>0 ? fmtMYR(UNITS_HELD) : '—');
+  setText('srCurrentValue',  MAX_VAL>0 ? 'RM '+fmtMYR(MAX_VAL) : '—');
+  setText('srPayoutBank',    (PROFILE && PROFILE.bank_name) || '—');
+  setText('srPayoutAcct',    (PROFILE && PROFILE.bank_account_no) ? ('···· ···· '+String(PROFILE.bank_account_no).slice(-4)) : '—');
+  setText('subNtaLbl',       NTA_PRICE>0 ? NTA_PRICE.toFixed(4) : '—');
+  setText('redNtaLbl',       NTA_PRICE>0 ? NTA_PRICE.toFixed(4) : '—');
+  setText('redUnitsHeldLbl', UNITS_HELD>0 ? fmtMYR(UNITS_HELD) : '—');
+}
+
 function openSR(type){
   subFileSet=false;
+  populateSRModal();
   if(type==='subscribe'){
     document.getElementById('subAmt').value='';
     document.getElementById('subUnits').value='—';
@@ -2251,19 +2349,19 @@ function simFileUpload(who){
 }
 function setSubAmt(v){
   document.getElementById('subAmt').value=fmtMYR(v);
-  document.getElementById('subUnits').value=fmtMYR(v/NTA_PRICE)+' units';
+  document.getElementById('subUnits').value=(NTA_PRICE>0)?(fmtMYR(v/NTA_PRICE)+' units'):'—';
   document.getElementById('sfAmt').classList.remove('show-err');
 }
 function setRedPct(pct){
   var units=UNITS_HELD*pct/100;
-  document.getElementById('redUnitsIn').value=fmtMYR(units);
-  document.getElementById('redAmt').value=fmtMYR(units*NTA_PRICE);
-  document.getElementById('redOut').value=fmtMYR(units*NTA_PRICE)+' RM';
+  document.getElementById('redUnitsIn').value=(units>0)?fmtMYR(units):'';
+  document.getElementById('redAmt').value=(units>0&&NTA_PRICE>0)?fmtMYR(units*NTA_PRICE):'';
+  document.getElementById('redOut').value=(units>0&&NTA_PRICE>0)?(fmtMYR(units*NTA_PRICE)+' RM'):'—';
   document.getElementById('rfAmt').classList.remove('show-err');
 }
 function redAmtChanged(){
   var a=parseMYR(document.getElementById('redAmt').value);
-  if(a>0){
+  if(a>0 && NTA_PRICE>0){
     var u=a/NTA_PRICE;
     document.getElementById('redUnitsIn').value=fmtMYR(u);
     document.getElementById('redOut').value=fmtMYR(u)+' units';
@@ -2274,7 +2372,7 @@ function redAmtChanged(){
 }
 function redUnitsChanged(){
   var u=parseMYR(document.getElementById('redUnitsIn').value);
-  if(u>0){
+  if(u>0 && NTA_PRICE>0){
     var a=u*NTA_PRICE;
     document.getElementById('redAmt').value=fmtMYR(a);
     document.getElementById('redOut').value='RM '+fmtMYR(a);
@@ -2285,7 +2383,7 @@ function redUnitsChanged(){
 }
 var _sa=document.getElementById('subAmt');if(_sa)_sa.addEventListener('input',function(){
   var a=parseMYR(this.value);
-  document.getElementById('subUnits').value=a>0?fmtMYR(a/NTA_PRICE)+' units':'—';
+  document.getElementById('subUnits').value=(a>0&&NTA_PRICE>0)?(fmtMYR(a/NTA_PRICE)+' units'):'—';
 });
 function submitSub(){
   var a=parseMYR(document.getElementById('subAmt').value);
@@ -2365,7 +2463,7 @@ function doLogin(){
   if(!e||!p){showToast('Please enter your email and password','error');return;}
   try{localStorage.setItem('zy-session','1');localStorage.setItem('zy-email',e);}catch(err){}
   document.getElementById('lscreen').style.display='none';
-  showToast('Welcome back, Hui Mei.','success');
+  showToast('Welcome back, '+e+'.','success');
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────

@@ -53,14 +53,14 @@
     </button>
       <div class="user-menu-wrap">
       <button class="nav-user" id="userBtn" onclick="toggleUserMenu()">
-        <div style="text-align:right"><div class="nu-name" id="navName">Tan Hui Mei</div><div class="nu-role" id="navRole">huimei.tan@gmail.com</div></div>
-        <div class="avatar" id="navAvatar">HM</div>
+        <div style="text-align:right"><div class="nu-name" id="navName">—</div><div class="nu-role" id="navRole">—</div></div>
+        <div class="avatar" id="navAvatar">—</div>
         <span style="font-size:.6rem;color:var(--fg-3)">▾</span>
       </button>
       <div class="user-menu" id="userMenu">
         <div class="um-head">
-          <div class="avatar" id="menuAvatar" style="width:38px;height:38px;font-size:.88rem">HM</div>
-          <div><div class="um-name" id="menuName">Tan Hui Mei</div><div class="um-mail" id="menuEmail">huimei.tan@gmail.com</div></div>
+          <div class="avatar" id="menuAvatar" style="width:38px;height:38px;font-size:.88rem">—</div>
+          <div><div class="um-name" id="menuName">—</div><div class="um-mail" id="menuEmail">—</div></div>
         </div>
         <a class="um-item" href="#" onclick="window.location.href='settings.html';toggleUserMenu();return false;">
           <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>
@@ -165,7 +165,7 @@
         <div class="sr-kv"><span>Account Name</span><b>ZY-Invest Fund Sdn Bhd</b></div>
         <div class="sr-kv"><span>Account No.</span><b style="font-family:var(--font-mono)">5141 8827 3041</b></div>
         <div class="sr-kv"><span>SWIFT</span><b style="font-family:var(--font-mono)">MBBEMYKL</b></div>
-        <div class="sr-kv"><span>Reference</span><b>ZYI-2024-0014</b></div>
+        <div class="sr-kv"><span>Reference</span><b id="srSubRef">—</b></div>
       </div>
       <div class="sr-form">
         <div class="sr-field" id="sfAmt">
@@ -179,7 +179,7 @@
           </div>
         </div>
         <div class="sr-field">
-          <label>Indicative Units <span class="opt">at NTA 1.0245</span></label>
+          <label>Indicative Units <span class="opt">at NTA <span id="subNtaLbl">—</span></span></label>
           <input class="sr-inp" type="text" id="subUnits" value="—" disabled>
         </div>
         <div class="sr-field" id="sfFile">
@@ -206,23 +206,23 @@
     <div class="sr-cols">
       <div class="sr-bank">
         <div class="sr-bhead">Your Account</div>
-        <div class="sr-kv"><span>Member</span><b>Tan Hui Mei</b></div>
-        <div class="sr-kv"><span>Member ID</span><b>ZYI-2024-0014</b></div>
-        <div class="sr-kv"><span>Units Held</span><b style="font-family:var(--font-mono)">59,763.79</b></div>
-        <div class="sr-kv"><span>Current Value</span><b>RM 61,228.00</b></div>
+        <div class="sr-kv"><span>Member</span><b id="srMemberName">—</b></div>
+        <div class="sr-kv"><span>Member ID</span><b id="srMemberId">—</b></div>
+        <div class="sr-kv"><span>Units Held</span><b id="srUnitsHeld" style="font-family:var(--font-mono)">—</b></div>
+        <div class="sr-kv"><span>Current Value</span><b id="srCurrentValue">—</b></div>
         <div class="sr-bhead" style="margin-top:13px">Payout Bank Account</div>
-        <div class="sr-kv"><span>Bank</span><b>Maybank</b></div>
-        <div class="sr-kv"><span>Account No.</span><b style="font-family:var(--font-mono)">···· ···· 2048</b></div>
+        <div class="sr-kv"><span>Bank</span><b id="srPayoutBank">—</b></div>
+        <div class="sr-kv"><span>Account No.</span><b id="srPayoutAcct" style="font-family:var(--font-mono)">—</b></div>
       </div>
       <div class="sr-form">
         <div class="sr-field" id="rfAmt">
           <label>Withdrawal Amount (RM) <span style="color:var(--red)">*</span></label>
           <input class="sr-inp" type="text" id="redAmt" placeholder="e.g. 10,000.00" oninput="redAmtChanged()">
-          <div class="sr-err">Enter an amount up to RM 61,228.00.</div>
+          <div class="sr-err">Enter a valid withdrawal amount within your available balance.</div>
         </div>
         <div class="sr-or">or enter units</div>
         <div class="sr-field">
-          <label>Units to Redeem <span class="opt">of 59,763.79 held</span></label>
+          <label>Units to Redeem <span class="opt">of <span id="redUnitsHeldLbl">—</span> held</span></label>
           <input class="sr-inp" type="text" id="redUnitsIn" placeholder="e.g. 5,000.0000" oninput="redUnitsChanged()">
           <div class="sr-chips">
             <button onclick="setRedPct(25)">25%</button>
@@ -232,7 +232,7 @@
           </div>
         </div>
         <div class="sr-field">
-          <label>Indicative Output <span class="opt">at NTA 1.0245</span></label>
+          <label>Indicative Output <span class="opt">at NTA <span id="redNtaLbl">—</span></span></label>
           <input class="sr-inp" type="text" id="redOut" value="—" disabled>
         </div>
 
