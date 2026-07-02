@@ -7,7 +7,310 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="./manifest.webmanifest">
 <title>Transactions — ZY-Invest</title>
-<link rel="stylesheet" href="../../styles.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   ZY-Invest — Color Tokens
+   Brand: Blue #1565C0 · Green #2E7D32 · Orange #E65100
+   ============================================================ */
+
+:root {
+  /* ── Brand Blue ──────────────────────────────────────────── */
+  --blue:         #1565C0;   /* Primary — Material Blue 800   */
+  --blue-light:   #1E88E5;   /* Hover states, lighter accents */
+  --blue-dark:    #0D47A1;   /* Pressed / dark panel headers  */
+  --blue-bg:      #E3F2FD;   /* Tinted surfaces, badge fills  */
+
+  /* ── Brand Green ─────────────────────────────────────────── */
+  --green:        #2E7D32;   /* Gains, confirmations, active  */
+  --green-light:  #43A047;
+  --green-bg:     #E8F5E9;
+
+  /* ── Brand Orange ────────────────────────────────────────── */
+  --orange:       #E65100;   /* Warnings, cash, distributions */
+  --orange-light: #F57C00;
+  --orange-bg:    #FFF7ED;
+
+  /* ── Semantic Red ────────────────────────────────────────── */
+  --red:          #DC2626;   /* Losses, errors, danger        */
+  --red-light:    #EF4444;
+  --red-bg:       #FEF2F2;
+
+  /* ── Neutrals ────────────────────────────────────────────── */
+  --white:        #FFFFFF;
+  --off-white:    #F8FAFC;
+  --gray-50:      #F9FAFB;
+  --gray-100:     #F3F4F6;
+  --gray-200:     #E5E7EB;
+  --gray-400:     #9CA3AF;
+  --gray-600:     #4B5563;
+  --gray-700:     #374151;
+  --gray-800:     #1F2937;
+  --gray-900:     #111827;
+
+  /* ── Semantic Foreground ─────────────────────────────────── */
+  --fg-1:         #0F172A;   /* Primary text (headings)       */
+  --fg-2:         #374151;   /* Body text                     */
+  --fg-3:         #64748B;   /* Muted / meta / labels         */
+  --fg-inverse:   #FFFFFF;
+
+  /* ── Borders ─────────────────────────────────────────────── */
+  --border:         #E2E8F0;
+  --border-strong:  #CBD5E1;
+
+  /* ── Surfaces ────────────────────────────────────────────── */
+  --surface-0:    #FFFFFF;
+  --surface-1:    #F8FAFC;   /* Page background               */
+  --surface-2:    #F3F4F6;   /* Subtle section fills          */
+  --surface-dark: #0B1220;   /* Hero dark sections, footer    */
+
+  /* ── Gradients ───────────────────────────────────────────── */
+  --grad-hero:    linear-gradient(180deg, #FBFDFF 0%, #F2F8FF 42%, #EEF6FF 100%); /* @kind other */
+  --grad-cta:     linear-gradient(135deg, var(--blue-dark), var(--blue)); /* @kind other */
+  --grad-login:   linear-gradient(160deg, var(--blue-dark), var(--blue)); /* @kind other */
+  --grad-brand:   linear-gradient(90deg, var(--blue), var(--green)); /* @kind other */
+  --grad-avatar-b: linear-gradient(145deg, var(--blue), var(--blue-light)); /* @kind other */
+  --grad-avatar-g: linear-gradient(145deg, var(--green), var(--green-light)); /* @kind other */
+  --grad-avatar-o: linear-gradient(145deg, var(--orange), var(--orange-light)); /* @kind other */
+}
+
+/* ============================================================
+   ZY-Invest — Typography Tokens
+   DM Sans (body/headings) · DM Serif Display (italic accent)
+   DM Mono (numbers, code, mono data)
+   ============================================================ */
+
+:root {
+  /* ── Font Families ───────────────────────────────────────── */
+  --font-body:    'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-mono:    'DM Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ── Type Scale (rem) ────────────────────────────────────── */
+  --text-xs:    0.72rem;    /* 11.5px — uppercase labels, meta  */
+  --text-sm:    0.82rem;    /* 13px   — small UI text           */
+  --text-base:  0.95rem;    /* 15px   — default UI              */
+  --text-body:  1rem;       /* 16px   — body copy               */
+  --text-lg:    1.1rem;     /* 17.6px — lead paragraphs         */
+  --text-xl:    1.25rem;    /* 20px   — h4 / subheadings        */
+  --text-2xl:   1.5rem;     /* 24px   — h3                      */
+  --text-3xl:   2rem;       /* 32px   — h2                      */
+  --text-4xl:   2.8rem;     /* 44.8px — h1                      */
+  --text-hero:  3.5rem;     /* 56px   — hero headline           */
+
+  /* ── Line Heights ────────────────────────────────────────── */
+  --leading-tight:  1.1;
+  --leading-snug:   1.3;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.7;
+  --leading-loose:  1.8;
+
+  /* ── Font Weights ────────────────────────────────────────── */
+  --weight-light:   300;
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+  --weight-bold:    700;
+
+  /* ── Letter Spacing ──────────────────────────────────────── */
+  --tracking-tight:  -0.025em;
+  --tracking-snug:   -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.08em;
+  --tracking-wider:  0.12em;
+  --tracking-widest: 0.16em;
+}
+
+/* ── Semantic type utility classes ───────────────────────────── */
+
+/* Headings — DM Sans semibold, tight tracking */
+.zy-h1 {
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: clamp(2rem, 5vw, var(--text-hero));
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg-1);
+}
+.zy-h2 {
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-snug);
+  color: var(--fg-1);
+}
+.zy-h3 {
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-xl);
+  line-height: var(--leading-snug);
+  color: var(--fg-1);
+}
+.zy-h4 {
+  font-family: var(--font-body);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-body);
+  color: var(--fg-1);
+}
+
+/* Accent — DM Serif Display italic, used sparingly in headings */
+.zy-accent {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--blue);
+  letter-spacing: -0.01em;
+}
+
+/* Body */
+.zy-body   { font-size: var(--text-body); line-height: var(--leading-relaxed); color: var(--fg-2); }
+.zy-body-sm { font-size: var(--text-base); line-height: var(--leading-normal); color: var(--fg-3); }
+
+/* Label / eyebrow — ALL CAPS */
+.zy-eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+/* Stat / number display */
+.zy-stat {
+  font-family: var(--font-body);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--fg-1);
+}
+
+/* Mono — financial data, account numbers */
+.zy-mono {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   ZY-Invest — Spacing & Layout Tokens
+   8pt grid: multiples of 4px, named by step count
+   ============================================================ */
+
+:root {
+  /* ── Spacing scale ───────────────────────────────────────── */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+  --space-20:  80px;
+  --space-24:  96px;
+  --space-32:  128px;
+
+  /* ── Corner radii ────────────────────────────────────────── */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-pill: 999px;
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  --container-max: 1180px;
+  --nav-h:         68px;
+  --sidebar-w:     260px;
+  --sidebar-w-collapsed: 64px;
+}
+
+/* ============================================================
+   ZY-Invest — Elevation / Shadow Tokens
+   ============================================================ */
+
+:root {
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md:    0 4px 16px rgba(0, 0, 0, 0.10);
+  --shadow-lg:    0 12px 40px rgba(0, 0, 0, 0.12);
+  --shadow-xl:    0 18px 50px rgba(15, 23, 42, 0.14);
+
+  /* ── Focus ring ──────────────────────────────────────────── */
+  --shadow-focus: 0 0 0 3px rgba(21, 101, 192, 0.10);
+
+  /* ── Glass / backdrop ────────────────────────────────────── */
+  --glass-bg:     rgba(255, 255, 255, 0.62); /* @kind other */
+  --glass-border: rgba(255, 255, 255, 0.90); /* @kind other */
+  --blur-glass:   blur(16px); /* @kind other */
+  --blur-nav:     blur(14px); /* @kind other */
+}
+
+/* ============================================================
+   ZY-Invest — Motion & Animation Tokens
+   ============================================================ */
+
+:root {
+  /* ── Easing ──────────────────────────────────────────────── */
+  --ease-default:  ease; /* @kind other */
+  --ease-in:       cubic-bezier(0.4, 0, 1, 1); /* @kind other */
+  --ease-out:      cubic-bezier(0, 0, 0.2, 1); /* @kind other */
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --ease-spring:   cubic-bezier(0.76, 0, 0.24, 1); /* @kind other */
+  --ease-bounce:   cubic-bezier(0.34, 1.56, 0.64, 1); /* @kind other */
+
+  /* ── Durations ───────────────────────────────────────────── */
+  --duration-fast:   0.2s; /* @kind other */
+  --duration-normal: 0.4s; /* @kind other */
+  --duration-slow:   0.6s; /* @kind other */
+  --duration-slower: 0.85s; /* @kind other */
+
+  /* ── Composite shorthands ────────────────────────────────── */
+  --transition:        0.2s ease; /* @kind other */
+  --transition-slow:   0.6s ease; /* @kind other */
+  --transition-spring: 0.4s cubic-bezier(0.76, 0, 0.24, 1); /* @kind other */
+}
+
+/* ── Reveal animation ────────────────────────────────────────── */
+/* Scroll-triggered: add class .in to reveal  */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity var(--duration-slow) var(--ease-default),
+              transform var(--duration-slow) var(--ease-default);
+}
+.reveal.in   { opacity: 1; transform: none; }
+.reveal.d1   { transition-delay: 0.08s; }
+.reveal.d2   { transition-delay: 0.16s; }
+.reveal.d3   { transition-delay: 0.24s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ── Blip (live status pulse) ────────────────────────────────── */
+@keyframes zy-blip {
+  0%, 100% { opacity: 0.4; box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); }
+  50%       { opacity: 1;   box-shadow: 0 0 0 5px rgba(46, 125, 50, 0); }
+}
+
+/* ── Ticker scroll ───────────────────────────────────────────── */
+@keyframes zy-ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── Wheel (scroll cue) ──────────────────────────────────────── */
+@keyframes zy-wheel {
+  0%   { opacity: 0; transform: translate(-50%, 0); }
+  40%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 12px); }
+}
+</style>
 <style>
 *,*::before,*::after{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}

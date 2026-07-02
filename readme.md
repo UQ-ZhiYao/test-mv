@@ -16,7 +16,6 @@ A private investment fund website and member portal built for GitHub Pages + Sup
 ├── login.html                  ← Member login (PWA installable)
 ├── manifest.webmanifest        ← PWA manifest
 ├── sw.js                       ← Service worker (offline / PWA)
-├── styles.css                  ← Imports all design tokens
 │
 ├── assets/
 │   ├── css/site.css            ← Public site stylesheet
@@ -26,13 +25,6 @@ A private investment fund website and member portal built for GitHub Pages + Sup
 │       ├── api.js              ← REST API helpers + auth guards
 │       ├── member-api.js       ← All Supabase data queries
 │       └── site.js             ← Nav, animations, PWA transition
-│
-├── tokens/
-│   ├── colors.css              ← Brand + semantic color tokens
-│   ├── typography.css          ← Font scale + weights
-│   ├── spacing.css             ← 8pt grid + radii
-│   ├── elevation.css           ← Shadows + glass
-│   └── motion.css              ← Easing + animation durations
 │
 └── members/
     ├── manifest.webmanifest    ← Portal PWA manifest
