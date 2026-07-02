@@ -195,6 +195,14 @@
   </div>
 </div>
 
+<script>
+(function(){
+  var ua=navigator.userAgent;
+  var isMobile=/android|iphone|ipad|ipod|blackberry|windows phone|opera mini|mobile/i.test(ua);
+  var isSmall=window.innerWidth<768;
+  if(isMobile||isSmall){ window.location.replace('members/phone/login.html'); }
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/supabase-auth.js"></script>
 <script src="assets/js/api.js"></script>
@@ -215,6 +223,9 @@
         if(s.data.session){ window.location.href='members/desktop/dashboard.html'; return; }
       }
     }catch(e){}
+    if(localStorage.getItem('zy-session')||localStorage.getItem('zy_token')){
+      window.location.href='members/desktop/dashboard.html'; return;
+    }
   })();
 
   var form=document.getElementById('loginForm'), btn=document.getElementById('submitBtn'),

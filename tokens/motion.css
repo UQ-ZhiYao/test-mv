@@ -1,0 +1,60 @@
+/* ============================================================
+   ZY-Invest — Motion & Animation Tokens
+   ============================================================ */
+
+:root {
+  /* ── Easing ──────────────────────────────────────────────── */
+  --ease-default:  ease; /* @kind other */
+  --ease-in:       cubic-bezier(0.4, 0, 1, 1); /* @kind other */
+  --ease-out:      cubic-bezier(0, 0, 0.2, 1); /* @kind other */
+  --ease-in-out:   cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --ease-spring:   cubic-bezier(0.76, 0, 0.24, 1); /* @kind other */
+  --ease-bounce:   cubic-bezier(0.34, 1.56, 0.64, 1); /* @kind other */
+
+  /* ── Durations ───────────────────────────────────────────── */
+  --duration-fast:   0.2s; /* @kind other */
+  --duration-normal: 0.4s; /* @kind other */
+  --duration-slow:   0.6s; /* @kind other */
+  --duration-slower: 0.85s; /* @kind other */
+
+  /* ── Composite shorthands ────────────────────────────────── */
+  --transition:        0.2s ease; /* @kind other */
+  --transition-slow:   0.6s ease; /* @kind other */
+  --transition-spring: 0.4s cubic-bezier(0.76, 0, 0.24, 1); /* @kind other */
+}
+
+/* ── Reveal animation ────────────────────────────────────────── */
+/* Scroll-triggered: add class .in to reveal  */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity var(--duration-slow) var(--ease-default),
+              transform var(--duration-slow) var(--ease-default);
+}
+.reveal.in   { opacity: 1; transform: none; }
+.reveal.d1   { transition-delay: 0.08s; }
+.reveal.d2   { transition-delay: 0.16s; }
+.reveal.d3   { transition-delay: 0.24s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ── Blip (live status pulse) ────────────────────────────────── */
+@keyframes zy-blip {
+  0%, 100% { opacity: 0.4; box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.4); }
+  50%       { opacity: 1;   box-shadow: 0 0 0 5px rgba(46, 125, 50, 0); }
+}
+
+/* ── Ticker scroll ───────────────────────────────────────────── */
+@keyframes zy-ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── Wheel (scroll cue) ──────────────────────────────────────── */
+@keyframes zy-wheel {
+  0%   { opacity: 0; transform: translate(-50%, 0); }
+  40%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 12px); }
+}
