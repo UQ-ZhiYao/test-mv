@@ -232,7 +232,7 @@ function initChart(period) {
 }
 
 // ── PAGE RENDERS ─────────────────────────────────────────────────────────────
-function segBtn(lbl,p){return '<button class="'+(S.period===p?'on':'')+'" onclick="switchPeriod('+JSON.stringify(p)+')">'+lbl+'</button>';}
+function segBtn(lbl,p){return '<button class="'+(S.period===p?'on':'')+'" onclick="switchPeriod(\''+p+'\')">'+lbl+'</button>';}
 
 // ── Live-computed aggregates (real data only — "—" when nothing to compute) ──
 function holdingsTotals(){
