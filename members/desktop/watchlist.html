@@ -3167,7 +3167,7 @@ function showToast(msg,type){
 // ── LOGIN ────────────────────────────────────────────────────────────────────
 function doLogout(){
   document.getElementById('userMenu').classList.remove('open');
-  try{localStorage.removeItem('zy-page');localStorage.removeItem('zy_token');localStorage.removeItem('zy_role');}catch(e){}
+  try{['zy-page','zy_token','zy_role','zy_name','zy_investor_id','zy-session','zy-email'].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
   if(typeof sb!=='undefined'&&sb){
     sb.auth.signOut().then(function(){window.location.href='../../login.html';}).catch(function(){window.location.href='../../login.html';});
   } else { window.location.href='../../login.html'; }
@@ -3770,7 +3770,7 @@ function showToast(msg,type){
 // ── LOGIN ────────────────────────────────────────────────────────────────────
 function doLogout(){
   document.getElementById('userMenu').classList.remove('open');
-  try{localStorage.removeItem('zy-page');localStorage.removeItem('zy_token');localStorage.removeItem('zy_role');}catch(e){}
+  try{['zy-page','zy_token','zy_role','zy_name','zy_investor_id','zy-session','zy-email'].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
   if(typeof sb!=='undefined'&&sb){
     sb.auth.signOut().then(function(){window.location.href='../../login.html';}).catch(function(){window.location.href='../../login.html';});
   } else { window.location.href='../../login.html'; }
