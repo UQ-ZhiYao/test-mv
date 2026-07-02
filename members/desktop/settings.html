@@ -902,6 +902,8 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../assets/js/supabase-auth.js"></script>
 <script>
 if(!localStorage.getItem('zy-session')&&!localStorage.getItem('zy_token')){window.location.href='../../login.html';}
 function navigate(pg){
