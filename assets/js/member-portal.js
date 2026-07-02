@@ -28,6 +28,8 @@ let PROFILE = null;
 let AUTH_USER = null;
 let INVESTOR_ID = null;
 let CAPITAL_SUMMARY = { unitsHeld: 0, avgCost: 0, totalCost: 0 };
+let PRODUCT_TYPES = {};
+let NTA_LOAD_ERROR = null;
 
 function mpInitials(name){
   if(!name) return '—';
@@ -97,11 +99,12 @@ async function loadLiveData(){
       mpLoadAll(authUser, investorId),
       mpLoadShareholders(),
       mpLoadFundOverview(),
-      mpLoadCapitalSummary(authUser.id)
+      mpLoadCapitalSummary(authUser.id),
+      mpLoadProductTypes()
     ]);
 
-    if(results[0].status === 'fulfilled') NTA = results[0].value;
-    else console.warn('NTA history load failed:', results[0].reason && results[0].reason.message);
+    if(results[0].status === 'fulfilled'){ NTA = results[0].value; NTA_LOAD_ERROR = null; }
+    else { NTA_LOAD_ERROR = (results[0].reason && results[0].reason.message) || 'Unknown error'; console.warn('NTA history load failed:', NTA_LOAD_ERROR); }
 
     if(results[1].status === 'fulfilled'){
       var all = results[1].value;
@@ -149,6 +152,9 @@ async function loadLiveData(){
     if(results[4].status === 'fulfilled') CAPITAL_SUMMARY = results[4].value;
     else console.warn('Capital summary load failed:', results[4].reason && results[4].reason.message);
 
+    if(results[5].status === 'fulfilled') PRODUCT_TYPES = results[5].value;
+    else console.warn('Product types load failed:', results[5].reason && results[5].reason.message);
+
     refreshLiveConstants();
     populateSRModal();
     LIVE_DATA_READY = true;
@@ -171,6 +177,17 @@ function makePath(vals, W, H, px, py) {
     d+=' C'+c1x.toFixed(1)+','+c1y.toFixed(1)+' '+c2x.toFixed(1)+','+c2y.toFixed(1)+' '+p2[0].toFixed(1)+','+p2[1].toFixed(1);
   }
   return {d:d, pts:pts};
+}
+
+function ntaHasData(period){
+  var d = NTA && NTA[period];
+  return !!(d && d.l && d.l.length && d.l[0]!=='—');
+}
+function ntaEmptyState(){
+  var msg = NTA_LOAD_ERROR
+    ? 'Could not load NTA history — '+NTA_LOAD_ERROR
+    : 'No NTA history found for this period yet.';
+  return '<div style="height:180px;display:flex;align-items:center;justify-content:center;color:var(--fg-3);font-size:.85rem;text-align:center;padding:0 20px">'+msg+'</div>';
 }
 
 function chartHTML(period) {
@@ -247,8 +264,7 @@ function pgDashboard() {
   }).join('');
   var hl=HOLDINGS.slice(0,5).map(function(h){
     var w=Math.min(100,Math.round(h.al/14.2*100));
-    var ic=INST_COL[h.inst]||'#9CA3AF';
-    return '<tr><td class="hn"><b>'+h.n+'</b><span>'+h.t+'</span></td><td><span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:'+ic+'1A;color:'+ic+'">'+h.inst+'</span></td><td>'+h.sec+'</td><td><div class="ac"><div class="ac-bar"><span style="width:'+w+'%;background:var(--blue)"></span></div><span class="ac-pct">'+h.al.toFixed(1)+'%</span></div></td></tr>';
+    return '<tr><td class="hn"><b>'+h.n+'</b><span>'+h.t+'</span></td><td>'+productPill(h.inst)+'</td><td>'+h.sec+'</td><td><div class="ac"><div class="ac-bar"><span style="width:'+w+'%;background:var(--blue)"></span></div><span class="ac-pct">'+h.al.toFixed(1)+'%</span></div></td></tr>';
   }).join('');
   var moreCount = Math.max(0, HOLDINGS.length-5);
   var moreRow = moreCount>0 ? '<tr><td colspan="4" style="padding:10px 20px;font-size:.8rem;color:var(--blue);cursor:pointer" onclick="navigate(\'holdings\')">+ '+moreCount+' more positions →</td></tr>' : '';
@@ -268,7 +284,7 @@ function pgDashboard() {
     +'<div class="split"><div class="col-main">'
     +'<div class="mrow"><div class="mc"><div class="lbl">Units Held</div><div class="val">'+(cs.unitsHeld?cs.unitsHeld.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4}):'—')+'</div><div class="sub">Total cost '+fmtMoneyOrDash(cs.totalCost)+'</div></div><div class="mc"><div class="lbl">Current NTA</div><div class="val b">'+(NTA_PRICE>0?('RM '+NTA_PRICE.toFixed(4)):'—')+'</div><div class="sub">Avg cost '+(cs.avgCost?('RM '+cs.avgCost.toFixed(4)+'/unit'):'—')+'</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val'+(myPnl>0?' g':'')+'">'+fmtMoneyOrDash(myPnl)+'</div><div class="sub">Realised —</div></div><div class="mc"><div class="lbl">Annualised IRR</div><div class="val">—</div><div class="sub">Total P&L —</div></div></div>'
     +'<div class="panel"><div class="ph"><h3>NTA per Unit</h3><div class="seg">'+segBtn('YTD','ytd')+segBtn('1Y','1y')+segBtn('3Y','3y')+segBtn('ALL','all')+'</div></div>'
-    +'<div class="chart-wrap"><div class="chart-main">'+chartHTML(S.period)+'</div><div class="chart-side"><div><div class="ck">Annualised IRR</div><div class="cv">—</div></div><div><div class="ck">Total Return</div><div class="cv">—</div></div><div><div class="ck">Cost Basis</div><div class="cv">—</div></div></div></div></div>'
+    +'<div class="chart-wrap"><div class="chart-main">'+(ntaHasData(S.period)?chartHTML(S.period):ntaEmptyState())+'</div><div class="chart-side"><div><div class="ck">Annualised IRR</div><div class="cv">—</div></div><div><div class="ck">Total Return</div><div class="cv">—</div></div><div><div class="ck">Cost Basis</div><div class="cv">—</div></div></div></div></div>'
     +'<div class="panel"><div class="ph"><h3>Your Holdings</h3><button class="lnk" onclick="navigate(\'holdings\')">View all →</button></div><table class="tbl"><thead><tr><th>Holding</th><th>Product</th><th>Sector</th><th style="width:36%">Allocation</th></tr></thead><tbody>'+(hl||'<tr><td colspan="4" style="padding:16px 20px;color:var(--fg-3)">No holdings on record</td></tr>')+moreRow+'</tbody></table></div>'
     +'<div class="panel"><div class="ph"><h3>Recent Activity</h3><button class="lnk" onclick="navigate(\'transactions\')">View all →</button></div>'+(txRows||'<div style="padding:16px 20px;color:var(--fg-3)">No recent activity</div>')+'</div>'
     +'</div><div class="col-rail">'
@@ -281,6 +297,18 @@ function pgDashboard() {
 var SC={Healthcare:'#1565C0',Financials:'#2E7D32',Telcos:'#7C3AED',Consumer:'#E65100',Energy:'#B45309',Technology:'#0891B2',Cash:'#9CA3AF'};
 
 var INST_COL={'Blue Chip':'#1565C0','Growth':'#7C3AED','Defensive':'#2E7D32','Cash':'#9CA3AF'};
+function productPill(name){
+  var pt = PRODUCT_TYPES[name];
+  if(pt) return '<span style="display:inline-block;padding:2px 9px;border-radius:99px;font-size:.75rem;font-weight:500;white-space:nowrap;letter-spacing:.01em;background:'+pt.bg+';color:'+pt.color+'">'+name+'</span>';
+  var ic=INST_COL[name]||'#9CA3AF';
+  return '<span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:'+ic+'1A;color:'+ic+'">'+name+'</span>';
+}
+function productColorMap(){
+  var m={};
+  Object.keys(PRODUCT_TYPES).forEach(function(k){ m[k]=PRODUCT_TYPES[k].color; });
+  Object.keys(INST_COL).forEach(function(k){ if(!m[k]) m[k]=INST_COL[k]; });
+  return m;
+}
 
 function piePanel(title, entries, colMap) {
   var cx=150,cy=150,R=132,ir=100;
@@ -323,10 +351,9 @@ function pgHoldings() {
   var instEntries=Object.entries(insts).sort(function(a,b){return b[1]-a[1];});
   var hRows=HOLDINGS.map(function(h){
     var col=SC[h.sec]||'#9CA3AF';
-    var ic=INST_COL[h.inst]||'#9CA3AF';
     return '<tr>'
       +'<td class="hn"><b>'+h.n+'</b><span>'+h.t+'</span></td>'
-      +'<td><span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:'+ic+'1A;color:'+ic+'">'+h.inst+'</span></td>'
+      +'<td>'+productPill(h.inst)+'</td>'
       +'<td><span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:'+col+'1A;color:'+col+'">'+h.sec+'</span></td>'
       +'<td><div class="ac"><div class="ac-bar"><span style="width:'+Math.min(100,Math.round(h.al/14.2*100))+'%;background:'+(h.inst==='Cash'?'var(--orange)':'var(--blue)')+'"></span></div><span class="ac-pct">'+h.al.toFixed(1)+'%</span></div></td>'
       +'</tr>';
@@ -334,7 +361,7 @@ function pgHoldings() {
   return '<div class="ph-xl"><h1>My <span class="acc">Holdings</span></h1><p>Full portfolio breakdown as of '+new Date().toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})+' · Total value '+fmtMoneyOrDash(htHold.value)+'</p></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr 220px;gap:14px;margin-bottom:16px;align-items:start">'
     +piePanel('Sector Allocation',secEntries,SC)
-    +piePanel('Instrument Type',instEntries,INST_COL)
+    +piePanel('Instrument Type',instEntries,productColorMap())
     +'<div style="display:flex;flex-direction:column;gap:12px"><div class="mc"><div class="lbl">Total Value</div><div class="val">'+fmtMoneyOrDash(htHold.value)+'</div><div class="sub">—</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val'+(htHold.pnl>0?' g':'')+'">'+fmtMoneyOrDash(htHold.pnl)+'</div><div class="sub">'+((htHold.value!==null&&htHold.cost)?('▲ '+((htHold.pnl/htHold.cost)*100).toFixed(2)+'% total return'):'—')+'</div></div><div class="mc"><div class="lbl">Positions</div><div class="val">'+HOLDINGS.length+'</div><div class="sub">Across all instruments</div></div></div>'
     +'</div>'
     +'<div class="panel"><div class="ph"><h3>All Positions</h3></div>'

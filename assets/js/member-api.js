@@ -312,6 +312,18 @@ async function mpLoadShareholders() {
   return data || [];
 }
 
+/* ── Product Types (colour taxonomy for product pills) ───── */
+async function mpLoadProductTypes() {
+  const { data, error } = await sb.from('product_types')
+    .select('name, color, bg_color');
+  if (error) throw error;
+  const map = {};
+  (data || []).forEach(function(p) {
+    map[p.name] = { color: p.color, bg: p.bg_color };
+  });
+  return map;
+}
+
 /* ── Fund Overview (public) ──────────────────────────────── */
 async function mpLoadFundOverview() {
   const { data, error } = await sb.from('fund_overview')
