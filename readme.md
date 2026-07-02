@@ -18,12 +18,16 @@ A private investment fund website and member portal built for GitHub Pages + Sup
 ├── sw.js                       ← Service worker (offline / PWA)
 │
 ├── assets/
-│   ├── css/site.css            ← Public site stylesheet
+│   ├── css/
+│   │   ├── site.css            ← Public site stylesheet
+│   │   ├── member-tokens.css   ← Member portal design tokens (shared)
+│   │   └── member-portal.css   ← Member portal component/layout CSS (shared)
 │   ├── img/                    ← Logo, favicon, PWA icons
 │   └── js/
 │       ├── supabase-auth.js    ← Supabase client + auth helpers
 │       ├── api.js              ← REST API helpers + auth guards
 │       ├── member-api.js       ← All Supabase data queries
+│       ├── member-portal.js    ← Member portal shared app logic (nav, pages, charts)
 │       └── site.js             ← Nav, animations, PWA transition
 │
 └── members/
@@ -32,7 +36,8 @@ A private investment fund website and member portal built for GitHub Pages + Sup
     ├── phone/
     │   ├── index.html          ← Mobile dashboard
     │   └── login.html          ← Mobile login
-    └── desktop/
+    └── desktop/                ← Each page below links the shared assets above and
+                                   keeps only its own <title> + a small render-dispatch script
         ├── dashboard.html      ← Main SPA (all pages rendered here)
         ├── holdings.html
         ├── transactions.html
