@@ -27,6 +27,7 @@ let LIVE_DATA_READY = false;
 let PROFILE = null;
 let AUTH_USER = null;
 let INVESTOR_ID = null;
+let CAPITAL_SUMMARY = { unitsHeld: 0, avgCost: 0, totalCost: 0 };
 
 function mpInitials(name){
   if(!name) return '—';
@@ -95,7 +96,8 @@ async function loadLiveData(){
       mpLoadNTA(),
       mpLoadAll(authUser, investorId),
       mpLoadShareholders(),
-      mpLoadFundOverview()
+      mpLoadFundOverview(),
+      mpLoadCapitalSummary(authUser.id)
     ]);
 
     if(results[0].status === 'fulfilled') NTA = results[0].value;
@@ -143,6 +145,9 @@ async function loadLiveData(){
 
     if(results[3].status === 'fulfilled') FUND_OVERVIEW = results[3].value;
     else console.warn('Fund overview load failed:', results[3].reason && results[3].reason.message);
+
+    if(results[4].status === 'fulfilled') CAPITAL_SUMMARY = results[4].value;
+    else console.warn('Capital summary load failed:', results[4].reason && results[4].reason.message);
 
     refreshLiveConstants();
     populateSRModal();
@@ -242,26 +247,29 @@ function pgDashboard() {
   }).join('');
   var hl=HOLDINGS.slice(0,5).map(function(h){
     var w=Math.min(100,Math.round(h.al/14.2*100));
-    return '<tr><td class="hn"><b>'+h.n+'</b><span>'+h.t+'</span></td><td>'+h.sec+'</td><td><div class="ac"><div class="ac-bar"><span style="width:'+w+'%;background:var(--blue)"></span></div><span class="ac-pct">'+h.al.toFixed(1)+'%</span></div></td></tr>';
+    var ic=INST_COL[h.inst]||'#9CA3AF';
+    return '<tr><td class="hn"><b>'+h.n+'</b><span>'+h.t+'</span></td><td><span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:'+ic+'1A;color:'+ic+'">'+h.inst+'</span></td><td>'+h.sec+'</td><td><div class="ac"><div class="ac-bar"><span style="width:'+w+'%;background:var(--blue)"></span></div><span class="ac-pct">'+h.al.toFixed(1)+'%</span></div></td></tr>';
   }).join('');
   var moreCount = Math.max(0, HOLDINGS.length-5);
-  var moreRow = moreCount>0 ? '<tr><td colspan="3" style="padding:10px 20px;font-size:.8rem;color:var(--blue);cursor:pointer" onclick="navigate(\'holdings\')">+ '+moreCount+' more positions →</td></tr>' : '';
+  var moreRow = moreCount>0 ? '<tr><td colspan="4" style="padding:10px 20px;font-size:.8rem;color:var(--blue);cursor:pointer" onclick="navigate(\'holdings\')">+ '+moreCount+' more positions →</td></tr>' : '';
   var memberName = (PROFILE && (PROFILE.preferred_name || PROFILE.full_name)) || (AUTH_USER && AUTH_USER.email) || '—';
   var todayStr = new Date().toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});
-  var ht = holdingsTotals();
   var dt = distTotals();
-  var portfolioValLbl = fmtMoneyOrDash(ht.value);
-  var portfolioRetLbl = (ht.value!==null && ht.cost) ? ('▲ '+((ht.pnl/ht.cost)*100).toFixed(2)+'% total return') : '—';
+  var cs = CAPITAL_SUMMARY;
+  var myValue = (NTA_PRICE>0 && cs.unitsHeld) ? cs.unitsHeld*NTA_PRICE : null;
+  var myPnl   = (myValue!==null) ? myValue-cs.totalCost : null;
+  var portfolioValLbl = fmtMoneyOrDash(myValue);
+  var portfolioRetLbl = (myValue!==null && cs.totalCost) ? ('▲ '+((myPnl/cs.totalCost)*100).toFixed(2)+'% total return') : '—';
   var distCard = dt
     ? ('<div class="dbig">'+fmtMoneyOrDash(dt.total)+'</div><div class="dsub">'+dt.count+' payment'+(dt.count===1?'':'s')+'</div>'
       +'<div class="dleg">'+Object.keys(dt.byType).map(function(k){return '<div class="dr"><span class="dl">'+k+'</span><span class="dv">'+fmtMoneyOrDash(dt.byType[k])+'</span></div>';}).join('')+'</div>')
     : ('<div class="dbig">—</div><div class="dsub">No distributions on record</div>');
   return '<div class="ph-xl"><h1>My <span class="acc">Portfolio</span></h1><p>Welcome back, '+memberName+'. Here\'s your investment with ZY-Invest as of '+todayStr+'.</p></div>'
     +'<div class="split"><div class="col-main">'
-    +'<div class="mrow"><div class="mc"><div class="lbl">Units Held</div><div class="val">—</div><div class="sub">Total cost —</div></div><div class="mc"><div class="lbl">Current NTA</div><div class="val b">'+(NTA_PRICE>0?('RM '+NTA_PRICE.toFixed(4)):'—')+'</div><div class="sub">Avg cost —</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val'+(ht.pnl>0?' g':'')+'">'+fmtMoneyOrDash(ht.pnl)+'</div><div class="sub">Realised —</div></div><div class="mc"><div class="lbl">Annualised IRR</div><div class="val">—</div><div class="sub">Total P&L —</div></div></div>'
+    +'<div class="mrow"><div class="mc"><div class="lbl">Units Held</div><div class="val">'+(cs.unitsHeld?cs.unitsHeld.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4}):'—')+'</div><div class="sub">Total cost '+fmtMoneyOrDash(cs.totalCost)+'</div></div><div class="mc"><div class="lbl">Current NTA</div><div class="val b">'+(NTA_PRICE>0?('RM '+NTA_PRICE.toFixed(4)):'—')+'</div><div class="sub">Avg cost '+(cs.avgCost?('RM '+cs.avgCost.toFixed(4)+'/unit'):'—')+'</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val'+(myPnl>0?' g':'')+'">'+fmtMoneyOrDash(myPnl)+'</div><div class="sub">Realised —</div></div><div class="mc"><div class="lbl">Annualised IRR</div><div class="val">—</div><div class="sub">Total P&L —</div></div></div>'
     +'<div class="panel"><div class="ph"><h3>NTA per Unit</h3><div class="seg">'+segBtn('YTD','ytd')+segBtn('1Y','1y')+segBtn('3Y','3y')+segBtn('ALL','all')+'</div></div>'
     +'<div class="chart-wrap"><div class="chart-main">'+chartHTML(S.period)+'</div><div class="chart-side"><div><div class="ck">Annualised IRR</div><div class="cv">—</div></div><div><div class="ck">Total Return</div><div class="cv">—</div></div><div><div class="ck">Cost Basis</div><div class="cv">—</div></div></div></div></div>'
-    +'<div class="panel"><div class="ph"><h3>Your Holdings</h3><button class="lnk" onclick="navigate(\'holdings\')">View all →</button></div><table class="tbl"><thead><tr><th>Holding</th><th>Sector</th><th style="width:44%">Allocation</th></tr></thead><tbody>'+(hl||'<tr><td colspan="3" style="padding:16px 20px;color:var(--fg-3)">No holdings on record</td></tr>')+moreRow+'</tbody></table></div>'
+    +'<div class="panel"><div class="ph"><h3>Your Holdings</h3><button class="lnk" onclick="navigate(\'holdings\')">View all →</button></div><table class="tbl"><thead><tr><th>Holding</th><th>Product</th><th>Sector</th><th style="width:36%">Allocation</th></tr></thead><tbody>'+(hl||'<tr><td colspan="4" style="padding:16px 20px;color:var(--fg-3)">No holdings on record</td></tr>')+moreRow+'</tbody></table></div>'
     +'<div class="panel"><div class="ph"><h3>Recent Activity</h3><button class="lnk" onclick="navigate(\'transactions\')">View all →</button></div>'+(txRows||'<div style="padding:16px 20px;color:var(--fg-3)">No recent activity</div>')+'</div>'
     +'</div><div class="col-rail">'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="vc"><div class="vc-lbl">Total Portfolio Value</div><div class="gw"><svg viewBox="0 0 300 162" width="100%"><defs><linearGradient id="aG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1565C0"/><stop offset="1" stop-color="#2E7D32"/></linearGradient></defs><path d="M22,148 A128,128 0 0 1 278,148" fill="none" stroke="#F3F4F6" stroke-width="8" stroke-linecap="round"/><path d="M22,148 A128,128 0 0 1 278,148" fill="none" stroke="url(#aG)" stroke-width="8" stroke-linecap="round" stroke-dasharray="401" stroke-dashoffset="100"/><circle cx="240" cy="60" r="6" fill="#fff" stroke="#2E7D32" stroke-width="3"/></svg><div class="gc"><div class="gv">'+portfolioValLbl+'</div><div class="gd">'+portfolioRetLbl+'</div></div></div><div class="vact"><button class="bf" onclick="openSR(\'subscribe\')">Subscribe</button><button class="bl" onclick="openSR(\'redeem\')">Redeem</button></div></div></div>'
@@ -317,10 +325,9 @@ function pgHoldings() {
     var col=SC[h.sec]||'#9CA3AF';
     var ic=INST_COL[h.inst]||'#9CA3AF';
     return '<tr>'
-      +'<td class="hn"><b>'+h.n+'</b></td>'
+      +'<td class="hn"><b>'+h.n+'</b><span>'+h.t+'</span></td>'
       +'<td><span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:'+ic+'1A;color:'+ic+'">'+h.inst+'</span></td>'
       +'<td><span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:'+col+'1A;color:'+col+'">'+h.sec+'</span></td>'
-      +'<td style="font-size:.82rem;font-family:var(--font-mono);color:var(--fg-3)">'+(h.t==='—'?'—':h.t)+'</td>'
       +'<td><div class="ac"><div class="ac-bar"><span style="width:'+Math.min(100,Math.round(h.al/14.2*100))+'%;background:'+(h.inst==='Cash'?'var(--orange)':'var(--blue)')+'"></span></div><span class="ac-pct">'+h.al.toFixed(1)+'%</span></div></td>'
       +'</tr>';
   }).join('');
@@ -331,7 +338,7 @@ function pgHoldings() {
     +'<div style="display:flex;flex-direction:column;gap:12px"><div class="mc"><div class="lbl">Total Value</div><div class="val">'+fmtMoneyOrDash(htHold.value)+'</div><div class="sub">—</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val'+(htHold.pnl>0?' g':'')+'">'+fmtMoneyOrDash(htHold.pnl)+'</div><div class="sub">'+((htHold.value!==null&&htHold.cost)?('▲ '+((htHold.pnl/htHold.cost)*100).toFixed(2)+'% total return'):'—')+'</div></div><div class="mc"><div class="lbl">Positions</div><div class="val">'+HOLDINGS.length+'</div><div class="sub">Across all instruments</div></div></div>'
     +'</div>'
     +'<div class="panel"><div class="ph"><h3>All Positions</h3></div>'
-    +'<table class="tbl"><thead><tr><th>Holding</th><th>Instrument</th><th>Sector</th><th>Product</th><th style="width:160px">Allocation</th></tr></thead><tbody>'+hRows+'</tbody></table></div>';
+    +'<table class="tbl"><thead><tr><th>Instrument</th><th>Product</th><th>Sector</th><th style="width:160px">Allocation</th></tr></thead><tbody>'+(hRows||'<tr><td colspan="4" style="padding:20px;color:var(--fg-3)">No holdings on record</td></tr>')+'</tbody></table></div>';
 }
 
 function pgTransactions() {

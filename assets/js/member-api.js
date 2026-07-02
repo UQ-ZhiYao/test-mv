@@ -80,10 +80,14 @@ async function mpLoadHoldings(investorId) {
     const inst = instByName[p.instrument_name] || {};
     const isCash = p.instrument_name === CASH_NAME;
     const mv = parseFloat(p.market_value || p.total_cost || 0);
+    const tk = (inst.ticker || '').trim();
+    const co = (inst.code || '').trim();
+    const subLine = isCash ? 'MYR' : (tk && co && tk !== co ? (tk + ' | ' + co) : (tk || co || '—'));
     return {
       n:    p.instrument_name || 'Unknown',
-      t:    inst.ticker || inst.code || '—',
-      code: inst.code || '—',
+      t:    subLine,
+      ticker: tk || '—',
+      code: co || '—',
       sec:  isCash ? 'Cash' : (inst.sector || 'Unknown'),
       inst: p.product || inst.product || 'Other',
       units: p.units != null ? parseFloat(p.units) : null,
@@ -107,6 +111,44 @@ async function mpLoadHoldings(investorId) {
     return (b.al || 0) - (a.al || 0);
   });
   return ordered;
+}
+
+/* ── Capital Summary (Units Held, AVCO Avg Cost, Total Cost) ──
+   Units Held = direct sum of signed units from Approved capital_injection.
+   Avg Cost   = AVCO over the same Approved rows in date order:
+                Subscriptions add to the cost pool, Redemptions draw
+                down units+cost at the running average (never at the
+                redemption's own price) — same method used for trade
+                settlement in the admin repo.
+   Total Cost = Avg Cost × Units Held.                                */
+async function mpLoadCapitalSummary(userId) {
+  const { data, error } = await sb.from('capital_injection')
+    .select('type, amount, units, date, status')
+    .eq('uid', userId)
+    .eq('status', 'Approved')
+    .order('date', { ascending: true });
+  if (error) throw error;
+  const rows = data || [];
+
+  const unitsHeld = rows.reduce((s, r) => s + (parseFloat(r.units) || 0), 0);
+
+  let runUnits = 0, runCost = 0;
+  rows.forEach(function(r) {
+    const u = parseFloat(r.units) || 0;
+    if (u > 0) {
+      runCost  += Math.abs(parseFloat(r.amount) || 0);
+      runUnits += u;
+    } else if (u < 0 && runUnits > 0) {
+      const sellUnits = Math.min(Math.abs(u), runUnits);
+      const avgCost = runCost / runUnits;
+      runUnits -= sellUnits;
+      runCost   = runUnits > 0 ? runCost - avgCost * sellUnits : 0;
+    }
+  });
+  const avgCost   = runUnits > 0 ? runCost / runUnits : 0;
+  const totalCost = avgCost * unitsHeld;
+
+  return { unitsHeld: unitsHeld, avgCost: avgCost, totalCost: totalCost };
 }
 
 /* ── Transactions (from capital_injection — this member's own rows) ── */
