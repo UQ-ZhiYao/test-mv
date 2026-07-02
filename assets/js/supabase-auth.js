@@ -9,7 +9,13 @@ var ZY_DEMO = SUPABASE_URL.indexOf('YOUR-PROJECT') !== -1;
 var sb = null;
 if (!ZY_DEMO && window.supabase && window.supabase.createClient) {
   sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-    auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true }
+    auth: {
+      autoRefreshToken: true, persistSession: true, detectSessionInUrl: true,
+      // Bypasses supabase-js's cross-tab Navigator Locks mutex, which has a known
+      // deadlock class (supabase/supabase-js#1594, #2013) that can hang
+      // getSession()/signInWithPassword() forever if a lock is never released.
+      lock: function(name, acquireTimeout, fn) { return fn(); }
+    }
   });
 }
 function zyVerifyRedirect() { return location.origin + location.pathname.replace(/[^/]*$/, '') + 'verify.html'; }

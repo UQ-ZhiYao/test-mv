@@ -783,6 +783,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../../assets/js/supabase-auth.js"></script>
 <script>
 // ── STATUS BAR CLOCK ─────────────────────────────────────────────────────────
 function updateClock(){
@@ -1389,8 +1391,10 @@ document.addEventListener('click',function(e){
 });
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 function doLogout(){
-  try{localStorage.removeItem('zy-session');localStorage.removeItem('zy_token');localStorage.removeItem('zy_role');localStorage.removeItem('zy_name');localStorage.removeItem('zy-page');}catch(e){}
-  window.location.href='../../login.html';
+  try{['zy-page','zy_token','zy_role','zy_name','zy_investor_id','zy-session','zy-email'].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
+  if(typeof sb!=='undefined'&&sb){
+    sb.auth.signOut().then(function(){window.location.href='../../login.html';}).catch(function(){window.location.href='../../login.html';});
+  } else { window.location.href='../../login.html'; }
 }
 // ── AUTH GATE ────────────────────────────────────────────────────────────────
 (function(){if(!localStorage.getItem('zy-session')&&!localStorage.getItem('zy_token')){window.location.replace('../../login.html');}})();
