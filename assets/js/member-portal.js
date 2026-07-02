@@ -14,10 +14,11 @@ function navigate(pg){
 }
 
 // ── DATA (live from Supabase; small fallback shown only if a fetch fails) ──────
-let NTA = { max:{v:[1.0000],l:["—"]}, '3y':{v:[1.0000],l:["—"]}, '1y':{v:[1.0000],l:["—"]}, '1d':{v:[1.0000],l:["—"]} };
+let NTA = { all:{v:[1.0000,1.0000],l:["—","—"]}, '3y':{v:[1.0000,1.0000],l:["—","—"]}, '1y':{v:[1.0000,1.0000],l:["—","—"]}, ytd:{v:[1.0000,1.0000],l:["—","—"]} };
 let HOLDINGS = [];
 let TXS = [];
 let DISTS = [];
+let ACTIVITY = [];
 let DOCS = [];
 let NOTIFS = [];
 let SHAREHOLDERS = [];
@@ -31,6 +32,33 @@ function mpInitials(name){
   if(!name) return '—';
   var parts=String(name).trim().split(/\s+/);
   return (parts[0][0]+(parts[parts.length-1][0]||'')).toUpperCase();
+}
+
+// ── Recent Activity — merges capital_injection (Subscription/Redemption)
+// with computed distribution entitlements, sorted by date, top 5 ──────────
+function buildActivity(){
+  var items=[];
+  TXS.forEach(function(t){
+    items.push({ type:t.type, ref:t.ref, date:t.date, dateRaw:t.dateRaw, amt:t.amt, status:t.status });
+  });
+  DISTS.forEach(function(d){
+    if(d.amt>0){
+      items.push({
+        type: 'Distribution',
+        ref:  (d.fy||'')+(d.type?(' '+d.type):''),
+        date: d.pay!=='—' ? d.pay : d.ex,
+        dateRaw: d.payRaw || d.exRaw,
+        amt:  '+RM '+d.amt.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}),
+        status: d.status
+      });
+    }
+  });
+  items.sort(function(a,b){
+    var da=a.dateRaw?new Date(a.dateRaw).getTime():0;
+    var db=b.dateRaw?new Date(b.dateRaw).getTime():0;
+    return db-da;
+  });
+  return items.slice(0,5);
 }
 
 // ── TOP BAR / DROPDOWN — populate with real Supabase profile data ──────────
@@ -78,6 +106,7 @@ async function loadLiveData(){
       HOLDINGS = all.holdings || [];
       TXS = all.transactions || [];
       DISTS = all.distributions || [];
+      ACTIVITY = buildActivity();
       DOCS = all.documents || [];
       if(all.nominees && all.nominees.length){
         NOM_DATA = all.nominees;
@@ -185,34 +214,35 @@ function segBtn(lbl,p){return '<button class="'+(S.period===p?'on':'')+'" onclic
 
 // ── Live-computed aggregates (real data only — "—" when nothing to compute) ──
 function holdingsTotals(){
-  var totalVal=0, totalCost=0, any=false;
+  var totalVal=0, totalPnl=0, any=false;
   HOLDINGS.forEach(function(h){
-    if(typeof h.units==='number' && typeof h.px==='number'){ totalVal += h.units*h.px; any=true; }
-    if(typeof h.units==='number' && typeof h.cost==='number'){ totalCost += h.units*h.cost; }
+    if(typeof h.mv==='number'){ totalVal += h.mv; any=true; }
+    if(typeof h.pnl==='number'){ totalPnl += h.pnl; }
   });
-  return any ? { value: totalVal, cost: totalCost, pnl: totalVal-totalCost } : { value:null, cost:null, pnl:null };
+  return any ? { value: totalVal, cost: totalVal-totalPnl, pnl: totalPnl } : { value:null, cost:null, pnl:null };
 }
 function distTotals(){
-  if(!DISTS.length) return null;
+  var mine = DISTS.filter(function(d){ return (d.amt||0)>0 && d.status==='Paid'; });
+  if(!mine.length) return null;
   var total=0, byType={};
-  DISTS.forEach(function(d){
+  mine.forEach(function(d){
     var amt = parseFloat(d.amt)||0;
     total += amt;
     byType[d.type] = (byType[d.type]||0) + amt;
   });
-  return { total:total, count:DISTS.length, byType:byType, latestFY: DISTS[0] && DISTS[0].fy };
+  return { total:total, count:mine.length, byType:byType, latestFY: mine[0] && mine[0].fy };
 }
 function fmtMoneyOrDash(n){ return (n===null||n===undefined||isNaN(n)) ? '—' : 'RM '+n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 function pgDashboard() {
-  var txRows=TXS.slice(0,3).map(function(t){
+  var txRows=ACTIVITY.map(function(t){
     var ic=t.type==='Distribution'?'dist':t.type==='Redemption'?'red-ic':'sub';
     var col=t.amt.startsWith('+')&&t.type!=='Redemption'?'color:var(--green)':'color:var(--fg-1)';
     return '<div class="ar"><div class="ar-ic '+ic+'"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(t.type==='Distribution'?'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>':(t.type==='Redemption'?'<path d="M20 16H6l3 3"/><path d="M4 8h14l-3-3"/>':(t.type==='Subscription'?'<path d="M4 8h14l-3-3"/><path d="M20 16H6l3 3"/>':'')))+'</svg></div><div class="ar-meta"><div class="ar-title">'+t.type+'</div><div class="ar-date">'+t.ref+' · '+t.date+'</div></div><div class="ar-amt" style="'+col+'">'+t.amt+'<span class="su">'+t.status+'</span></div></div>';
   }).join('');
   var hl=HOLDINGS.slice(0,5).map(function(h){
-    var w=Math.round(h.al/14.2*100);
-    return '<tr><td class="hn"><b>'+h.n+'</b><span>'+h.t+'</span></td><td>'+h.sec+'</td><td><div class="ac"><div class="ac-bar"><span style="width:'+w+'%;background:var(--blue)"></span></div><span class="ac-pct">'+h.al+'%</span></div></td></tr>';
+    var w=Math.min(100,Math.round(h.al/14.2*100));
+    return '<tr><td class="hn"><b>'+h.n+'</b><span>'+h.t+'</span></td><td>'+h.sec+'</td><td><div class="ac"><div class="ac-bar"><span style="width:'+w+'%;background:var(--blue)"></span></div><span class="ac-pct">'+h.al.toFixed(1)+'%</span></div></td></tr>';
   }).join('');
   var moreCount = Math.max(0, HOLDINGS.length-5);
   var moreRow = moreCount>0 ? '<tr><td colspan="3" style="padding:10px 20px;font-size:.8rem;color:var(--blue);cursor:pointer" onclick="navigate(\'holdings\')">+ '+moreCount+' more positions →</td></tr>' : '';
@@ -229,7 +259,7 @@ function pgDashboard() {
   return '<div class="ph-xl"><h1>My <span class="acc">Portfolio</span></h1><p>Welcome back, '+memberName+'. Here\'s your investment with ZY-Invest as of '+todayStr+'.</p></div>'
     +'<div class="split"><div class="col-main">'
     +'<div class="mrow"><div class="mc"><div class="lbl">Units Held</div><div class="val">—</div><div class="sub">Total cost —</div></div><div class="mc"><div class="lbl">Current NTA</div><div class="val b">'+(NTA_PRICE>0?('RM '+NTA_PRICE.toFixed(4)):'—')+'</div><div class="sub">Avg cost —</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val'+(ht.pnl>0?' g':'')+'">'+fmtMoneyOrDash(ht.pnl)+'</div><div class="sub">Realised —</div></div><div class="mc"><div class="lbl">Annualised IRR</div><div class="val">—</div><div class="sub">Total P&L —</div></div></div>'
-    +'<div class="panel"><div class="ph"><h3>NTA per Unit</h3><div class="seg">'+segBtn('1D','1d')+segBtn('1Y','1y')+segBtn('3Y','3y')+segBtn('Max','max')+'</div></div>'
+    +'<div class="panel"><div class="ph"><h3>NTA per Unit</h3><div class="seg">'+segBtn('YTD','ytd')+segBtn('1Y','1y')+segBtn('3Y','3y')+segBtn('ALL','all')+'</div></div>'
     +'<div class="chart-wrap"><div class="chart-main">'+chartHTML(S.period)+'</div><div class="chart-side"><div><div class="ck">Annualised IRR</div><div class="cv">—</div></div><div><div class="ck">Total Return</div><div class="cv">—</div></div><div><div class="ck">Cost Basis</div><div class="cv">—</div></div></div></div></div>'
     +'<div class="panel"><div class="ph"><h3>Your Holdings</h3><button class="lnk" onclick="navigate(\'holdings\')">View all →</button></div><table class="tbl"><thead><tr><th>Holding</th><th>Sector</th><th style="width:44%">Allocation</th></tr></thead><tbody>'+(hl||'<tr><td colspan="3" style="padding:16px 20px;color:var(--fg-3)">No holdings on record</td></tr>')+moreRow+'</tbody></table></div>'
     +'<div class="panel"><div class="ph"><h3>Recent Activity</h3><button class="lnk" onclick="navigate(\'transactions\')">View all →</button></div>'+(txRows||'<div style="padding:16px 20px;color:var(--fg-3)">No recent activity</div>')+'</div>'
@@ -291,7 +321,7 @@ function pgHoldings() {
       +'<td><span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:'+ic+'1A;color:'+ic+'">'+h.inst+'</span></td>'
       +'<td><span style="font-size:.75rem;padding:2px 8px;border-radius:99px;background:'+col+'1A;color:'+col+'">'+h.sec+'</span></td>'
       +'<td style="font-size:.82rem;font-family:var(--font-mono);color:var(--fg-3)">'+(h.t==='—'?'—':h.t)+'</td>'
-      +'<td><div class="ac"><div class="ac-bar"><span style="width:'+Math.round(h.al/14.2*100)+'%;background:'+(h.inst==='Cash'?'var(--orange)':'var(--blue)')+'"></span></div><span class="ac-pct">'+h.al+'%</span></div></td>'
+      +'<td><div class="ac"><div class="ac-bar"><span style="width:'+Math.min(100,Math.round(h.al/14.2*100))+'%;background:'+(h.inst==='Cash'?'var(--orange)':'var(--blue)')+'"></span></div><span class="ac-pct">'+h.al.toFixed(1)+'%</span></div></td>'
       +'</tr>';
   }).join('');
   return '<div class="ph-xl"><h1>My <span class="acc">Holdings</span></h1><p>Full portfolio breakdown as of '+new Date().toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})+' · Total value '+fmtMoneyOrDash(htHold.value)+'</p></div>'
@@ -308,16 +338,17 @@ function pgTransactions() {
   var types=['all','Subscription','Redemption'];
   var all=TXS.filter(function(t){return t.type==='Subscription'||t.type==='Redemption';});
   var list=S.txf==='all'?all:all.filter(function(t){return t.type===S.txf;});
-  var totalSub=all.filter(function(t){return t.type==='Subscription';}).reduce(function(a,t){return a+parseFloat((t.amt||'0').replace(/[^0-9.]/g,''));},0);
-  var totalUnits=all.reduce(function(a,t){var u=parseFloat((t.units||'0').replace(/[^0-9.]/g,''));return a+(isNaN(u)?0:u);},0);
+  var approved=all.filter(function(t){return t.status==='Approved';});
+  var totalSub=approved.filter(function(t){return t.type==='Subscription';}).reduce(function(a,t){return a+(t.amtRaw||0);},0);
+  var totalUnits=approved.reduce(function(a,t){return a+(t.unitsRaw||0);},0);
   var cards='<div class="mrow" style="margin-bottom:16px">'
     +'<div class="mc"><div class="lbl">No. of Transactions</div><div class="val">'+all.length+'</div><div class="sub">Subscriptions &amp; redemptions</div></div>'
-    +'<div class="mc"><div class="lbl">Total Invested</div><div class="val b">RM '+totalSub.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="sub">Gross subscriptions</div></div>'
-    +'<div class="mc"><div class="lbl">Total Units</div><div class="val">'+totalUnits.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="sub">Net units transacted</div></div>'
+    +'<div class="mc"><div class="lbl">Total Invested</div><div class="val b">RM '+totalSub.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="sub">Approved subscriptions</div></div>'
+    +'<div class="mc"><div class="lbl">Net Units</div><div class="val">'+totalUnits.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4})+'</div><div class="sub">Approved, net of redemptions</div></div>'
     +'<div class="mc"><div class="lbl">IRR</div><div class="val">—</div><div class="sub">To be calculated</div></div>'
     +'</div>';
-  var stBg={Approved:'var(--blue-bg)',Paid:'var(--green-bg)',Completed:'var(--gray-100)',Processing:'var(--orange-bg)'};
-  var stC={Approved:'var(--blue)',Paid:'var(--green)',Completed:'var(--gray-600)',Processing:'var(--orange)'};
+  var stBg={Approved:'var(--green-bg)',Pending:'var(--orange-bg)',Rejected:'var(--gray-100)'};
+  var stC={Approved:'var(--green)',Pending:'var(--orange)',Rejected:'var(--red)'};
   var tBg={Subscription:'var(--blue-bg)',Redemption:'var(--orange-bg)'};
   var tC={Subscription:'var(--blue)',Redemption:'var(--orange)'};
   var tabs=types.map(function(t){return '<button class="ftab'+(S.txf===t?' on':'')+'" onclick="filterTx(\''+t+'\')">'+(t==='all'?'All':t+'s')+'</button>';}).join('');
@@ -330,41 +361,46 @@ function pgTransactions() {
       +'<td style="text-align:right;color:'+uc+'">'+t.units+'</td>'
       +'<td style="text-align:right">'+t.nav+'</td>'
       +'<td style="text-align:right;font-weight:700;color:'+ac+'">'+t.amt+'</td>'
-      +'<td><span class="pill" style="background:'+stBg[t.status]+';color:'+stC[t.status]+'">'+t.status+'</span></td></tr>';
+      +'<td><span class="pill" style="background:'+(stBg[t.status]||'var(--gray-100)')+';color:'+(stC[t.status]||'var(--fg-2)')+'">'+t.status+'</span></td></tr>';
   }).join('');
   return '<div class="ph-xl"><h1><span class="acc">Principal Transactions</span></h1><p>Subscription &amp; redemption history — principal movements only.</p></div>'
     +cards
     +'<div class="panel"><div class="ph" style="flex-wrap:wrap;gap:10px"><h3>Principal Transactions</h3><div class="ftabs">'+tabs+'</div></div>'
-    +'<table class="tbl"><thead><tr><th>Reference</th><th>Type</th><th>Date</th><th style="text-align:right">Units</th><th style="text-align:right">NAV (RM)</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    +'<table class="tbl"><thead><tr><th>Reference</th><th>Type</th><th>Date</th><th style="text-align:right">Units</th><th style="text-align:right">NAV (RM)</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7" style="padding:20px;color:var(--fg-3)">No transactions on record</td></tr>')+'</tbody></table></div>';
 }
 
 function pgDistributions() {
-  var totalReceived = DISTS.reduce(function(a,d){return a+(d.amt||0);},0);
+  var paid = DISTS.filter(function(d){return d.status==='Paid';});
+  var totalReceived = paid.reduce(function(a,d){return a+(d.amt||0);},0);
   var uniqueFys = DISTS.map(function(d){return d.fy;}).filter(Boolean).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
   var periodLbl = uniqueFys.length ? (uniqueFys.length===1?uniqueFys[0]:(uniqueFys[0]+' – '+uniqueFys[uniqueFys.length-1])) : '—';
   var mc4=[
-    '<div class="mc"><div class="lbl">Total Received</div><div class="val'+(totalReceived>0?' g':'')+'">'+(DISTS.length?fmtMoneyOrDash(totalReceived):'—')+'</div><div class="sub">Since inception</div></div>',
+    '<div class="mc"><div class="lbl">Total Received</div><div class="val'+(totalReceived>0?' g':'')+'">'+(paid.length?fmtMoneyOrDash(totalReceived):'—')+'</div><div class="sub">Since inception</div></div>',
     '<div class="mc"><div class="lbl">No. of Distributions</div><div class="val b">'+(DISTS.length||'—')+'</div><div class="sub">'+(uniqueFys.length?('Across '+uniqueFys.length+' financial year'+(uniqueFys.length===1?'':'s')):'—')+'</div></div>',
     '<div class="mc"><div class="lbl">Distribution Period</div><div class="val">'+periodLbl+'</div><div class="sub">—</div></div>',
     '<div class="mc"><div class="lbl">Payout Ratio</div><div class="val">—</div><div class="sub">Of net income distributed</div></div>'
   ].join('');
   var tBg={Final:'var(--blue-bg)',Interim:'var(--green-bg)',Special:'var(--orange-bg)'};
   var tC={Final:'var(--blue)',Interim:'var(--green)',Special:'var(--orange)'};
+  var sBg={Paid:'var(--green-bg)',Pending:'var(--orange-bg)'};
+  var sC ={Paid:'var(--green)',Pending:'var(--orange)'};
   var rows=DISTS.map(function(d){
-    var u=(d.amt&&d.dps)?Math.round(d.amt/parseFloat(d.dps)*100).toLocaleString():'—';
-    return '<tr><td style="font-weight:700">'+d.fy+'</td>'
-      +'<td><span class="pill" style="background:'+tBg[d.type]+';color:'+tC[d.type]+'">'+d.type+'</span></td>'
+    var u = d.units>0 ? fmtMYR(d.units) : '—';
+    var amtCol = d.amt>0 ? 'var(--green)' : 'var(--fg-3)';
+    var amtTxt = d.amt>0 ? ('+RM '+d.amt.toFixed(2)) : '—';
+    return '<tr><td style="font-weight:700">'+(d.fy||'—')+'</td>'
+      +'<td><span class="pill" style="background:'+(tBg[d.type]||'var(--gray-100)')+';color:'+(tC[d.type]||'var(--fg-2)')+'">'+d.type+'</span></td>'
       +'<td>'+d.ex+'</td><td>'+d.pay+'</td>'
       +'<td style="text-align:right;font-weight:600">'+d.dps+'</td>'
-      +'<td style="text-align:right">'+(u!=='—'?'~'+u:'—')+'</td>'
-      +'<td style="text-align:right;font-weight:700;color:var(--green)">+RM '+d.amt.toFixed(2)+'</td>'
-      +'<td><span class="pill" style="background:var(--green-bg);color:var(--green)">Paid</span></td></tr>';
+      +'<td style="text-align:right">'+u+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:'+amtCol+'">'+amtTxt+'</td>'
+      +'<td><span class="pill" style="background:'+(sBg[d.status]||'var(--gray-100)')+';color:'+(sC[d.status]||'var(--fg-2)')+'">'+d.status+'</span></td></tr>';
   }).join('');
-  return '<div class="ph-xl"><h1>My <span class="acc">Distributions</span></h1><p>All cash distributions since inception · Total received: '+(DISTS.length?fmtMoneyOrDash(totalReceived):'—')+'</p></div>'
+  return '<div class="ph-xl"><h1>My <span class="acc">Distributions</span></h1><p>All cash distributions since inception · Total received: '+(paid.length?fmtMoneyOrDash(totalReceived):'—')+'</p></div>'
     +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">'+mc4+'</div>'
-    +'<div class="panel"><div class="ph"><h3>Distribution History</h3><span style="font-size:.8rem;color:var(--fg-3)">Next ex-date: —</span></div>'
+    +'<div class="panel"><div class="ph"><h3>Distribution History</h3></div>'
     +'<table class="tbl"><thead><tr><th>FY</th><th>Type</th><th>Ex-Date</th><th>Pay Date</th><th style="text-align:right">DPS (sen)</th><th style="text-align:right">Units</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8" style="padding:20px;color:var(--fg-3)">No distributions on record</td></tr>')
-    +(DISTS.length?('<tr style="background:var(--gray-50)"><td colspan="6" style="font-weight:700;color:var(--fg-1);padding:12px 20px">Total received</td><td style="text-align:right;font-weight:700;color:var(--green);padding:12px 20px">+'+fmtMoneyOrDash(totalReceived)+'</td><td></td></tr>'):'')
+    +(paid.length?('<tr style="background:var(--gray-50)"><td colspan="6" style="font-weight:700;color:var(--fg-1);padding:12px 20px">Total received</td><td style="text-align:right;font-weight:700;color:var(--green);padding:12px 20px">+'+fmtMoneyOrDash(totalReceived)+'</td><td></td></tr>'):'')
     +'</tbody></table></div>';
 }
 
@@ -2297,7 +2333,7 @@ var NTA_PRICE=0, UNITS_HELD=0, MAX_VAL=0;
 // UNITS_HELD / MAX_VAL have no live per-investor capital-account source in
 // this portal yet, so they stay 0 and the UI shows "—" instead of a fake number.
 function refreshLiveConstants(){
-  var v = NTA && NTA.max && NTA.max.v;
+  var v = NTA && NTA.all && NTA.all.v;
   NTA_PRICE = (v && v.length) ? v[v.length-1] : 0;
 }
 function fmtMYR(n){return n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}

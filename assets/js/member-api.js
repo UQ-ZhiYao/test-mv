@@ -28,93 +28,155 @@ async function mpSaveProfile(userId, updates) {
   if (error) throw error;
 }
 
-/* ── NTA History ─────────────────────────────────────────── */
+/* ── NTA History (from nta_daily: date, nta) ────────────────
+   Buckets: YTD / 1Y / 3Y / ALL (no 1D — daily granularity IS the data) */
 async function mpLoadNTA() {
-  const { data, error } = await sb.from('nta_history')
-    .select('date, nta_value')
+  const { data, error } = await sb.from('nta_daily')
+    .select('date, nta')
     .order('date', { ascending: true });
   if (error) throw error;
-  // Group into 1D / 1Y / 3Y / max periods
-  const all = data || [];
-  const vals = all.map(r => parseFloat(r.nta_value));
-  const lbls = all.map(r => r.date);
+  const all = (data || []).filter(r => r.date && r.nta !== null && r.nta !== undefined);
   const now = new Date();
-  function since(months) {
-    const cutoff = new Date(now); cutoff.setMonth(cutoff.getMonth() - months);
-    return all.filter(r => new Date(r.date) >= cutoff);
+
+  function bucket(rows) {
+    if (!rows.length) return { v: [1, 1], l: ['—', '—'] };
+    if (rows.length === 1) return { v: [parseFloat(rows[0].nta), parseFloat(rows[0].nta)], l: [rows[0].date, rows[0].date] };
+    return { v: rows.map(r => parseFloat(r.nta)), l: rows.map(r => r.date) };
   }
-  const d1d = since(1); // last month as proxy for "daily" data
-  const d1y = since(12);
-  const d3y = since(36);
+  function since(dateFrom) {
+    return all.filter(r => new Date(r.date) >= dateFrom);
+  }
+
+  const ytdFrom = new Date(now.getFullYear(), 0, 1);
+  const oneYFrom = new Date(now); oneYFrom.setFullYear(oneYFrom.getFullYear() - 1);
+  const threeYFrom = new Date(now); threeYFrom.setFullYear(threeYFrom.getFullYear() - 3);
+
   return {
-    max: { v: vals, l: lbls },
-    '3y': { v: since(36).map(r=>parseFloat(r.nta_value)), l: since(36).map(r=>r.date) },
-    '1y': { v: since(12).map(r=>parseFloat(r.nta_value)), l: since(12).map(r=>r.date) },
-    '1d': { v: d1d.map(r=>parseFloat(r.nta_value)), l: d1d.map(r=>r.date) }
+    ytd: bucket(since(ytdFrom)),
+    '1y': bucket(since(oneYFrom)),
+    '3y': bucket(since(threeYFrom)),
+    all: bucket(all)
   };
 }
 
-/* ── Portfolio / Holdings ────────────────────────────────── */
+/* ── Portfolio / Holdings (fund-wide: portfolio + instruments) ──
+   portfolio: instrument_name, product, units, total_cost, vwap_cost,
+              market_value, latest_price, unrealised_pnl
+   instruments: name, ticker, code, product, sector, currency
+   (joined client-side on instrument_name === instruments.name) */
 async function mpLoadHoldings(investorId) {
-  const { data, error } = await sb.from('portfolios')
-    .select('*, instruments(name, ticker, sector, instrument_type)')
-    .eq('investor_id', investorId)
-    .order('allocation_pct', { ascending: false });
-  if (error) throw error;
-  return (data || []).map(function(p) {
-    const inst = p.instruments || {};
+  const [pfRes, inRes] = await Promise.all([
+    sb.from('portfolio')
+      .select('instrument_name, product, units, total_cost, vwap_cost, market_value, latest_price, unrealised_pnl'),
+    sb.from('instruments')
+      .select('name, ticker, code, product, sector, currency')
+  ]);
+  if (pfRes.error) throw pfRes.error;
+  const instByName = {};
+  (inRes.data || []).forEach(function(i) { instByName[i.name] = i; });
+
+  const CASH_NAME = 'MYR Cash Account';
+  const rows = (pfRes.data || []).map(function(p) {
+    const inst = instByName[p.instrument_name] || {};
+    const isCash = p.instrument_name === CASH_NAME;
+    const mv = parseFloat(p.market_value || p.total_cost || 0);
     return {
-      n:    inst.name    || p.instrument_name || 'Unknown',
-      t:    inst.ticker  || p.ticker || '—',
-      sec:  inst.sector  || p.sector || 'Unknown',
-      inst: inst.instrument_type || p.instrument_type || 'Other',
-      units: p.units_held  ? parseFloat(p.units_held)  : null,
-      cost:  p.avg_cost    ? parseFloat(p.avg_cost)     : null,
-      px:    p.market_price? parseFloat(p.market_price) : null,
-      al:    p.allocation_pct ? parseFloat(p.allocation_pct) : 0
+      n:    p.instrument_name || 'Unknown',
+      t:    inst.ticker || inst.code || '—',
+      code: inst.code || '—',
+      sec:  isCash ? 'Cash' : (inst.sector || 'Unknown'),
+      inst: p.product || inst.product || 'Other',
+      units: p.units != null ? parseFloat(p.units) : null,
+      cost:  p.vwap_cost != null ? parseFloat(p.vwap_cost) : null,
+      px:    p.latest_price != null ? parseFloat(p.latest_price) : null,
+      mv:    mv,
+      pnl:   isCash ? 0 : (p.unrealised_pnl != null ? parseFloat(p.unrealised_pnl) : 0),
+      isCash: isCash
     };
   });
+
+  // Non-cash first, cash last — mirrors admin portfolio ordering
+  const nonCash = rows.filter(r => !r.isCash);
+  const cash    = rows.filter(r => r.isCash);
+  const ordered = nonCash.concat(cash);
+
+  const totalMV = ordered.reduce((s, r) => s + (r.mv || 0), 0);
+  ordered.forEach(function(r) { r.al = totalMV > 0 ? (r.mv / totalMV) * 100 : 0; });
+  ordered.sort(function(a, b) {
+    if (a.isCash !== b.isCash) return a.isCash ? 1 : -1;
+    return (b.al || 0) - (a.al || 0);
+  });
+  return ordered;
 }
 
-/* ── Transactions ────────────────────────────────────────── */
-async function mpLoadTransactions(investorId) {
-  const { data, error } = await sb.from('transactions')
-    .select('*')
-    .eq('investor_id', investorId)
-    .order('transaction_date', { ascending: false });
+/* ── Transactions (from capital_injection — this member's own rows) ── */
+async function mpLoadTransactions(userId) {
+  const { data, error } = await sb.from('capital_injection')
+    .select('reference_id, type, amount, units, nta, date, status')
+    .eq('uid', userId)
+    .order('date', { ascending: false });
   if (error) throw error;
   return (data || []).map(function(t) {
+    const units = parseFloat(t.units) || 0;
+    const amt = parseFloat(t.amount) || 0;
     return {
-      ref:    t.reference_no || t.id,
-      type:   t.transaction_type,   // 'Subscription' | 'Redemption'
-      date:   formatDate(t.transaction_date),
-      units:  t.units > 0 ? '+' + parseFloat(t.units).toFixed(4)
-              : parseFloat(t.units).toFixed(4),
-      nav:    parseFloat(t.nav_price).toFixed(4),
-      amt:    t.transaction_type === 'Redemption'
-              ? '\u2212RM ' + Math.abs(parseFloat(t.amount)).toLocaleString('en-MY',{minimumFractionDigits:2})
-              : '+RM ' + parseFloat(t.amount).toLocaleString('en-MY',{minimumFractionDigits:2}),
-      status: t.status || 'Completed'
+      ref:    t.reference_id || '—',
+      type:   t.type,   // 'Subscription' | 'Redemption'
+      date:   formatDate(t.date),
+      dateRaw: t.date,
+      units:  t.type === 'Redemption' ? '\u2212' + Math.abs(units).toFixed(4) : '+' + Math.abs(units).toFixed(4),
+      unitsRaw: t.type === 'Redemption' ? -Math.abs(units) : Math.abs(units),
+      nav:    t.nta != null ? parseFloat(t.nta).toFixed(4) : '—',
+      amt:    t.type === 'Redemption'
+              ? '\u2212RM ' + Math.abs(amt).toLocaleString('en-MY',{minimumFractionDigits:2})
+              : '+RM ' + Math.abs(amt).toLocaleString('en-MY',{minimumFractionDigits:2}),
+      amtRaw: t.type === 'Redemption' ? -Math.abs(amt) : Math.abs(amt),
+      status: t.status || 'Pending'
     };
   });
 }
 
-/* ── Distributions ───────────────────────────────────────── */
-async function mpLoadDistributions(investorId) {
-  const { data, error } = await sb.from('distributions')
-    .select('*')
-    .eq('investor_id', investorId)
-    .order('ex_date', { ascending: false });
-  if (error) throw error;
-  return (data || []).map(function(d) {
+/* ── Distributions ───────────────────────────────────────────
+   Fund-wide `distributions` rows; each member's entitlement is
+   computed (not stored) from their approved capital_injection
+   units as at the distribution's ex-date — same logic as the
+   admin/member repo: myUnits = sum(units) where date <= ex_date,
+   myAmount = myUnits>0 ? myUnits * dps/100 : 0.                */
+async function mpLoadDistributions(userId) {
+  const [distRes, ciRes] = await Promise.all([
+    sb.from('distributions')
+      .select('fy, type, ex_date, pay_date, dps, status')
+      .order('ex_date', { ascending: false }),
+    sb.from('capital_injection')
+      .select('units, date')
+      .eq('uid', userId)
+      .eq('status', 'Approved')
+      .order('date', { ascending: true })
+  ]);
+  if (distRes.error) throw distRes.error;
+  const dists = distRes.data || [];
+  const myCI  = ciRes.data || [];
+
+  return dists.map(function(d) {
+    const exDate = d.ex_date;
+    let myUnits = 0;
+    myCI.forEach(function(r) {
+      if (r.date && exDate && r.date <= exDate) myUnits += parseFloat(r.units) || 0;
+    });
+    myUnits = Math.max(0, myUnits);
+    const dps = parseFloat(d.dps) || 0;
+    const myAmount = myUnits > 0 ? myUnits * (dps / 100) : 0;
     return {
-      fy:   d.financial_year,
-      type: d.distribution_type,    // 'Final' | 'Interim' | 'Special'
-      ex:   formatDate(d.ex_date),
-      pay:  formatDate(d.payment_date),
-      dps:  parseFloat(d.dps_sen).toFixed(2),
-      amt:  parseFloat(d.amount),
-      status: d.status || 'Paid'
+      fy:      d.fy,
+      type:    d.type,    // 'Final' | 'Interim' | 'Special'
+      ex:      formatDate(d.ex_date),
+      pay:     formatDate(d.pay_date),
+      exRaw:   d.ex_date,
+      payRaw:  d.pay_date,
+      dps:     dps.toFixed(2),
+      units:   myUnits,
+      amt:     myAmount,
+      status:  d.status || 'Pending'
     };
   });
 }
@@ -246,8 +308,8 @@ async function mpLoadAll(user, investorId) {
     await Promise.allSettled([
       mpLoadProfile(user.id),
       mpLoadHoldings(investorId),
-      mpLoadTransactions(investorId),
-      mpLoadDistributions(investorId),
+      mpLoadTransactions(user.id),
+      mpLoadDistributions(user.id),
       mpLoadDocuments(),
       mpLoadNominees(investorId),
       mpLoadNotifications(investorId)
