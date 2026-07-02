@@ -53,14 +53,14 @@
     </button>
       <div class="user-menu-wrap">
       <button class="nav-user" id="userBtn" onclick="toggleUserMenu()">
-        <div style="text-align:right"><div class="nu-name">Tan Hui Mei</div><div class="nu-role">huimei.tan@gmail.com</div></div>
-        <div class="avatar">HM</div>
+        <div style="text-align:right"><div class="nu-name" id="navName">Tan Hui Mei</div><div class="nu-role" id="navRole">huimei.tan@gmail.com</div></div>
+        <div class="avatar" id="navAvatar">HM</div>
         <span style="font-size:.6rem;color:var(--fg-3)">▾</span>
       </button>
       <div class="user-menu" id="userMenu">
         <div class="um-head">
-          <div class="avatar" style="width:38px;height:38px;font-size:.88rem">HM</div>
-          <div><div class="um-name">Tan Hui Mei</div><div class="um-mail">huimei.tan@gmail.com</div></div>
+          <div class="avatar" id="menuAvatar" style="width:38px;height:38px;font-size:.88rem">HM</div>
+          <div><div class="um-name" id="menuName">Tan Hui Mei</div><div class="um-mail" id="menuEmail">huimei.tan@gmail.com</div></div>
         </div>
         <a class="um-item" href="#" onclick="window.location.href='settings.html';toggleUserMenu();return false;">
           <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>

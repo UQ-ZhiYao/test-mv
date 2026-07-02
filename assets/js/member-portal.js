@@ -23,11 +23,29 @@ let NOTIFS = [];
 let SHAREHOLDERS = [];
 let FUND_OVERVIEW = null;
 let LIVE_DATA_READY = false;
+let PROFILE = null;
+let AUTH_USER = null;
 
 function mpInitials(name){
   if(!name) return '—';
   var parts=String(name).trim().split(/\s+/);
   return (parts[0][0]+(parts[parts.length-1][0]||'')).toUpperCase();
+}
+
+// ── TOP BAR / DROPDOWN — populate with real Supabase profile data ──────────
+function setText(id, txt){ var el=document.getElementById(id); if(el) el.textContent = (txt===undefined||txt===null||txt==='') ? '—' : txt; }
+function populateNav(){
+  if(!AUTH_USER) return;
+  var email = AUTH_USER.email || '—';
+  var displayName = (PROFILE && (PROFILE.preferred_name || PROFILE.full_name)) || email;
+  var fullName = (PROFILE && PROFILE.full_name) || email;
+  var av = mpInitials(PROFILE && (PROFILE.preferred_name || PROFILE.full_name));
+  setText('navName',    fullName);
+  setText('navRole',    email);
+  setText('navAvatar',  av);
+  setText('menuAvatar', av);
+  setText('menuName',   fullName);
+  setText('menuEmail',  email);
 }
 
 async function loadLiveData(){
@@ -38,6 +56,9 @@ async function loadLiveData(){
 
     var profile = null;
     try{ profile = await mpLoadProfile(authUser.id); }catch(e){ console.warn('Profile load failed:', e.message); }
+    AUTH_USER = authUser;
+    PROFILE = profile;
+    populateNav();
     var investorId = (profile && profile.investor_id) || localStorage.getItem('zy_investor_id') || authUser.id;
 
     var results = await Promise.allSettled([
@@ -322,10 +343,13 @@ function pgStatements() {
 var STAB = 'personal'; // active settings tab
 
 function profHero(){
+  var email = (AUTH_USER && AUTH_USER.email) || '—';
+  var fullName = (PROFILE && PROFILE.full_name) || email;
+  var av = mpInitials(PROFILE && (PROFILE.preferred_name || PROFILE.full_name));
   return '<div class="prof-hero">'
-    +'<div class="prof-av">HM</div>'
-    +'<div class="prof-info"><h2>Tan Hui Mei</h2>'
-    +'<div class="prof-meta"><span>huimei.tan@gmail.com</span></div>'
+    +'<div class="prof-av" id="profAvatar">'+av+'</div>'
+    +'<div class="prof-info"><h2 id="profName">'+fullName+'</h2>'
+    +'<div class="prof-meta"><span id="profEmail">'+email+'</span></div>'
     +'</div>'
     +'<span class="prof-badge">Verified Investor</span>'
     +'</div>';
@@ -353,10 +377,10 @@ function fcard(head,sub,body,foot,extraHead){
     +(foot?'<div class="fcard-foot">'+foot+'</div>':'')
     +'</div>';
 }
-function ff(lbl,id,type,val,ph,hint,full){
+function ff(lbl,id,type,val,ph,hint,full,disabled){
   var extra=full?' class="fg-full"':'';
   return '<div class="ffield'+extra+'"><label>'+lbl+'</label>'
-    +'<input id="'+id+'" type="'+(type||'text')+'" value="'+(val||'')+'" placeholder="'+(ph||'')+'">'
+    +'<input id="'+id+'" type="'+(type||'text')+'" value="'+(val||'')+'" placeholder="'+(ph||'')+'"'+(disabled?' disabled style="opacity:.6;cursor:not-allowed"':'')+'>'
     +(hint?'<div class="fhint">'+hint+'</div>':'')
     +'</div>';
 }
@@ -367,6 +391,9 @@ function ffSave(cancelFn,saveFn){
 
 function pgSettings(t){
   STAB=t;
+  var P = PROFILE || {};
+  var pEmail = (AUTH_USER && AUTH_USER.email) || '';
+  var nricLocked = !!P.nric_passport;
   return '<div class="prof-wrap">'
     +'<div class="ph-xl"><h1>Account <span class="acc">Settings</span></h1><p>Manage your profile, security and nominees from one place.</p></div>'
     +profHero()
@@ -374,28 +401,30 @@ function pgSettings(t){
     +'<div class="prof-pane'+(t==='personal'?' on':'')+'" data-pane="personal">'
     +fcard('Personal Details','Your contact and identity information on record.',
       '<div class="fgrid">'
-      +ff('Full Name','pf-name','text','Tan Hui Mei','As per NRIC / passport')
-      +ff('Preferred Name','pf-pref','text','Hui Mei','Display name')
-      +ff('Email Address','pf-email','email','huimei.tan@gmail.com','','Email is used for login',false)
-      +ff('Mobile','pf-phone','tel','+60 12-345 6789','+60 1X-XXX XXXX')
-      +ff('NRIC / Passport','pf-nric','text','990512-14-5678','','Locked after first save',false)
-      +ff('Date of Birth','pf-dob','date','1999-05-12','')
-      +'<div class="ffield"><label>Nationality</label><select id="pf-nat" style="font:inherit;font-size:.92rem;color:var(--fg-1);background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-md);padding:9px 12px;outline:none;transition:.2s;width:100%;box-sizing:border-box"><option selected>Malaysian</option><option>Singaporean</option><option>Permanent Resident</option><option>Other</option></select></div>'
-      +'<div class="ffield fg-full"><label>Residential Address</label><input id="pf-addr" value="No. 12, Jalan Taman Maju, Taman Sri Petaling, 57000 Kuala Lumpur"></div>'
+      +ff('Full Name','pf-name','text',(P.full_name||''),'As per NRIC / passport')
+      +ff('Preferred Name','pf-pref','text',(P.preferred_name||''),'Display name')
+      +ff('Email Address','pf-email','email',pEmail,'','Email is used for login',false,true)
+      +ff('Mobile','pf-phone','tel',(P.phone||''),'+60 1X-XXX XXXX')
+      +ff('NRIC / Passport','pf-nric','text',(nricLocked?'······-··-····':''),'e.g. 990512-14-5678',(nricLocked?'Locked after first save':''),false,nricLocked)
+      +ff('Date of Birth','pf-dob','date',(P.date_of_birth||''),'')
+      +'<div class="ffield"><label>Nationality</label><select id="pf-nat" style="font:inherit;font-size:.92rem;color:var(--fg-1);background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-md);padding:9px 12px;outline:none;transition:.2s;width:100%;box-sizing:border-box">'
+      +['Malaysian','Singaporean','Permanent Resident','Other'].map(function(n){return '<option'+(P.nationality===n?' selected':'')+'>'+n+'</option>';}).join('')
+      +'</select></div>'
+      +'<div class="ffield fg-full"><label>Residential Address</label><input id="pf-addr" value="'+(P.address||'')+'"></div>'
       +'</div>',
       ffSave('cancelSettings','profileSave')
     )
     +fcard('Distribution Bank Account','Where your income distributions are paid in MYR.',
       '<div class="fgrid">'
-      +ff('Bank Name','pf-bank','text','Maybank (Malayan Banking Berhad)','e.g. Maybank')
-      +ff('Account Number','pf-bankacct','text','1122334455','Account number')
-      +ff('Account Holder Name','pf-bkholder','text','Tan Hui Mei','Name as per bank account','',true)
+      +ff('Bank Name','pf-bank','text',(P.bank_name||''),'e.g. Maybank')
+      +ff('Account Number','pf-bankacct','text',(P.bank_account_no||''),'Account number')
+      +ff('Account Holder Name','pf-bkholder','text',(P.bank_account_holder||''),'Name as per bank account','',true)
       +'</div>',
       ffSave('cancelSettings','bankSave')
     )
     +fcard('Account Verification','Your KYC status and investor classification.',
       '<div>'
-      +'<div class="kyc-row"><span class="kyc-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span><span class="kyc-meta"><span class="kt">Identity Verification</span><span class="kd">NRIC verified · 990512-14-5678</span></span><span class="pill-ok">Verified</span></div>'
+      +'<div class="kyc-row"><span class="kyc-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span><span class="kyc-meta"><span class="kt">Identity Verification</span><span class="kd">'+(nricLocked?'NRIC verified':'NRIC not yet on file')+'</span></span><span class="'+(nricLocked?'pill-ok':'pill-warn')+'">'+(nricLocked?'Verified':'Pending')+'</span></div>'
       +'<div class="kyc-row"><span class="kyc-ic"><svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></span><span class="kyc-meta"><span class="kt">Investor Classification</span><span class="kd">Eligible to subscribe under the fund mandate</span></span><span class="pill-ok">Sophisticated Investor</span></div>'
       +'<div class="kyc-row"><span class="kyc-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></span><span class="kyc-meta"><span class="kt">Risk Profile Assessment</span><span class="kd">Annual review due 30 Jun 2026</span></span><span class="pill-warn">Review Due</span></div>'
       +'</div>'
@@ -598,8 +627,54 @@ function nomPane(){
 // Action helpers
 function csDashboard(){navigate('dashboard');}
 function cancelSettings(){navigate('dashboard');}
-function profileSave(){showToast('Personal details saved','success');}
-function bankSave(){showToast('Bank account updated','success');}
+function fVal(id){var el=document.getElementById(id);return el?el.value.trim():'';}
+async function profileSave(){
+  if(!AUTH_USER){showToast('Not signed in','error');return;}
+  var btn=event&&event.target;
+  var updates={
+    full_name:      fVal('pf-name'),
+    preferred_name: fVal('pf-pref'),
+    phone:           fVal('pf-phone'),
+    date_of_birth:   fVal('pf-dob') || null,
+    nationality:     fVal('pf-nat'),
+    address:         fVal('pf-addr')
+  };
+  var nricEl=document.getElementById('pf-nric');
+  if(nricEl && !nricEl.disabled && nricEl.value.trim()){
+    updates.nric_passport = nricEl.value.trim();
+  }
+  try{
+    if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    await mpSaveProfile(AUTH_USER.id, updates);
+    PROFILE = Object.assign({}, PROFILE||{}, updates);
+    populateNav();
+    document.getElementById('mainContent').innerHTML=pgSettings(STAB||'personal');
+    showToast('Personal details saved','success');
+  }catch(e){
+    showToast('Save failed: '+e.message,'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Save Changes';}
+  }
+}
+async function bankSave(){
+  if(!AUTH_USER){showToast('Not signed in','error');return;}
+  var btn=event&&event.target;
+  var updates={
+    bank_name:           fVal('pf-bank'),
+    bank_account_no:     fVal('pf-bankacct'),
+    bank_account_holder: fVal('pf-bkholder')
+  };
+  try{
+    if(btn){btn.disabled=true;btn.textContent='Saving…';}
+    await mpSaveProfile(AUTH_USER.id, updates);
+    PROFILE = Object.assign({}, PROFILE||{}, updates);
+    showToast('Bank account updated','success');
+  }catch(e){
+    showToast('Save failed: '+e.message,'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Save Changes';}
+  }
+}
 function enable2FA(){showToast('2FA setup coming soon','orange');}
 function revokeSession(){showToast('Session revoked','success');}
 function editNominee(){showToast('Edit nominee coming soon','orange');}
@@ -621,12 +696,23 @@ function pwStrength(v){
   var txt=['','Weak','Fair','Good','Strong','Strong'][sc];
   bar.style.width=pct+'%';bar.style.background=col;lbl.textContent=txt||'—';lbl.style.color=sc?col:'var(--fg-3)';
 }
-function submitPwChange(){
-  var cur=document.getElementById('pw-cur'),nw=document.getElementById('pw-new'),cf=document.getElementById('pw-cf');
-  if(!cur||!nw||!cf)return;
+async function submitPwChange(){
+  var nw=document.getElementById('pw-new'),cf=document.getElementById('pw-cf');
+  if(!nw||!cf)return;
   if(nw.value.length<8){showToast('New password must be at least 8 characters','error');return;}
   if(nw.value!==cf.value){showToast('Passwords do not match','error');return;}
-  clearPwForm();showToast('Password updated successfully','success');
+  if(typeof mpUpdatePassword!=='function'){showToast('Password service unavailable','error');return;}
+  var btn=event&&event.target;
+  try{
+    if(btn){btn.disabled=true;btn.textContent='Updating…';}
+    await mpUpdatePassword(nw.value);
+    clearPwForm();
+    showToast('Password updated successfully','success');
+  }catch(e){
+    showToast('Password update failed: '+e.message,'error');
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Update Password';}
+  }
 }
 
 // ── FUND OVERVIEW ─────────────────────────────────────────────────────────
