@@ -2230,6 +2230,48 @@ function pgFinancialResults(){
     var n=v||0;
     return Math.abs(n).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
   }
+  // "Nice numbers for graph labels" (Heckbert) — picks round tick values
+  // (2000, 10000, ...) instead of raw data-derived fractions (1998.32, ...).
+  function niceNum(range, round){
+    if(range<=0) return 1;
+    var exponent=Math.floor(Math.log10(range));
+    var fraction=range/Math.pow(10,exponent);
+    var niceFraction;
+    if(round){
+      if(fraction<1.5) niceFraction=1;
+      else if(fraction<3) niceFraction=2;
+      else if(fraction<7) niceFraction=5;
+      else niceFraction=10;
+    } else {
+      if(fraction<=1) niceFraction=1;
+      else if(fraction<=2) niceFraction=2;
+      else if(fraction<=5) niceFraction=5;
+      else niceFraction=10;
+    }
+    return niceFraction*Math.pow(10,exponent);
+  }
+  function niceAxisScale(min,max,tickCount){
+    tickCount=tickCount||5;
+    if(min===max){ min-=1; max+=1; }
+    var range=niceNum(max-min,false);
+    var step=niceNum(range/(tickCount-1),true);
+    var niceMin=Math.floor(min/step)*step;
+    var niceMax=Math.ceil(max/step)*step;
+    return {min:niceMin,max:niceMax,step:step};
+  }
+  // k at 6 digits (100,000+), mil at 9 digits (100,000,000+)
+  function fmtAxisNum(v){
+    var av=Math.abs(v);
+    var sign=v<0?'−':'';
+    if(av>=100000000){
+      var m=av/1000000;
+      return sign+(m%1===0?m.toFixed(0):m.toFixed(1))+'mil';
+    } else if(av>=100000){
+      var k=av/1000;
+      return sign+(k%1===0?k.toFixed(0):k.toFixed(1))+'k';
+    }
+    return sign+av.toLocaleString('en-MY',{maximumFractionDigits:0});
+  }
   function barChartFR(fyLabels,series){
     var n=fyLabels.length;
     // Width scales with n, capped at 7 FY
@@ -2239,19 +2281,22 @@ function pgFinancialResults(){
     var pctW=Math.min(100,(n/10*100)).toFixed(1)+'%';
     barW=Math.min(28,Math.floor((SEG-groupGap)/series.length-4));
     var allV=series.reduce(function(a,s){return a.concat(s.v);},[]);
-    var mx=Math.max.apply(null,allV.concat([0]));
-    var mn=Math.min.apply(null,allV.concat([0]));
+    var rawMx=Math.max.apply(null,allV.concat([0]));
+    var rawMn=Math.min.apply(null,allV.concat([0]));
+    var scale=niceAxisScale(rawMn,rawMx,5);
+    var mx=scale.max, mn=scale.min;
     if(mx===mn){ mx+=1; mn-=1; }
     var rng=mx-mn;
     var plotH=H-padYT-padYB;
     function yFor(v){ return padYT+(mx-v)/rng*plotH; }
     var zeroY=yFor(0);
     function bx(gi,si){return padL+gi*SEG+(SEG-groupGap-(series.length*barW+(series.length-1)*4))/2+si*(barW+4);}
-    // Grid lines across the actual value range (supports negative)
-    var grid=[0,0.25,0.5,0.75,1].map(function(f){
-      var v=mn+f*rng;
+    // Grid lines at nice round tick values (supports negative)
+    var ticks=[];
+    for(var tv=mn; tv<=mx+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
+    var grid=ticks.map(function(v){
       var yy=yFor(v).toFixed(1);
-      var vStr=(v<0?'−':'')+fmtFull(v);
+      var vStr=fmtAxisNum(v);
       return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'+
              '<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7" fill="#374151">'+vStr+'</text>';
     }).join('');
@@ -2299,12 +2344,16 @@ function pgFinancialResults(){
     var pctWL=Math.min(100,(n/10*100)).toFixed(1)+'%';
     pointGap=SEG;
     var allV=series.reduce(function(a,s){return a.concat(s.v);},[]).filter(function(v){return v>0;});
-    var mn=0,mx=Math.max.apply(null,allV)||1,rng=mx-mn||1;
+    var rawMx=Math.max.apply(null,allV.concat([0]))||1;
+    var scale=niceAxisScale(0,rawMx,5);
+    var mn=0,mx=scale.max,rng=mx-mn||1;
     function px(i){return padL+i*SEG+SEG/2;}
     function py(v){return H-padYB-((v-mn)/rng)*(H-padYT-padYB);}
-    var grid=[0.25,0.5,0.75,1].map(function(f){
-      var yy=(H-padYB-f*(H-padYT-padYB)).toFixed(1),v=mx*f;
-      var vStr=v>=1?v.toFixed(1)+'%':v.toFixed(3);
+    var ticks=[];
+    for(var tv=0; tv<=mx+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
+    var grid=ticks.map(function(v){
+      var yy=py(v).toFixed(1);
+      var vStr=(v%1===0?v.toFixed(0):v.toFixed(1))+'%';
       return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'+
              '<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7" fill="#374151">'+vStr+'</text>';
     }).join('');
@@ -2364,8 +2413,8 @@ function pgFinancialResults(){
       table='<div style="padding:24px;color:var(--fg-3);font-size:.86rem">No financial years defined yet — add rows to fy_settings to see the income statement.</div>';
     } else {
       chart=barChartFR(INCOME_STATEMENT.map(function(r){return r.fy;}),[
-        {v:INCOME_STATEMENT.map(function(r){return r.revenue;}),   color:'#93C5FD', label:'Revenue'},
-        {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#1565C0', label:'NPAT'}
+        {v:INCOME_STATEMENT.map(function(r){return r.revenue;}),   color:'#1565C0', label:'Revenue'},
+        {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#2E7D32', label:'NPAT'}
       ]);
       var isRow=function(label,key,bold,fmtFn,highlight){
         var style='font-size:.84rem;'+(bold?'font-weight:600;color:var(--fg-1)':'font-weight:400;color:var(--fg-2)');
