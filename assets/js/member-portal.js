@@ -2410,10 +2410,11 @@ function pgFinancialResults(){
   function slice(arr){return arr.filter(function(_,i){return activeFY.indexOf(FY[i])>=0;});}
 
   // ── Shared live-statement table helpers (Income Statement + Balance Sheet) ──
-  function fsRow(dataset,label,key,bold,fmtFn,highlight){
+  function fsRow(dataset,label,key,bold,fmtFn,highlight,indent){
     var style='font-size:.84rem;'+(bold?'font-weight:600;color:var(--fg-1)':'font-weight:400;color:var(--fg-2)');
     var rowBg=highlight?' style="background:var(--blue-bg);border-bottom:1px solid var(--border)"':' style="border-bottom:1px solid var(--border)"';
-    return '<tr'+rowBg+'><td style="padding:9px 16px;'+style+'">'+label+'</td>'
+    var labelPad=indent?'9px 16px 9px 32px':'9px 16px';
+    return '<tr'+rowBg+'><td style="padding:'+labelPad+';'+style+'">'+label+'</td>'
       +dataset.map(function(r){
         var v=r[key];
         if(v===null||v===undefined) return '<td style="padding:9px 16px;text-align:right;'+style+'">—</td>';
@@ -2424,6 +2425,9 @@ function pgFinancialResults(){
         return '<td style="padding:9px 16px;text-align:right;'+style+(vc?';'+vc:'')+'">'+txt+'</td>';
       }).join('')
       +'</tr>';
+  }
+  function fsSubheader(dataset,label){
+    return '<tr><td colspan="'+(dataset.length+1)+'" style="padding:9px 16px 0;font-size:.8rem;font-style:italic;color:var(--fg-3)">'+label+'</td></tr>';
   }
   function fsThead(dataset,unitLabel){
     return '<thead><tr style="border-bottom:1px solid var(--border);background:var(--gray-100)">'
@@ -2503,14 +2507,15 @@ function pgFinancialResults(){
       ]);
       table='<table style="width:100%;border-collapse:collapse">'+fsThead(CASH_FLOW,'RM')+'<tbody>'
         +fsRow(CASH_FLOW,'Profit before Tax','profitBeforeTax',false)
-        +fsRow(CASH_FLOW,'Unrealised Gain / (Loss) on Securities','unrealizedAdjustment',false)
-        +fsRow(CASH_FLOW,'Changes in Securities','changeSecurities',false)
-        +fsRow(CASH_FLOW,'Changes in Other Assets','changeOtherAssets',false)
+        +fsSubheader(CASH_FLOW,'Adjustments for:')
+        +fsRow(CASH_FLOW,'Unrealised (Gain) / Loss on Securities','unrealizedAdjustment',false,null,false,true)
         +fsRow(CASH_FLOW,'Changes in Receivables','changeReceivables',false)
         +fsRow(CASH_FLOW,'Cashflow from Operations','cashflowFromOps',true,null,true)
         +fsRow(CASH_FLOW,'Income Tax Paid','incomeTaxPaid',false)
         +fsRow(CASH_FLOW,'Net Cash from Operating Activities','netCashOperating',true,null,true)
         +fsSpacer(CASH_FLOW)
+        +fsRow(CASH_FLOW,'Net Proceeds from (Investment) / Disposal — Securities','proceedsSecurities',false)
+        +fsRow(CASH_FLOW,'Net Proceeds from (Investment) / Disposal — Other Assets','proceedsOtherAssets',false)
         +fsRow(CASH_FLOW,'Net Cash from Investing Activities','netCashInvesting',true,null,true)
         +fsSpacer(CASH_FLOW)
         +fsRow(CASH_FLOW,'Dividend Paid','dividendPaid',false)

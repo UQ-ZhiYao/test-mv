@@ -584,28 +584,37 @@ async function mpLoadBalanceSheet() {
 }
 
 /* ── Cash Flow (fund-wide, per financial year) ───────────────
-   Reuses Income Statement (Profit before Tax) and Balance Sheet
-   (Securities / Other Investments / Dividend Receivables) rows already
-   loaded on the page — no need to re-derive them from nta_daily here.
-   Changes in operating assets follow the standard indirect-method sign
-   convention: an INCREASE in a non-cash asset is a USE of cash
-   (negative), a decrease is a SOURCE of cash (positive) —
-   change = previous balance − current balance.
+   Reuses Income Statement (Profit before Tax, Unrealised P&L) and
+   Balance Sheet (Dividend Receivables) rows already loaded on the page.
+
+   OPERATING: Profit before Tax, adjusted for the non-cash Unrealised
+   P&L embedded in it (a gain is subtracted, a loss added back), plus
+   the change in Dividend Receivables (indirect method: an increase in
+   a receivable is a use of cash, so change = previous − current).
+
+   INVESTING: "Net Proceeds from (Investment)/Disposal" — real trading
+   cashflows from transaction_trading (Buy = negative/outflow,
+   Sell = positive/inflow), split by product: Securities & REIT Trusts
+   vs. everything else ("Other Assets").
+
    Cash beginning/ending is chained forward FY by FY; the very first
    FY's beginning balance is seeded from nta_daily.cash at/just before
    that FY's start_date (there's no prior FY to chain from).          */
 async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
-  const [fyRes, ciRes, distRes] = await Promise.all([
+  const [fyRes, ciRes, distRes, tradeRes] = await Promise.all([
     sb.from('fy_settings').select('*').order('start_date', { ascending: true }),
     sb.from('capital_injection').select('amount, date, status').eq('status', 'Approved'),
-    sb.from('distributions').select('amount, pay_date, status')
+    sb.from('distributions').select('amount, pay_date, status'),
+    sb.from('transaction_trading').select('cashflow, product, trade_date')
   ]);
   if (fyRes.error) throw fyRes.error;
-  const FYS      = fyRes.data || [];
-  const ciRows   = ciRes.data || [];
-  const distRows = distRes.data || [];
+  const FYS       = fyRes.data || [];
+  const ciRows    = ciRes.data || [];
+  const distRows  = distRes.data || [];
+  const tradeRows = tradeRes.data || [];
 
   function inRange(d, start, end) { return d && d >= start && d <= end; }
+  function isSecuritiesProduct(p) { p = (p || '').trim(); return p === 'Securities' || p === 'REIT Trusts'; }
 
   const isByFy = {}; (incomeStatementRows || []).forEach(function(r) { isByFy[r.fy] = r; });
   const bsByFy = {}; (balanceSheetRows   || []).forEach(function(r) { bsByFy[r.fy] = r; });
@@ -622,7 +631,7 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     if (data && data.length) seedCash = parseFloat(data[0].cash) || 0;
   }
 
-  let prevSecurities = null, prevOtherAssets = null, prevReceivables = null, prevCashEnd = null;
+  let prevReceivables = null, prevCashEnd = null;
 
   const rows = FYS.map(function(fy) {
     const start = fy.start_date, end = fy.end_date;
@@ -634,19 +643,21 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     // (indirect method): a gain is subtracted, a loss is added back.
     const unrealizedAdjustment = -(is.unrealizedPnl || 0);
 
-    const securities  = bs.securities || 0;
-    const otherAssets  = bs.otherInvestments || 0;
-    const receivables  = bs.dividendReceivables || 0;
-
-    const changeSecurities  = prevSecurities  === null ? 0 : (prevSecurities  - securities);
-    const changeOtherAssets = prevOtherAssets === null ? 0 : (prevOtherAssets - otherAssets);
+    const receivables = bs.dividendReceivables || 0;
     const changeReceivables = prevReceivables === null ? 0 : (prevReceivables - receivables);
 
-    const cashflowFromOps = profitBeforeTax + unrealizedAdjustment + changeSecurities + changeOtherAssets + changeReceivables;
+    const cashflowFromOps = profitBeforeTax + unrealizedAdjustment + changeReceivables;
     const incomeTaxPaid = 0;
     const netCashOperating = cashflowFromOps + incomeTaxPaid;
 
-    const netCashInvesting = 0;
+    const fyTrades = tradeRows.filter(function(r) { return inRange(r.trade_date, start, end); });
+    const proceedsSecurities = fyTrades
+      .filter(function(r) { return isSecuritiesProduct(r.product); })
+      .reduce(function(s, r) { return s + (parseFloat(r.cashflow) || 0); }, 0);
+    const proceedsOtherAssets = fyTrades
+      .filter(function(r) { return !isSecuritiesProduct(r.product); })
+      .reduce(function(s, r) { return s + (parseFloat(r.cashflow) || 0); }, 0);
+    const netCashInvesting = proceedsSecurities + proceedsOtherAssets;
 
     const dividendPaid = -distRows
       .filter(function(r) { return r.status === 'Paid' && inRange(r.pay_date, start, end); })
@@ -661,14 +672,14 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     const cashBeginning = prevCashEnd === null ? seedCash : prevCashEnd;
     const cashEnding = cashBeginning + netIncreaseInCash;
 
-    prevSecurities = securities; prevOtherAssets = otherAssets; prevReceivables = receivables; prevCashEnd = cashEnding;
+    prevReceivables = receivables; prevCashEnd = cashEnding;
 
     return {
       fy: fy.label, startDate: start, endDate: end,
       profitBeforeTax: profitBeforeTax, unrealizedAdjustment: unrealizedAdjustment,
-      changeSecurities: changeSecurities, changeOtherAssets: changeOtherAssets, changeReceivables: changeReceivables,
+      changeReceivables: changeReceivables,
       cashflowFromOps: cashflowFromOps, incomeTaxPaid: incomeTaxPaid, netCashOperating: netCashOperating,
-      netCashInvesting: netCashInvesting,
+      proceedsSecurities: proceedsSecurities, proceedsOtherAssets: proceedsOtherAssets, netCashInvesting: netCashInvesting,
       dividendPaid: dividendPaid, issuanceOfShares: issuanceOfShares, netCashFinancing: netCashFinancing,
       netIncreaseInCash: netIncreaseInCash, cashBeginning: cashBeginning, cashEnding: cashEnding
     };
