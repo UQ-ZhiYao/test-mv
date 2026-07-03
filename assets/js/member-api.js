@@ -665,8 +665,12 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
       .reduce(function(s, r) { return s + (parseFloat(r.cashflow) || 0); }, 0);
 
     const receivables = bs.dividendReceivables || 0;
-    const changeReceivables = receivables - (prevReceivables === null ? 0 : prevReceivables);
+    // Receivables is an asset: change = previous FY − this FY (previous
+    // defaults to 0 for the first FY).
+    const changeReceivables = (prevReceivables === null ? 0 : prevReceivables) - receivables;
 
+    // Accrual Fees is a liability: change = this FY − previous FY
+    // (previous defaults to 0 for the first FY).
     const accrualFees = bs.accrualFees || 0;
     const changeAccrualFees = accrualFees - (prevAccrualFees === null ? 0 : prevAccrualFees);
 
