@@ -2214,11 +2214,11 @@ function pgFinancialResults(){
 
   // Active FY (skip leading zeros)
   // Cap at 8 FY
-  FY=FY.slice(-8);
-  Object.keys(INCOME).forEach(function(k){INCOME[k]=INCOME[k].slice(-8);});
-  Object.keys(BALANCE).forEach(function(k){BALANCE[k]=BALANCE[k].slice(-8);});
-  Object.keys(CASHFLOW).forEach(function(k){CASHFLOW[k]=CASHFLOW[k].slice(-8);});
-  Object.keys(RATIOS).forEach(function(k){RATIOS[k]=RATIOS[k].slice(-8);});
+  FY=FY.slice(-10);
+  Object.keys(INCOME).forEach(function(k){INCOME[k]=INCOME[k].slice(-10);});
+  Object.keys(BALANCE).forEach(function(k){BALANCE[k]=BALANCE[k].slice(-10);});
+  Object.keys(CASHFLOW).forEach(function(k){CASHFLOW[k]=CASHFLOW[k].slice(-10);});
+  Object.keys(RATIOS).forEach(function(k){RATIOS[k]=RATIOS[k].slice(-10);});
   var activeFY=FY.filter(function(_,i){
     // Keep FY if at least one series has non-zero value at that index
     var key=activeFRTab==='income'?Object.values(INCOME):activeFRTab==='balance'?Object.values(BALANCE):activeFRTab==='cashflow'?Object.values(CASHFLOW):Object.values(RATIOS);
@@ -2236,7 +2236,7 @@ function pgFinancialResults(){
     var barW=36, groupGap=24, padL=16, padR=58, padYT=14, padYB=24;
     var SEG=68;
     var W=padL+n*SEG+padR, H=240;
-    var pctW=Math.min(100,(n/8*100)).toFixed(1)+'%';
+    var pctW=Math.min(100,(n/10*100)).toFixed(1)+'%';
     barW=Math.min(28,Math.floor((SEG-groupGap)/series.length-4));
     var allV=series.reduce(function(a,s){return a.concat(s.v);},[]);
     var mx=Math.max.apply(null,allV.concat([0]));
@@ -2296,7 +2296,7 @@ function pgFinancialResults(){
     var padL=16,padR=48,padYT=14,padYB=24,pointGap=60;
     var SEG=68;
     var W=padL+n*SEG+padR, H=240;
-    var pctWL=Math.min(100,(n/8*100)).toFixed(1)+'%';
+    var pctWL=Math.min(100,(n/10*100)).toFixed(1)+'%';
     pointGap=SEG;
     var allV=series.reduce(function(a,s){return a.concat(s.v);},[]).filter(function(v){return v>0;});
     var mn=0,mx=Math.max.apply(null,allV)||1,rng=mx-mn||1;
@@ -2367,33 +2367,40 @@ function pgFinancialResults(){
         {v:INCOME_STATEMENT.map(function(r){return r.revenue;}),   color:'#93C5FD', label:'Revenue'},
         {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#1565C0', label:'Net Income'}
       ]);
-      var isRow=function(label,key,bold){
+      var isRow=function(label,key,bold,fmtFn){
         var style='font-size:.84rem;'+(bold?'font-weight:600;color:var(--fg-1)':'font-weight:400;color:var(--fg-2)');
         return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 16px;'+style+'">'+label+'</td>'
           +INCOME_STATEMENT.map(function(r){
-            var v=r[key]||0;
+            var v=r[key];
+            if(v===null||v===undefined) return '<td style="padding:9px 16px;text-align:right;'+style+'">—</td>';
             var vc=v<0?'color:var(--red)':(bold&&v>0?'color:var(--green)':'');
-            var txt=v===0?'—':(v<0?('('+fmtFull(v)+')'):fmtFull(v));
+            var txt;
+            if(fmtFn){ txt=v===0?'—':(v<0?('('+fmtFn(Math.abs(v))+')'):fmtFn(v)); }
+            else { txt=v===0?'—':(v<0?('('+fmtFull(v)+')'):fmtFull(v)); }
             return '<td style="padding:9px 16px;text-align:right;'+style+(vc?';'+vc:'')+'">'+txt+'</td>';
           }).join('')
           +'</tr>';
       };
       var isThead='<thead><tr style="border-bottom:1px solid var(--border)">'
-        +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">Item</th>'
+        +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">Item (RM)</th>'
         +INCOME_STATEMENT.map(function(r){return '<th style="padding:9px 16px;text-align:right;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">'+r.fy+'</th>';}).join('')
         +'</tr></thead>';
+      var fmtUnits=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});};
+      var fmtCents=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});};
       table='<table style="width:100%;border-collapse:collapse">'+isThead+'<tbody>'
-        +isRow('Dividend Income (RM)','dividendIncome',false)
-        +isRow('Interest Income (RM)','interestIncome',false)
-        +isRow('Revenue / Total Income (RM)','revenue',true)
-        +isRow('Management Cost (RM)','managementCost',false)
-        +isRow('Gross Income (RM)','grossIncome',true)
-        +isRow('Realised Profit &amp; Loss (RM)','realizedPnl',false)
-        +isRow('Unrealised Profit &amp; Loss (RM)','unrealizedPnl',false)
-        +isRow('Other Income / (Expenses) (RM)','otherIncomeExpense',false)
-        +isRow('Profit before Tax (RM)','profitBeforeTax',true)
-        +isRow('Tax Paid (RM)','tax',false)
-        +isRow('Net Income / Profit after Tax (RM)','netIncome',true)
+        +isRow('Dividend Income','dividendIncome',false)
+        +isRow('Interest Income','interestIncome',false)
+        +isRow('Revenue / Total Income','revenue',true)
+        +isRow('Management Cost','managementCost',false)
+        +isRow('Gross Income','grossIncome',true)
+        +isRow('Realised Profit &amp; Loss','realizedPnl',false)
+        +isRow('Unrealised Profit &amp; Loss','unrealizedPnl',false)
+        +isRow('Other Income / (Expenses)','otherIncomeExpense',false)
+        +isRow('Profit before Tax','profitBeforeTax',true)
+        +isRow('Tax Paid','tax',false)
+        +isRow('Net Income / Profit after Tax','netIncome',true)
+        +isRow('Outstanding Shares (Units)','outstandingShares',false,fmtUnits)
+        +isRow('EPS (cents)','epsCents',false,fmtCents)
         +'</tbody></table>';
     }
   } else if(activeFRTab==='balance'){

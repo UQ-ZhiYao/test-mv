@@ -412,7 +412,7 @@ async function mpLoadIncomeStatement() {
     sb.from('transaction_others').select('amount, date, category'),
     sb.from('remuneration').select('amount, date'),
     sb.from('settlement').select('pnl, date'),
-    sb.from('capital_injection').select('amount, date, status').eq('status', 'Approved'),
+    sb.from('capital_injection').select('amount, units, date, status').eq('status', 'Approved'),
     sb.from('distributions').select('amount, pay_date, status'),
     fetchAllNta()
   ]);
@@ -489,6 +489,11 @@ async function mpLoadIncomeStatement() {
     const tax = 0;
     const netIncome = profitBeforeTax - tax;
 
+    const outstandingShares = ciRows
+      .filter(function(r) { return r.date <= end; })
+      .reduce(function(s, r) { return s + (parseFloat(r.units) || 0); }, 0);
+    const epsCents = outstandingShares > 0 ? (netIncome / outstandingShares) * 100 : null;
+
     cumNetIncomeBefore += netIncome;
 
     return {
@@ -496,7 +501,8 @@ async function mpLoadIncomeStatement() {
       dividendIncome: dividendIncome, interestIncome: interestIncome, revenue: revenue,
       managementCost: managementCost, grossIncome: grossIncome,
       realizedPnl: realizedPnl, unrealizedPnl: unrealizedPnl, otherIncomeExpense: otherIncomeExpense,
-      profitBeforeTax: profitBeforeTax, tax: tax, netIncome: netIncome
+      profitBeforeTax: profitBeforeTax, tax: tax, netIncome: netIncome,
+      outstandingShares: outstandingShares, epsCents: epsCents
     };
   });
 
