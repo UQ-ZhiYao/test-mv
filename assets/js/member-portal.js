@@ -495,26 +495,38 @@ function pgTransactions() {
     +'<div class="mc"><div class="lbl">Net Units</div><div class="val">'+totalUnits.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4})+'</div><div class="sub">Approved, net of redemptions</div></div>'
     +'<div class="mc"><div class="lbl">IRR</div><div class="val">—</div><div class="sub">To be calculated</div></div>'
     +'</div>';
-  var stBg={Approved:'var(--green-bg)',Pending:'var(--orange-bg)',Rejected:'var(--gray-100)'};
-  var stC={Approved:'var(--green)',Pending:'var(--orange)',Rejected:'var(--red)'};
-  var tBg={Subscription:'var(--blue-bg)',Redemption:'var(--orange-bg)'};
-  var tC={Subscription:'var(--blue)',Redemption:'var(--orange)'};
+  // Same base colours as the admin Capital Injection table (tag-sub/tag-red-type/pill-green/pill-yellow/pill-red)
+  var TYPE_COL   = {Subscription:{bg:'#D1FAE5',fg:'#065F46'}, Redemption:{bg:'#FEE2E2',fg:'#991B1B'}};
+  var STATUS_COL = {Approved:{bg:'#D1FAE5',fg:'#065F46'}, Pending:{bg:'#FEF9C3',fg:'#854D0E'}, Rejected:{bg:'#FEE2E2',fg:'#991B1B'}};
   var tabs=types.map(function(t){return '<button class="ftab'+(S.txf===t?' on':'')+'" onclick="filterTx(\''+t+'\')">'+(t==='all'?'All':t+'s')+'</button>';}).join('');
+  var LP='padding-left:20px', RP='padding-right:20px;text-align:right';
   var rows=list.map(function(t){
-    var ac=t.type==='Subscription'?'var(--green)':'var(--red)';
-    var uc=t.units.startsWith('+')?'var(--green)':t.units.startsWith('\u2212')?'var(--red)':'var(--fg-3)';
-    return '<tr><td style="font-size:.82rem;font-weight:600;color:var(--fg-1)">'+t.ref+'</td>'
-      +'<td><span class="pill" style="background:'+tBg[t.type]+';color:'+tC[t.type]+'">'+t.type+'</span></td>'
-      +'<td>'+t.date+'</td>'
-      +'<td style="text-align:right;color:'+uc+'">'+t.units+'</td>'
-      +'<td style="text-align:right">'+t.nav+'</td>'
-      +'<td style="text-align:right;font-weight:700;color:'+ac+'">'+t.amt+'</td>'
-      +'<td><span class="pill" style="background:'+(stBg[t.status]||'var(--gray-100)')+';color:'+(stC[t.status]||'var(--fg-2)')+'">'+t.status+'</span></td></tr>';
+    var tc = TYPE_COL[t.type]   || {bg:'var(--gray-100)',fg:'var(--fg-2)'};
+    var sc = STATUS_COL[t.status] || {bg:'var(--gray-100)',fg:'var(--fg-2)'};
+    var unitsColor = t.unitsRaw>0 ? '#065F46' : (t.unitsRaw<0 ? '#991B1B' : 'var(--fg-1)');
+    var unitsTxt = (t.unitsRaw>0?'+':'')+t.unitsRaw.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});
+    return '<tr>'
+      +'<td style="'+LP+'">'+t.date+'</td>'
+      +'<td style="'+LP+'"><span class="pill" style="background:'+tc.bg+';color:'+tc.fg+'">'+t.type+'</span></td>'
+      +'<td style="'+LP+'">'+t.ref+'</td>'
+      +'<td style="'+RP+'">'+t.amt.replace(/^[+\u2212]/,'')+'</td>'
+      +'<td style="'+RP+'">'+t.nav+'</td>'
+      +'<td style="'+RP+';color:'+unitsColor+'">'+unitsTxt+'</td>'
+      +'<td style="'+RP+'"><span class="pill" style="background:'+sc.bg+';color:'+sc.fg+'">'+t.status+'</span></td>'
+      +'</tr>';
   }).join('');
   return '<div class="ph-xl"><h1><span class="acc">Principal Transactions</span></h1><p>Subscription &amp; redemption history — principal movements only.</p></div>'
     +cards
     +'<div class="panel"><div class="ph" style="flex-wrap:wrap;gap:10px"><h3>Principal Transactions</h3><div class="ftabs">'+tabs+'</div></div>'
-    +'<table class="tbl"><thead><tr><th>Reference</th><th>Type</th><th>Date</th><th style="text-align:right">Units</th><th style="text-align:right">NAV (RM)</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>'+(rows||'<tr><td colspan="7" style="padding:20px;color:var(--fg-3)">No transactions on record</td></tr>')+'</tbody></table></div>';
+    +'<table class="tbl"><thead><tr>'
+    +'<th style="'+LP+'">Date</th>'
+    +'<th style="'+LP+'">Type</th>'
+    +'<th style="'+LP+'">Reference ID</th>'
+    +'<th style="'+RP+'">Amount (RM)</th>'
+    +'<th style="'+RP+'">NTA</th>'
+    +'<th style="'+RP+'">Units</th>'
+    +'<th style="'+RP+'">Status</th>'
+    +'</tr></thead><tbody>'+(rows||'<tr><td colspan="7" style="padding:20px;color:var(--fg-3)">No transactions on record</td></tr>')+'</tbody></table></div>';
 }
 
 function pgDistributions() {
