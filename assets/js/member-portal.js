@@ -553,14 +553,13 @@ function pgTransactions() {
 
 function pgDistributions() {
   var paid = DISTS.filter(function(d){return d.status==='Paid';});
+  var received = paid.filter(function(d){return d.amt>0;});
   var totalReceived = paid.reduce(function(a,d){return a+(d.amt||0);},0);
-  var uniqueFys = DISTS.map(function(d){return d.fy;}).filter(Boolean).filter(function(v,i,a){return a.indexOf(v)===i;}).sort();
-  var periodLbl = uniqueFys.length ? (uniqueFys.length===1?uniqueFys[0]:(uniqueFys[0]+' – '+uniqueFys[uniqueFys.length-1])) : '—';
   var mc4=[
     '<div class="mc"><div class="lbl">Total Received</div><div class="val'+(totalReceived>0?' g':'')+'">'+(paid.length?fmtMoneyOrDash(totalReceived):'—')+'</div><div class="sub">Since inception</div></div>',
-    '<div class="mc"><div class="lbl">No. of Distributions</div><div class="val b">'+(DISTS.length||'—')+'</div><div class="sub">'+(uniqueFys.length?('Across '+uniqueFys.length+' financial year'+(uniqueFys.length===1?'':'s')):'—')+'</div></div>',
-    '<div class="mc"><div class="lbl">Distribution Period</div><div class="val">'+periodLbl+'</div><div class="sub">—</div></div>',
-    '<div class="mc"><div class="lbl">Payout Ratio</div><div class="val">—</div><div class="sub">Of net income distributed</div></div>'
+    '<div class="mc"><div class="lbl">No. of Distributions</div><div class="val b">'+(received.length||'—')+'</div><div class="sub">Received since inception</div></div>',
+    '<div class="mc"><div class="lbl">Interim Policy</div><div class="val">≥ 80%</div><div class="sub">of gross income</div></div>',
+    '<div class="mc"><div class="lbl">Final Policy</div><div class="val">≥ 10%</div><div class="sub">of net income (excl. gross)</div></div>'
   ].join('');
   var tBg={Final:'var(--blue-bg)',Interim:'var(--green-bg)',Special:'var(--orange-bg)'};
   var tC={Final:'var(--blue)',Interim:'var(--green)',Special:'var(--orange)'};
@@ -582,7 +581,6 @@ function pgDistributions() {
     +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">'+mc4+'</div>'
     +'<div class="panel"><div class="ph"><h3>Distribution History</h3></div>'
     +'<table class="tbl"><thead><tr><th>FY</th><th>Type</th><th>Ex-Date</th><th>Pay Date</th><th style="text-align:right">DPS (sen)</th><th style="text-align:right">Units</th><th style="text-align:right">Amount</th><th>Status</th></tr></thead><tbody>'+(rows||'<tr><td colspan="8" style="padding:20px;color:var(--fg-3)">No distributions on record</td></tr>')
-    +(paid.length?('<tr style="background:var(--gray-50)"><td colspan="6" style="font-weight:700;color:var(--fg-1);padding:12px 20px">Total received</td><td style="text-align:right;font-weight:700;color:var(--green);padding:12px 20px">+'+fmtMoneyOrDash(totalReceived)+'</td><td></td></tr>'):'')
     +'</tbody></table></div>';
 }
 
