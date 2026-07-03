@@ -509,6 +509,80 @@ async function mpLoadIncomeStatement() {
   return rows;
 }
 
+/* ── Balance Sheet (fund-wide, per financial year, as at FY end date) ──
+   All figures read directly (or derived) from nta_daily at the row
+   nearest-at-or-before each FY's end_date, plus cumulative capital
+   from capital_injection.                                            */
+async function mpLoadBalanceSheet() {
+  const pageSize = 1000;
+  async function fetchAllNta() {
+    let all = [], page = 0;
+    while (true) {
+      const { data, error } = await sb.from('nta_daily')
+        .select('date, securities, other_assets, receivables, cash, management_fees, total_equity, total_units, nta')
+        .order('date', { ascending: true })
+        .range(page * pageSize, page * pageSize + pageSize - 1);
+      if (error) throw error;
+      if (!data || !data.length) break;
+      all = all.concat(data);
+      if (data.length < pageSize) break;
+      page++;
+    }
+    return all;
+  }
+
+  const [fyRes, ciRes, ntaRows] = await Promise.all([
+    sb.from('fy_settings').select('*').order('start_date', { ascending: true }),
+    sb.from('capital_injection').select('amount, date, status').eq('status', 'Approved'),
+    fetchAllNta()
+  ]);
+  if (fyRes.error) throw fyRes.error;
+  const FYS    = fyRes.data || [];
+  const ciRows = ciRes.data || [];
+
+  function ntaAtOrBefore(dateStr) {
+    let result = null;
+    for (let i = 0; i < ntaRows.length; i++) {
+      if (ntaRows[i].date <= dateStr) result = ntaRows[i]; else break;
+    }
+    return result;
+  }
+
+  const rows = FYS.map(function(fy) {
+    const end = fy.end_date;
+    const row = ntaAtOrBefore(end) || {};
+
+    const securities           = parseFloat(row.securities)    || 0;
+    const otherInvestments     = parseFloat(row.other_assets)  || 0;
+    const dividendReceivables  = parseFloat(row.receivables)   || 0;
+    const cash                 = parseFloat(row.cash)          || 0;
+    const totalAssets = securities + otherInvestments + dividendReceivables + cash;
+
+    const accrualFees = parseFloat(row.management_fees) || 0;
+    const totalLiabilities = accrualFees;
+
+    const totalCapital = ciRows
+      .filter(function(r) { return r.date <= end; })
+      .reduce(function(s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    const totalEquity = parseFloat(row.total_equity) || 0;
+    const retainedEarnings = totalEquity - totalCapital;
+
+    const outstandingShares = parseFloat(row.total_units) || 0;
+    const ntaPerShare = parseFloat(row.nta) || 0;
+
+    return {
+      fy: fy.label, endDate: end,
+      securities: securities, otherInvestments: otherInvestments,
+      dividendReceivables: dividendReceivables, cash: cash, totalAssets: totalAssets,
+      accrualFees: accrualFees, totalLiabilities: totalLiabilities,
+      totalCapital: totalCapital, retainedEarnings: retainedEarnings, totalEquity: totalEquity,
+      outstandingShares: outstandingShares, ntaPerShare: ntaPerShare
+    };
+  });
+
+  return rows;
+}
+
 /* ── Password update ─────────────────────────────────────── */
 async function mpUpdatePassword(newPassword) {
   const { error } = await sb.auth.updateUser({ password: newPassword });

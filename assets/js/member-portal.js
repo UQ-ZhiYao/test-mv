@@ -32,6 +32,8 @@ let PRODUCT_TYPES = {};
 let NTA_LOAD_ERROR = null;
 let INCOME_STATEMENT = [];
 let INCOME_STATEMENT_ERROR = null;
+let BALANCE_SHEET = [];
+let BALANCE_SHEET_ERROR = null;
 
 function mpInitials(name){
   if(!name) return '—';
@@ -2405,6 +2407,32 @@ function pgFinancialResults(){
   // Slice data to active FY
   function slice(arr){return arr.filter(function(_,i){return activeFY.indexOf(FY[i])>=0;});}
 
+  // ── Shared live-statement table helpers (Income Statement + Balance Sheet) ──
+  function fsRow(dataset,label,key,bold,fmtFn,highlight){
+    var style='font-size:.84rem;'+(bold?'font-weight:600;color:var(--fg-1)':'font-weight:400;color:var(--fg-2)');
+    var rowBg=highlight?' style="background:var(--blue-bg);border-bottom:1px solid var(--border)"':' style="border-bottom:1px solid var(--border)"';
+    return '<tr'+rowBg+'><td style="padding:9px 16px;'+style+'">'+label+'</td>'
+      +dataset.map(function(r){
+        var v=r[key];
+        if(v===null||v===undefined) return '<td style="padding:9px 16px;text-align:right;'+style+'">—</td>';
+        var vc=v<0?'color:var(--red)':(bold&&v>0?'color:var(--green)':'');
+        var txt;
+        if(fmtFn){ txt=v===0?'—':(v<0?('('+fmtFn(Math.abs(v))+')'):fmtFn(v)); }
+        else { txt=v===0?'—':(v<0?('('+fmtFull(v)+')'):fmtFull(v)); }
+        return '<td style="padding:9px 16px;text-align:right;'+style+(vc?';'+vc:'')+'">'+txt+'</td>';
+      }).join('')
+      +'</tr>';
+  }
+  function fsThead(dataset,unitLabel){
+    return '<thead><tr style="border-bottom:1px solid var(--border);background:var(--gray-100)">'
+      +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">Item ('+unitLabel+')</th>'
+      +dataset.map(function(r){return '<th style="padding:9px 16px;text-align:right;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">'+r.fy+'</th>';}).join('')
+      +'</tr></thead>';
+  }
+  var fmtUnits=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});};
+  var fmtCents=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  var fmtNta=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});};
+
   var chart='',table='';
   if(activeFRTab==='income'){
     if(INCOME_STATEMENT_ERROR){
@@ -2416,57 +2444,47 @@ function pgFinancialResults(){
         {v:INCOME_STATEMENT.map(function(r){return r.revenue;}),   color:'#1565C0', label:'Revenue'},
         {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#2E7D32', label:'NPAT'}
       ]);
-      var isRow=function(label,key,bold,fmtFn,highlight){
-        var style='font-size:.84rem;'+(bold?'font-weight:600;color:var(--fg-1)':'font-weight:400;color:var(--fg-2)');
-        var rowBg=highlight?' style="background:var(--blue-bg);border-bottom:1px solid var(--border)"':' style="border-bottom:1px solid var(--border)"';
-        return '<tr'+rowBg+'><td style="padding:9px 16px;'+style+'">'+label+'</td>'
-          +INCOME_STATEMENT.map(function(r){
-            var v=r[key];
-            if(v===null||v===undefined) return '<td style="padding:9px 16px;text-align:right;'+style+'">—</td>';
-            var vc=v<0?'color:var(--red)':(bold&&v>0?'color:var(--green)':'');
-            var txt;
-            if(fmtFn){ txt=v===0?'—':(v<0?('('+fmtFn(Math.abs(v))+')'):fmtFn(v)); }
-            else { txt=v===0?'—':(v<0?('('+fmtFull(v)+')'):fmtFull(v)); }
-            return '<td style="padding:9px 16px;text-align:right;'+style+(vc?';'+vc:'')+'">'+txt+'</td>';
-          }).join('')
-          +'</tr>';
-      };
-      var isThead='<thead><tr style="border-bottom:1px solid var(--border);background:var(--gray-100)">'
-        +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">Item (RM)</th>'
-        +INCOME_STATEMENT.map(function(r){return '<th style="padding:9px 16px;text-align:right;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">'+r.fy+'</th>';}).join('')
-        +'</tr></thead>';
-      var fmtUnits=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});};
-      var fmtCents=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});};
-      table='<table style="width:100%;border-collapse:collapse">'+isThead+'<tbody>'
-        +isRow('Dividend Income','dividendIncome',false)
-        +isRow('Interest Income','interestIncome',false)
-        +isRow('Revenue / Total Income','revenue',true,null,true)
-        +isRow('Management Cost','managementCost',false)
-        +isRow('Gross Income','grossIncome',true,null,true)
-        +isRow('Realised Profit &amp; Loss','realizedPnl',false)
-        +isRow('Unrealised Profit &amp; Loss','unrealizedPnl',false)
-        +isRow('Other Income / (Expenses)','otherIncomeExpense',false)
-        +isRow('Profit before Tax','profitBeforeTax',true,null,true)
-        +isRow('Tax Paid','tax',false)
-        +isRow('Net Income / Profit after Tax (NPAT)','netIncome',true,null,true)
-        +isRow('Outstanding Shares (Units)','outstandingShares',false,fmtUnits)
-        +isRow('EPS (cents)','epsCents',false,fmtCents)
+      table='<table style="width:100%;border-collapse:collapse">'+fsThead(INCOME_STATEMENT,'RM')+'<tbody>'
+        +fsRow(INCOME_STATEMENT,'Dividend Income','dividendIncome',false)
+        +fsRow(INCOME_STATEMENT,'Interest Income','interestIncome',false)
+        +fsRow(INCOME_STATEMENT,'Revenue / Total Income','revenue',true,null,true)
+        +fsRow(INCOME_STATEMENT,'Management Cost','managementCost',false)
+        +fsRow(INCOME_STATEMENT,'Gross Income','grossIncome',true,null,true)
+        +fsRow(INCOME_STATEMENT,'Realised Profit &amp; Loss','realizedPnl',false)
+        +fsRow(INCOME_STATEMENT,'Unrealised Profit &amp; Loss','unrealizedPnl',false)
+        +fsRow(INCOME_STATEMENT,'Other Income / (Expenses)','otherIncomeExpense',false)
+        +fsRow(INCOME_STATEMENT,'Profit before Tax','profitBeforeTax',true,null,true)
+        +fsRow(INCOME_STATEMENT,'Tax Paid','tax',false)
+        +fsRow(INCOME_STATEMENT,'Net Income / Profit after Tax (NPAT)','netIncome',true,null,true)
+        +fsRow(INCOME_STATEMENT,'Outstanding Shares (Units)','outstandingShares',false,fmtUnits)
+        +fsRow(INCOME_STATEMENT,'EPS (cents)','epsCents',false,fmtCents)
         +'</tbody></table>';
     }
   } else if(activeFRTab==='balance'){
-    chart=barChartFR(activeFY,[
-      {v:slice(BALANCE.equityInv),  color:'#1565C0',label:'Equity'},
-      {v:slice(BALANCE.cashMM),     color:'#F59E0B',label:'Cash'},
-      {v:slice(BALANCE.fixedIncome),color:'#2E7D32',label:'Fixed Inc.'},
-    ]);
-    table='<table style="width:100%;border-collapse:collapse">'+thead()+'<tbody>'
-      +tRow('Total Assets (RM)',BALANCE.totalAssets,fmt,true)
-      +tRow('— Equity Investments (RM)',BALANCE.equityInv,fmt,false)
-      +tRow('— Cash & MM (RM)',BALANCE.cashMM,fmt,false)
-      +tRow('— Fixed Income (RM)',BALANCE.fixedIncome,fmt,false)
-      +tRow('Total Liabilities (RM)',BALANCE.liabilities,fmt,false)
-      +tRow('Net Asset Value (RM)',BALANCE.equity,fmt,true)
-      +'</tbody></table>';
+    if(BALANCE_SHEET_ERROR){
+      table='<div style="padding:24px;color:var(--red);font-size:.86rem">Could not load balance sheet — '+BALANCE_SHEET_ERROR+'</div>';
+    } else if(!BALANCE_SHEET.length){
+      table='<div style="padding:24px;color:var(--fg-3);font-size:.86rem">No financial years defined yet — add rows to fy_settings to see the balance sheet.</div>';
+    } else {
+      chart=barChartFR(BALANCE_SHEET.map(function(r){return r.fy;}),[
+        {v:BALANCE_SHEET.map(function(r){return r.totalAssets;}), color:'#1565C0', label:'Total Assets'},
+        {v:BALANCE_SHEET.map(function(r){return r.totalEquity;}), color:'#2E7D32', label:'Total Equity'}
+      ]);
+      table='<table style="width:100%;border-collapse:collapse">'+fsThead(BALANCE_SHEET,'RM')+'<tbody>'
+        +fsRow(BALANCE_SHEET,'Securities','securities',false)
+        +fsRow(BALANCE_SHEET,'Other Investments','otherInvestments',false)
+        +fsRow(BALANCE_SHEET,'Dividend Receivables','dividendReceivables',false)
+        +fsRow(BALANCE_SHEET,'Cash &amp; Cash Equivalents','cash',false)
+        +fsRow(BALANCE_SHEET,'Total Assets','totalAssets',true,null,true)
+        +fsRow(BALANCE_SHEET,'Accrual Fees','accrualFees',false)
+        +fsRow(BALANCE_SHEET,'Total Liabilities','totalLiabilities',true,null,true)
+        +fsRow(BALANCE_SHEET,'Total Capital','totalCapital',false)
+        +fsRow(BALANCE_SHEET,'Retained Earnings','retainedEarnings',false)
+        +fsRow(BALANCE_SHEET,'Total Equities','totalEquity',true,null,true)
+        +fsRow(BALANCE_SHEET,'Outstanding Shares (Units)','outstandingShares',false,fmtUnits)
+        +fsRow(BALANCE_SHEET,'NTA per Share','ntaPerShare',false,fmtNta)
+        +'</tbody></table>';
+    }
   } else if(activeFRTab==='cashflow'){
     chart=barChartFR(activeFY,[
       {v:slice(CASHFLOW.fromOps),color:'#2E7D32',label:'Operating'},

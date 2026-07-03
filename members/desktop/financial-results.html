@@ -295,14 +295,16 @@ var S = { page:'financialresults', period:'ytd', txf:'all' };
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
-  return (typeof mpLoadIncomeStatement==='function') ? mpLoadIncomeStatement() : [];
-}).then(function(rows){
-  INCOME_STATEMENT = rows || [];
-  INCOME_STATEMENT_ERROR = null;
-}).catch(function(e){
-  INCOME_STATEMENT = [];
-  INCOME_STATEMENT_ERROR = (e && e.message) || 'Unknown error';
-  console.warn('Income statement load failed:', INCOME_STATEMENT_ERROR);
+  return Promise.allSettled([
+    (typeof mpLoadIncomeStatement==='function') ? mpLoadIncomeStatement() : Promise.resolve([]),
+    (typeof mpLoadBalanceSheet==='function') ? mpLoadBalanceSheet() : Promise.resolve([])
+  ]);
+}).then(function(results){
+  if(results[0].status==='fulfilled'){ INCOME_STATEMENT = results[0].value || []; INCOME_STATEMENT_ERROR = null; }
+  else { INCOME_STATEMENT = []; INCOME_STATEMENT_ERROR = (results[0].reason && results[0].reason.message) || 'Unknown error'; console.warn('Income statement load failed:', INCOME_STATEMENT_ERROR); }
+
+  if(results[1].status==='fulfilled'){ BALANCE_SHEET = results[1].value || []; BALANCE_SHEET_ERROR = null; }
+  else { BALANCE_SHEET = []; BALANCE_SHEET_ERROR = (results[1].reason && results[1].reason.message) || 'Unknown error'; console.warn('Balance sheet load failed:', BALANCE_SHEET_ERROR); }
 }).finally(function(){
   document.getElementById('mainContent').innerHTML=pgFinancialResults();renderNotifs();
 });
