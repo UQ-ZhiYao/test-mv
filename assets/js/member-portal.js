@@ -351,9 +351,30 @@ function pgDashboard() {
     hi:  cs.unitsHeld*ntaStats.hi,
     lo:  cs.unitsHeld*ntaStats.lo
   } : null;
-  var distCard = dt
-    ? ('<div class="dbig">'+fmtMoneyOrDash(dt.total)+'</div><div class="dsub">'+dt.count+' payment'+(dt.count===1?'':'s')+'</div>'
-      +'<div class="dleg">'+Object.keys(dt.byType).map(function(k){return '<div class="dr"><span class="dl">'+k+'</span><span class="dv">'+fmtMoneyOrDash(dt.byType[k])+'</span></div>';}).join('')+'</div>')
+  var DIST_TYPE_COLOR = {Interim:'var(--blue)', Final:'var(--green)', Special:'var(--orange)'};
+  var paidDists = DISTS.filter(function(d){return d.status==='Paid'&&d.amt>0;});
+  var cardFY = paidDists.length ? paidDists[0].fy : null;
+  var fyDists = cardFY ? paidDists.filter(function(d){return d.fy===cardFY;}) : [];
+  var fyTotal = fyDists.reduce(function(a,d){return a+d.amt;},0);
+  var fyDpsSum = fyDists.reduce(function(a,d){return a+(parseFloat(d.dps)||0);},0);
+  var fyByType = {};
+  fyDists.forEach(function(d){ fyByType[d.type] = (fyByType[d.type]||0) + d.amt; });
+  var typeOrder = ['Interim','Final','Special'];
+  var orderedTypes = typeOrder.filter(function(t){return fyByType[t];})
+    .concat(Object.keys(fyByType).filter(function(t){return typeOrder.indexOf(t)===-1;}));
+  var todayISO = new Date().toISOString().slice(0,10);
+  var upcoming = DISTS.filter(function(d){return d.exRaw && d.exRaw>todayISO;}).sort(function(a,b){return a.exRaw<b.exRaw?-1:1;});
+  var nextDist = upcoming.length ? upcoming[0] : null;
+  var distCard = fyDists.length
+    ? ('<div class="dbig">'+fmtMoneyOrDash(fyTotal)+'</div><div class="dsub">'+fyDists.length+' payment'+(fyDists.length===1?'':'s')+' · <em>'+fyDpsSum.toFixed(2)+' sen DPS</em></div>'
+      +'<div class="dstack">'+orderedTypes.map(function(t){
+        var pct = fyTotal>0 ? (fyByType[t]/fyTotal*100) : 0;
+        return '<span style="width:'+pct.toFixed(1)+'%;background:'+(DIST_TYPE_COLOR[t]||'#9CA3AF')+'"></span>';
+      }).join('')+'</div>'
+      +'<div class="dleg">'+orderedTypes.map(function(t){
+        return '<div class="dr"><span class="dl"><span class="dd" style="background:'+(DIST_TYPE_COLOR[t]||'#9CA3AF')+'"></span>'+t+'</span><span class="dv">'+fmtMoneyOrDash(fyByType[t])+'</span></div>';
+      }).join('')+'</div>'
+      +(nextDist?('<div class="dnxt"><span class="dl">Next ex-date · '+nextDist.fy+'</span><span class="dv">'+nextDist.ex+'</span></div>'):''))
     : ('<div class="dbig">—</div><div class="dsub">No distributions on record</div>');
   return '<div class="ph-xl"><h1>My <span class="acc">Portfolio</span></h1><p>Welcome back, '+memberName+'. Here\'s your investment with ZY-Invest as of '+todayStr+'.</p></div>'
     +'<div class="split"><div class="col-main">'
@@ -370,7 +391,7 @@ function pgDashboard() {
       +'<div style="color:var(--red)">Lowest: '+fmtMoneyOrDash(pvStats.lo)+'</div>'
       +'</div>') : '<div id="pvTip" style="display:none"></div>')
     +'<div class="vact"><button class="bf" onclick="openSR(\'subscribe\')">Subscribe</button><button class="bl" onclick="openSR(\'redeem\')">Redeem</button></div></div></div>'
-    +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="ph"><h3>Distributions'+(dt&&dt.latestFY?(' · '+dt.latestFY):'')+'</h3><button class="lnk" onclick="navigate(\'distributions\')">Details →</button></div><div class="dov">'+distCard+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="ph"><h3>Distributions'+(cardFY?(' · '+cardFY):'')+'</h3><button class="lnk" onclick="navigate(\'distributions\')">Details →</button></div><div class="dov">'+distCard+'</div></div>'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden"><div class="ph"><h3>Fund Resources</h3></div><div class="res-list"><a class="res-item" onclick="navigate(\'statements\')"><span class="ri-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><path d="M9 13h6M9 17h4"/></svg></span><span class="ri-t"><b>Latest Factsheet</b><span>PDF</span></span><span class="ri-arr">→</span></a><a class="res-item" onclick="navigate(\'distributions\')"><span class="ri-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><span class="ri-t"><b>Distribution History</b><span>All FY payments</span></span><span class="ri-arr">→</span></a><a class="res-item" onclick="navigate(\'holdings\')"><span class="ri-ic"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 15l5-5 4 3 7-8"/></svg></span><span class="ri-t"><b>NTA &amp; Holdings</b><span>Portfolio breakdown</span></span><span class="ri-arr">→</span></a></div></div>'
     +'</div></div>';
 }
