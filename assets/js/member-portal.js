@@ -2433,7 +2433,7 @@ function pgFinancialResults(){
   }
   function fsThead(dataset,unitLabel){
     return '<thead><tr style="border-bottom:1px solid var(--border);background:var(--gray-100)">'
-      +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">Item ('+unitLabel+')</th>'
+      +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3);width:300px">Item ('+unitLabel+')</th>'
       +dataset.map(function(r){return '<th style="padding:9px 16px;text-align:right;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">'+r.fy+'</th>';}).join('')
       +'</tr></thead>';
   }
@@ -2460,7 +2460,7 @@ function pgFinancialResults(){
         {v:INCOME_STATEMENT.map(function(r){return r.revenue;}),   color:'#1565C0', label:'Revenue'},
         {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#2E7D32', label:'NPAT'}
       ]);
-      table='<table style="width:100%;border-collapse:collapse">'+fsThead(INCOME_STATEMENT,'RM')+'<tbody>'
+      table='<table style="width:100%;border-collapse:collapse;table-layout:fixed">'+fsThead(INCOME_STATEMENT,'RM')+'<tbody>'
         +fsRow(INCOME_STATEMENT,'Dividend Income','dividendIncome',false)
         +fsRow(INCOME_STATEMENT,'Interest Income','interestIncome',false)
         +fsRow(INCOME_STATEMENT,'Revenue / Total Income','revenue',true,null,true)
@@ -2486,7 +2486,7 @@ function pgFinancialResults(){
         {v:BALANCE_SHEET.map(function(r){return r.totalAssets;}), color:'#1565C0', label:'Assets'},
         {v:BALANCE_SHEET.map(function(r){return r.totalEquity;}), color:'#2E7D32', label:'Equities'}
       ]);
-      table='<table style="width:100%;border-collapse:collapse">'+fsThead(BALANCE_SHEET,'RM')+'<tbody>'
+      table='<table style="width:100%;border-collapse:collapse;table-layout:fixed">'+fsThead(BALANCE_SHEET,'RM')+'<tbody>'
         +fsRow(BALANCE_SHEET,'Securities','securities',false)
         +fsRow(BALANCE_SHEET,'Other Investments','otherInvestments',false)
         +fsRow(BALANCE_SHEET,'Dividend Receivables','dividendReceivables',false)
@@ -2512,7 +2512,7 @@ function pgFinancialResults(){
         {v:CASH_FLOW.map(function(r){return r.netCashInvesting;}), color:'#E65100', label:'CF Investing'},
         {v:CASH_FLOW.map(function(r){return r.netCashFinancing;}), color:'#2E7D32', label:'CF Financing'}
       ]);
-      table='<table style="width:100%;border-collapse:collapse">'+fsThead(CASH_FLOW,'RM')+'<tbody>'
+      table='<table style="width:100%;border-collapse:collapse;table-layout:fixed">'+fsThead(CASH_FLOW,'RM')+'<tbody>'
         +fsRow(CASH_FLOW,'Profit before Tax','profitBeforeTax',false)
         +fsSubheader(CASH_FLOW,'Adjustments for:')
         +fsRow(CASH_FLOW,'Unrealised (Gain) / Loss on Investment','unrealizedAdjustment',false,null,false,true)
@@ -2546,7 +2546,7 @@ function pgFinancialResults(){
         {v:RATIO_ANALYSIS.map(function(r){return r.yieldReturn||0;}), color:'#1565C0', label:'Yield Return'},
         {v:RATIO_ANALYSIS.map(function(r){return r.grossReturn||0;}), color:'#2E7D32', label:'Gross Return'}
       ]);
-      table='<table style="width:100%;border-collapse:collapse">'+fsThead(RATIO_ANALYSIS,'%')+'<tbody>'
+      table='<table style="width:100%;border-collapse:collapse;table-layout:fixed">'+fsThead(RATIO_ANALYSIS,'%')+'<tbody>'
         +fsSectionHeader(RATIO_ANALYSIS,'Profitability')
         +fsRow(RATIO_ANALYSIS,'Gross Margin','grossMargin',false,fmtPctAbs)
         +fsRow(RATIO_ANALYSIS,'PBT Margin','pbtMargin',false,fmtPctAbs)
