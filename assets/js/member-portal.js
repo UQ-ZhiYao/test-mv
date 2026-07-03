@@ -2543,8 +2543,8 @@ function pgFinancialResults(){
       table='<div style="padding:24px;color:var(--fg-3);font-size:.86rem">No financial years defined yet — add rows to fy_settings to see ratio analysis.</div>';
     } else {
       chart=lineChartFR(RATIO_ANALYSIS.map(function(r){return r.fy;}),[
-        {v:RATIO_ANALYSIS.map(function(r){return r.grossMargin||0;}), color:'#1565C0', label:'Gross Margin'},
-        {v:RATIO_ANALYSIS.map(function(r){return r.natMargin||0;}),   color:'#2E7D32', label:'NAT Margin'}
+        {v:RATIO_ANALYSIS.map(function(r){return r.yieldReturn||0;}), color:'#1565C0', label:'Yield Return'},
+        {v:RATIO_ANALYSIS.map(function(r){return r.grossReturn||0;}), color:'#2E7D32', label:'Gross Return'}
       ]);
       table='<table style="width:100%;border-collapse:collapse">'+fsThead(RATIO_ANALYSIS,'%')+'<tbody>'
         +fsSectionHeader(RATIO_ANALYSIS,'Profitability')

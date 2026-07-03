@@ -760,7 +760,7 @@ async function mpLoadRatioAnalysis(incomeStatementRows, balanceSheetRows) {
     const natMargin    = revenue ? (netIncome / revenue) * 100 : null;
 
     // ── Return (average of assets, previous FY defaults to 0) ──
-    const avgAssets = (totalAssets + (prevTotalAssets === null ? 0 : prevTotalAssets)) / 2;
+    const avgAssets = prevTotalAssets === null ? totalAssets : (totalAssets + prevTotalAssets) / 2;
     const yieldReturn    = avgAssets ? (revenue / avgAssets) * 100 : null;
     const grossReturn    = avgAssets ? (grossIncome / avgAssets) * 100 : null;
     const returnOnAsset  = avgAssets ? (netIncome / avgAssets) * 100 : null;
