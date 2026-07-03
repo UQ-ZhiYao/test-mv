@@ -2433,8 +2433,8 @@ function pgFinancialResults(){
   }
   function fsThead(dataset,unitLabel){
     return '<thead><tr style="border-bottom:1px solid var(--border);background:var(--gray-100)">'
-      +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3);width:210px">Item ('+unitLabel+')</th>'
-      +dataset.map(function(r){return '<th style="padding:9px 16px;text-align:right;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">'+r.fy+'</th>';}).join('')
+      +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3);width:300px">Item ('+unitLabel+')</th>'
+      +dataset.map(function(r){return '<th style="padding:9px 16px;text-align:right;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3);width:90px">'+r.fy+'</th>';}).join('')
       +'</tr></thead>';
   }
   function fsSpacer(dataset){
