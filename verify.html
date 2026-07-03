@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify Email — ZY-Invest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1565C0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ZY-Invest">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<style>
+.vbox{text-align:center;padding:8px 0;}
+.vbox h3{margin:18px 0 6px;}
+.vspin{width:54px;height:54px;border:4px solid #e2e8f0;border-top-color:#1565C0;border-radius:50%;margin:0 auto;animation:vrot .8s linear infinite;}
+@keyframes vrot{to{transform:rotate(360deg);}}
+.vicon{width:62px;height:62px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:1.9rem;color:#fff;}
+.vicon.ok{background:#2E7D32;}
+.vicon.bad{background:#DC2626;}
+.vicon.wait{background:#E65100;}
+.vactions{display:flex;flex-direction:column;gap:10px;margin-top:20px;}
+.vactions a.form-submit{text-decoration:none;display:flex;align-items:center;justify-content:center;}
+.resend-wrap{display:flex;flex-direction:column;gap:10px;margin-top:18px;}
+</style>
+</head>
+<body class="motion">
+
+<!-- ===================== INTRO LOADER ===================== -->
+<div id="loader">
+  <div class="ld-panel ld-left"></div>
+  <div class="ld-panel ld-right"></div>
+  <div class="ld-glow"></div>
+  <div class="ld-line"></div>
+  <div class="ld-center">
+    <div class="ld-row">
+      <span class="ld-pct" id="ldPct">0%</span>
+      <div class="ld-mark">
+        <svg class="ld-ring" width="128" height="128" viewBox="0 0 128 128">
+          <circle class="trk" cx="64" cy="64" r="58" fill="none" stroke-width="2"/>
+          <circle class="prg" id="ldProg" cx="64" cy="64" r="58" fill="none" stroke-width="2" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4"/>
+        </svg>
+        <img src="assets/img/logo.png" alt="ZY-Invest">
+      </div>
+      <span class="ld-load" id="ldLoad">loading</span>
+    </div>
+  </div>
+  <div class="ld-brand">ZY-Invest · Smart Investing, Simply Done</div>
+  <div class="ld-skip">Click to skip</div>
+</div>
+
+<!-- ===================== NAV ===================== -->
+<nav class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">
+      <img src="assets/img/logo.png" alt="ZY-Invest">
+      <span class="lt"><b>ZY-Invest</b><span>Smart Investing, Simply Done</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="team.html">Team</a>
+      <a href="about.html">About</a>
+      <a href="login.html" class="nav-cta">Member Login</a>
+    </div>
+    <button class="nav-burger" id="navBurger" aria-label="Open menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <div class="mm-top">
+    <span style="display:flex;align-items:center;"><img src="assets/img/logo.png" alt="ZY-Invest"><b>ZY-Invest</b></span>
+    <button class="mm-close" id="mmClose" aria-label="Close menu">✕</button>
+  </div>
+  <nav class="mm-links">
+    <a href="index.html">Home</a>
+    <a href="team.html">Team</a>
+    <a href="about.html">About</a>
+    <a href="login.html" class="mm-cta">Member Login</a>
+  </nav>
+</div>
+
+<!-- ===================== LIVING BACKGROUND ===================== -->
+<div class="hero" style="position:fixed;inset:0;min-height:100vh;z-index:0;">
+  <canvas id="wp"></canvas>
+  <svg class="skyline" viewBox="0 0 1440 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="skyG" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#1B3A6B" stop-opacity="0.26"/>
+        <stop offset="0.55" stop-color="#1565C0" stop-opacity="0.12"/>
+        <stop offset="1" stop-color="#1E88E5" stop-opacity="0.03"/>
+      </linearGradient>
+      <linearGradient id="skyG2" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#13294D" stop-opacity="0.34"/>
+        <stop offset="1" stop-color="#1565C0" stop-opacity="0.10"/>
+      </linearGradient>
+      <style>
+        .lit{fill:#FFD79A;} .litc{fill:#BFE2FF;}
+        body.motion .tw{animation:tw 3.4s ease-in-out infinite;}
+        body.motion .tw2{animation:tw 4.6s ease-in-out infinite .8s;}
+        body.motion .tw3{animation:tw 2.8s ease-in-out infinite 1.4s;}
+        @keyframes tw{0%,100%{opacity:.25;}50%{opacity:.9;}}
+      </style>
+    </defs>
+    <g fill="url(#skyG)">
+      <rect x="20" y="180" width="70" height="120"/><rect x="96" y="150" width="48" height="150"/>
+      <rect x="150" y="200" width="60" height="100"/><path d="M218 300 V120 l24 -14 24 14 V300 Z"/>
+      <rect x="276" y="168" width="40" height="132"/><rect x="1120" y="160" width="52" height="140"/>
+      <rect x="1178" y="196" width="64" height="104"/><rect x="1248" y="146" width="46" height="154"/>
+      <rect x="1300" y="190" width="60" height="110"/><rect x="1366" y="166" width="74" height="134"/>
+    </g>
+    <g fill="url(#skyG2)">
+      <path d="M338 300 L344 96 L356 40 L362 18 L368 40 L380 96 L386 300 Z"/>
+      <rect x="404" y="150" width="46" height="150"/><rect x="456" y="186" width="40" height="114"/><rect x="506" y="120" width="40" height="180"/>
+      <path d="M584 300 L596 150 L606 78 L632 78 L642 150 L654 300 Z"/><path d="M615 78 L619 36 L623 78 Z"/>
+      <rect x="654" y="118" width="52" height="9"/>
+      <path d="M706 300 L718 150 L728 78 L754 78 L764 150 L776 300 Z"/><path d="M737 78 L741 36 L745 78 Z"/>
+      <rect x="800" y="170" width="44" height="130"/>
+      <rect x="876" y="120" width="12" height="180"/><ellipse cx="882" cy="116" rx="20" ry="13"/><rect x="880" y="58" width="4" height="48"/>
+      <rect x="924" y="156" width="42" height="144"/>
+      <rect x="982" y="86" width="52" height="214"/><rect x="996" y="66" width="24" height="22"/><rect x="1004" y="48" width="8" height="20"/>
+      <rect x="1052" y="172" width="46" height="128"/>
+    </g>
+    <g>
+      <rect class="lit tw" x="610" y="170" width="3" height="3"/><rect class="lit tw2" x="624" y="200" width="3" height="3"/>
+      <rect class="litc tw3" x="616" y="230" width="3" height="3"/><rect class="lit tw2" x="732" y="178" width="3" height="3"/>
+      <rect class="litc tw" x="746" y="212" width="3" height="3"/><rect class="lit tw3" x="724" y="250" width="3" height="3"/>
+      <rect class="litc tw" x="998" y="120" width="3" height="3"/><rect class="lit tw2" x="1014" y="150" width="3" height="3"/>
+    </g>
+  </svg>
+  <div class="hero-fade"></div>
+</div>
+
+<!-- ===================== VERIFY ===================== -->
+<div class="login-wrapper">
+  <div class="login-card reveal in">
+
+    <!-- Left: branding panel -->
+    <div class="login-left">
+      <div class="login-brand">
+        <img src="assets/img/logo.png" alt="ZY-Invest">
+        <h2>Email Verification</h2>
+        <p>Confirming your email secures your account and unlocks access to the investor portal.</p>
+      </div>
+      <div class="login-features">
+        <div class="login-feature"><span class="fdot"></span><span>Real-time portfolio valuation</span></div>
+        <div class="login-feature"><span class="fdot"></span><span>Daily NTA updates</span></div>
+        <div class="login-feature"><span class="fdot"></span><span>Personal IRR computation</span></div>
+        <div class="login-feature"><span class="fdot"></span><span>Distribution history &amp; documents</span></div>
+        <div class="login-feature"><span class="fdot"></span><span>Fund performance analytics</span></div>
+      </div>
+      <div class="login-foot">Email verification via Supabase · Data encrypted in transit</div>
+    </div>
+
+    <!-- Right: verification status -->
+    <div class="login-right">
+      <div id="vState" class="vbox">
+        <div class="vspin" id="vSpin"></div>
+        <h3 id="vTitle">Verifying your email…</h3>
+        <p class="subtitle" id="vMsg">Please wait while we confirm your verification link.</p>
+        <div id="vActions" class="vactions"></div>
+        <div class="resend-wrap" id="resendWrap" style="display:none;">
+          <input type="email" id="resendEmail" class="form-input" placeholder="your@email.com">
+          <button type="button" class="form-submit" id="resendBtn"><span id="resendText">Resend verification email</span><div class="spinner" id="resendSpin"></div></button>
+        </div>
+      </div>
+      <div class="login-back">
+        <a href="login.html">← Member Login</a>
+        &nbsp;·&nbsp;
+        <a href="register.html">Create another account</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-auth.js"></script>
+<script src="assets/js/site.js"></script>
+<script>
+(function(){
+  var spin=document.getElementById('vSpin'), title=document.getElementById('vTitle'), msg=document.getElementById('vMsg'),
+      actions=document.getElementById('vActions'), resendWrap=document.getElementById('resendWrap');
+
+  function icon(kind, glyph){ var d=document.createElement('div'); d.className='vicon '+kind; d.textContent=glyph; spin.replaceWith(d); spin=d; }
+  function btnLink(href,label){ var a=document.createElement('a'); a.href=href; a.className='form-submit'; a.style.display='flex'; a.textContent=label; return a; }
+
+  function render(r){
+    if(r.status==='success'){
+      icon('ok','✓'); title.textContent='Email verified';
+      msg.innerHTML='Your account is now active'+(r.demo?' <span style="font-size:0.78rem;color:#94a3b8;">(demo)</span>':'')+'. You can sign in to the investor portal.';
+      actions.appendChild(btnLink('login.html','Continue to Login →'));
+      try{ localStorage.removeItem('zy_pending_email'); }catch(e){}
+    } else if(r.status==='pending'){
+      icon('wait','✉'); title.textContent='Check your inbox';
+      msg.innerHTML='We sent a verification link to your email. Click it to activate your account — this page will confirm it automatically.';
+      resendWrap.style.display='flex';
+      try{ var pe=localStorage.getItem('zy_pending_email'); if(pe) document.getElementById('resendEmail').value=pe; }catch(e){}
+    } else if(r.status==='expired'){
+      icon('bad','⌛'); title.textContent='Link expired';
+      msg.innerHTML='This verification link has expired. Request a fresh one below.';
+      resendWrap.style.display='flex';
+    } else {
+      icon('bad','✕'); title.textContent='Verification failed';
+      msg.innerHTML=(r.message||'We couldn\u2019t verify this link.')+' You can request a new verification email.';
+      resendWrap.style.display='flex';
+    }
+  }
+
+  (async function(){
+    try{ render(await zyVerifyFromUrl()); }
+    catch(ex){ render({status:'error', message:(ex&&ex.message)||''}); }
+  })();
+
+  // resend
+  var rb=document.getElementById('resendBtn'), rt=document.getElementById('resendText'), rsp=document.getElementById('resendSpin');
+  rb && rb.addEventListener('click', async function(){
+    var email=document.getElementById('resendEmail').value.trim();
+    if(!email){ document.getElementById('resendEmail').focus(); return; }
+    rb.disabled=true; rt.textContent='Sending…'; rsp.style.display='block';
+    try{ await zyResend(email); rt.textContent='Sent ✓'; setTimeout(function(){ rt.textContent='Resend verification email'; rb.disabled=false; rsp.style.display='none'; }, 2200); }
+    catch(ex){ rt.textContent='Resend verification email'; rb.disabled=false; rsp.style.display='none'; }
+  });
+})();
+</script>
+</body>
+</html>
