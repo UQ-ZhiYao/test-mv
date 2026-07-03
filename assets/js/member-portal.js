@@ -496,23 +496,24 @@ function pgTransactions() {
     +'<div class="mc"><div class="lbl">IRR</div><div class="val">—</div><div class="sub">To be calculated</div></div>'
     +'</div>';
   // Same base colours as the admin Capital Injection table (tag-sub/tag-red-type/pill-green/pill-yellow/pill-red)
-  var TYPE_COL   = {Subscription:{bg:'#D1FAE5',fg:'#065F46'}, Redemption:{bg:'#FEE2E2',fg:'#991B1B'}};
-  var STATUS_COL = {Approved:{bg:'#D1FAE5',fg:'#065F46'}, Pending:{bg:'#FEF9C3',fg:'#854D0E'}, Rejected:{bg:'#FEE2E2',fg:'#991B1B'}};
+  // Solid fill + white text, per feedback (was pale badge style before)
+  var TYPE_COL   = {Subscription:{bg:'#16A34A',fg:'#FFFFFF'}, Redemption:{bg:'#DC2626',fg:'#FFFFFF'}};
+  var STATUS_COL = {Approved:{bg:'#16A34A',fg:'#FFFFFF'}, Pending:{bg:'#D97706',fg:'#FFFFFF'}, Rejected:{bg:'#DC2626',fg:'#FFFFFF'}};
   var tabs=types.map(function(t){return '<button class="ftab'+(S.txf===t?' on':'')+'" onclick="filterTx(\''+t+'\')">'+(t==='all'?'All':t+'s')+'</button>';}).join('');
   var LP='padding-left:20px', RP='padding-right:20px;text-align:right';
   var rows=list.map(function(t){
     var tc = TYPE_COL[t.type]   || {bg:'var(--gray-100)',fg:'var(--fg-2)'};
     var sc = STATUS_COL[t.status] || {bg:'var(--gray-100)',fg:'var(--fg-2)'};
-    var unitsColor = t.unitsRaw>0 ? '#065F46' : (t.unitsRaw<0 ? '#991B1B' : 'var(--fg-1)');
+    var unitsColor = t.unitsRaw>0 ? '#16A34A' : (t.unitsRaw<0 ? '#DC2626' : 'var(--fg-1)');
     var unitsTxt = (t.unitsRaw>0?'+':'')+t.unitsRaw.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});
     return '<tr>'
       +'<td style="'+LP+'">'+t.date+'</td>'
-      +'<td style="'+LP+'"><span class="pill" style="background:'+tc.bg+';color:'+tc.fg+'">'+t.type+'</span></td>'
+      +'<td style="'+LP+'"><span class="pill" style="background:'+tc.bg+';color:'+tc.fg+';font-weight:700">'+t.type+'</span></td>'
       +'<td style="'+LP+'">'+t.ref+'</td>'
       +'<td style="'+RP+'">'+t.amt.replace(/^[+\u2212]/,'')+'</td>'
       +'<td style="'+RP+'">'+t.nav+'</td>'
       +'<td style="'+RP+';color:'+unitsColor+'">'+unitsTxt+'</td>'
-      +'<td style="'+RP+'"><span class="pill" style="background:'+sc.bg+';color:'+sc.fg+'">'+t.status+'</span></td>'
+      +'<td style="'+RP+'"><span class="pill" style="background:'+sc.bg+';color:'+sc.fg+';font-weight:700">'+t.status+'</span></td>'
       +'</tr>';
   }).join('');
   return '<div class="ph-xl"><h1><span class="acc">Principal Transactions</span></h1><p>Subscription &amp; redemption history — principal movements only.</p></div>'
