@@ -2253,7 +2253,7 @@ function pgFinancialResults(){
       var yy=yFor(v).toFixed(1);
       var vStr=(v<0?'−':'')+fmtFull(v);
       return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'+
-             '<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#374151">'+vStr+'</text>';
+             '<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7" fill="#374151">'+vStr+'</text>';
     }).join('');
     var zeroLine=(mn<0&&mx>0)?('<line x1="'+padL+'" y1="'+zeroY.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+zeroY.toFixed(1)+'" stroke="#CBD5E1" stroke-width="1.2"/>'):'';
     // Bars — extend from the zero baseline up (positive) or down (negative)
@@ -2278,7 +2278,7 @@ function pgFinancialResults(){
       return '<rect x="'+ox+'" y="'+padYT+'" width="'+SEG+'" height="'+(H-padYT-padYB)+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'))" onmouseleave="frHide()" style="cursor:crosshair"/>';
     }).join('');
     var xL=fyLabels.map(function(l,i){
-      return '<text x="'+(padL+i*SEG+SEG/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="8" fill="#374151">'+l+'</text>';
+      return '<text x="'+(padL+i*SEG+SEG/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="7" fill="#374151">'+l+'</text>';
     }).join('');
     var leg='<div style="display:flex;gap:14px;margin-top:8px;justify-content:center">'+series.map(function(s){
       return '<span style="display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--fg-3)"><span style="width:9px;height:9px;border-radius:2px;background:'+s.color+';display:inline-block"></span>'+s.label+'</span>';
@@ -2286,7 +2286,7 @@ function pgFinancialResults(){
     return '<div style="width:100%">'
       +'<div style="width:'+pctW+';min-width:'+W+'px;max-width:100%;margin-left:auto;position:relative;overflow:visible">'
       +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">'+grid+zeroLine+bars+overlays+xL+'</svg>'
-      +'<div id="frTipEl" style="display:none;position:absolute;background:#0F172A;color:#fff;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;"></div>'
+      +'<div id="frTipEl" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13);"></div>'
       +'</div></div>'+leg;
   }
 
@@ -2306,7 +2306,7 @@ function pgFinancialResults(){
       var yy=(H-padYB-f*(H-padYT-padYB)).toFixed(1),v=mx*f;
       var vStr=v>=1?v.toFixed(1)+'%':v.toFixed(3);
       return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'+
-             '<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#374151">'+vStr+'</text>';
+             '<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7" fill="#374151">'+vStr+'</text>';
     }).join('');
     var paths=series.map(function(s){
       var pts=s.v.map(function(v,i){return {x:px(i),y:py(v),v:v};}).filter(function(p){return p.v>0;});
@@ -2323,14 +2323,14 @@ function pgFinancialResults(){
       var cx=((padL+gi*SEG+SEG/2)/W).toFixed(4);
       return '<rect x="'+ox+'" y="'+padYT+'" width="'+SEG+'" height="'+(H-padYT-padYB)+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'))" onmouseleave="frHide()" style="cursor:crosshair"/>';
     }).join('');
-    var xL=fyLabels.map(function(l,i){return '<text x="'+px(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="8" fill="#374151">'+l+'</text>';}).join('');
+    var xL=fyLabels.map(function(l,i){return '<text x="'+px(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="7" fill="#374151">'+l+'</text>';}).join('');
     var leg='<div style="display:flex;gap:14px;margin-top:8px;justify-content:center">'+series.map(function(s){
       return '<span style="display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--fg-3)"><span style="width:14px;height:2px;background:'+s.color+';display:inline-block;border-radius:2px"></span>'+s.label+'</span>';
     }).join('')+'</div>';
     return '<div style="width:100%">'
       +'<div style="width:'+pctWL+';min-width:'+W+'px;max-width:100%;margin-left:auto;position:relative">'
       +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">'+grid+paths+lineOverlays+xL+'</svg>'
-      +'<div id="frTipEl" style="display:none;position:absolute;background:#0F172A;color:#fff;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;"></div>'
+      +'<div id="frTipEl" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13);"></div>'
       +'</div></div>'+leg;
   }
 
@@ -2365,11 +2365,12 @@ function pgFinancialResults(){
     } else {
       chart=barChartFR(INCOME_STATEMENT.map(function(r){return r.fy;}),[
         {v:INCOME_STATEMENT.map(function(r){return r.revenue;}),   color:'#93C5FD', label:'Revenue'},
-        {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#1565C0', label:'Net Income'}
+        {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#1565C0', label:'NPAT'}
       ]);
-      var isRow=function(label,key,bold,fmtFn){
+      var isRow=function(label,key,bold,fmtFn,highlight){
         var style='font-size:.84rem;'+(bold?'font-weight:600;color:var(--fg-1)':'font-weight:400;color:var(--fg-2)');
-        return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:9px 16px;'+style+'">'+label+'</td>'
+        var rowBg=highlight?' style="background:var(--blue-bg);border-bottom:1px solid var(--border)"':' style="border-bottom:1px solid var(--border)"';
+        return '<tr'+rowBg+'><td style="padding:9px 16px;'+style+'">'+label+'</td>'
           +INCOME_STATEMENT.map(function(r){
             var v=r[key];
             if(v===null||v===undefined) return '<td style="padding:9px 16px;text-align:right;'+style+'">—</td>';
@@ -2381,7 +2382,7 @@ function pgFinancialResults(){
           }).join('')
           +'</tr>';
       };
-      var isThead='<thead><tr style="border-bottom:1px solid var(--border)">'
+      var isThead='<thead><tr style="border-bottom:1px solid var(--border);background:var(--gray-100)">'
         +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">Item (RM)</th>'
         +INCOME_STATEMENT.map(function(r){return '<th style="padding:9px 16px;text-align:right;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">'+r.fy+'</th>';}).join('')
         +'</tr></thead>';
@@ -2390,15 +2391,15 @@ function pgFinancialResults(){
       table='<table style="width:100%;border-collapse:collapse">'+isThead+'<tbody>'
         +isRow('Dividend Income','dividendIncome',false)
         +isRow('Interest Income','interestIncome',false)
-        +isRow('Revenue / Total Income','revenue',true)
+        +isRow('Revenue / Total Income','revenue',true,null,true)
         +isRow('Management Cost','managementCost',false)
-        +isRow('Gross Income','grossIncome',true)
+        +isRow('Gross Income','grossIncome',true,null,true)
         +isRow('Realised Profit &amp; Loss','realizedPnl',false)
         +isRow('Unrealised Profit &amp; Loss','unrealizedPnl',false)
         +isRow('Other Income / (Expenses)','otherIncomeExpense',false)
-        +isRow('Profit before Tax','profitBeforeTax',true)
+        +isRow('Profit before Tax','profitBeforeTax',true,null,true)
         +isRow('Tax Paid','tax',false)
-        +isRow('Net Income / Profit after Tax','netIncome',true)
+        +isRow('Net Income / Profit after Tax (NPAT)','netIncome',true,null,true)
         +isRow('Outstanding Shares (Units)','outstandingShares',false,fmtUnits)
         +isRow('EPS (cents)','epsCents',false,fmtCents)
         +'</tbody></table>';
@@ -2446,14 +2447,14 @@ function pgFinancialResults(){
   }
 
   var tabs=[{id:'income',label:'Income Statement'},{id:'balance',label:'Balance Sheet'},{id:'cashflow',label:'Cash Flow'},{id:'ratios',label:'Ratio Analysis'}];
-  var tabBar='<div style="display:inline-flex;gap:2px;background:var(--gray-100);border-radius:10px;padding:4px;margin-bottom:24px;">'
+  var tabBar='<div style="display:inline-flex;gap:2px;background:var(--gray-100);border-radius:10px;padding:4px;flex:none;">'
     +tabs.map(function(t){
       var on=t.id===activeFRTab;
       return '<button onclick="window._frTab=\''+t.id+'\';renderMain(true)" style="font:inherit;font-size:.82rem;font-weight:'+(on?'700':'500')+';padding:8px 14px;border-radius:8px;border:none;background:'+(on?'#fff':'none')+';color:'+(on?'var(--blue)':'var(--fg-3)')+';cursor:pointer;box-shadow:'+(on?'0 1px 4px rgba(0,0,0,.1)':'none')+';white-space:nowrap;">'+t.label+'</button>';
     }).join('')+'</div>';
 
-  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Financial <span class="acc">Results</span></h1><p>Annual income, balance sheet, cash flow &amp; ratios.</p></div>'
-    +tabBar
+  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%">'
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px"><div class="ph-xl" style="margin-bottom:0"><h1>Financial <span class="acc">Results</span></h1><p>Annual income, balance sheet, cash flow &amp; ratios.</p></div>'+tabBar+'</div>'
     +'<div style="margin-bottom:20px">'+chart+'</div>'
     +'<div style="margin-bottom:4px">'+table+'</div></div>';
 }
@@ -2463,15 +2464,15 @@ function frTip(e,txt,cxStr){
   var parts=txt.split('|');
   var fy=parts[0].replace('FY:','');
   var lines=parts.slice(1);
-  el.innerHTML='<div style="font-size:.76rem;font-weight:600;color:rgba(255,255,255,.55);margin-bottom:7px;letter-spacing:.04em">'+fy+'</div>'
+  el.innerHTML='<div style="font-size:.76rem;font-weight:600;color:#64748B;margin-bottom:7px;letter-spacing:.04em">'+fy+'</div>'
     +lines.map(function(l){
       var cc=l.split('::');
       var color=cc[0]; var rest=cc[1]||l;
       var kv=rest.split(': ');
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
         +'<span style="width:8px;height:8px;border-radius:50%;background:'+color+';flex-shrink:0"></span>'
-        +'<span style="font-size:.8rem;color:rgba(255,255,255,.85);flex:1">'+kv[0]+'</span>'
-        +'<span style="font-size:.8rem;font-weight:700;color:#fff;margin-left:14px">'+kv[1]+'</span>'
+        +'<span style="font-size:.8rem;color:#374151;flex:1">'+kv[0]+'</span>'
+        +'<span style="font-size:.8rem;font-weight:700;color:#0F172A;margin-left:14px">'+kv[1]+'</span>'
         +'</div>';
     }).join('');
   var tipW=200;
