@@ -155,6 +155,19 @@
 <!-- SUBSCRIBE / REDEEM MODALS -->
 <div class="sr-scrim" id="srScrim" onclick="closeSR()"></div>
 
+<!-- TRANSACTION DOCUMENT VIEWER -->
+<div class="sr-scrim" id="txDocScrim" onclick="closeTxDoc()"></div>
+<div class="sr-modal" id="txDocModal" style="width:560px;height:auto;max-height:86vh;">
+  <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex:none;">
+    <div>
+      <h3 style="margin:0;font-size:1.05rem;font-weight:600;color:var(--fg-1)">Transaction Document</h3>
+      <div id="txDocRef" style="font-size:.8rem;color:var(--fg-3);margin-top:2px;font-family:var(--font-mono)">—</div>
+    </div>
+    <button onclick="closeTxDoc()" style="background:none;border:none;font-size:1.2rem;color:var(--fg-3);cursor:pointer">&#x2715;</button>
+  </div>
+  <div id="txDocBody" style="padding:20px 24px;overflow-y:auto;flex:1"></div>
+</div>
+
 <div class="sr-modal" id="subModal">
   <div class="sr-head"><div><h3>Subscribe — Add Funds</h3><div class="sr-sub">Transfer to the fund's bank account, then submit your deposit details below.</div></div><button class="sr-x" onclick="closeSR()">&#x2715;</button></div>
   <div class="sr-body">
@@ -289,7 +302,7 @@
 <script src="../../assets/js/member-api.js"></script>
 <script src="../../assets/js/member-portal.js"></script>
 <script>
-var S = { page:'dashboard', period:'ytd', txf:'all' };
+var S = { page:'transactions', period:'ytd', txf:'all' };
 // [init removed for standalone page]
 
 // Page init

@@ -487,13 +487,14 @@ function pgTransactions() {
   var all=TXS.filter(function(t){return t.type==='Subscription'||t.type==='Redemption';});
   var list=S.txf==='all'?all:all.filter(function(t){return t.type===S.txf;});
   var approved=all.filter(function(t){return t.status==='Approved';});
-  var totalSub=approved.filter(function(t){return t.type==='Subscription';}).reduce(function(a,t){return a+(t.amtRaw||0);},0);
   var totalUnits=approved.reduce(function(a,t){return a+(t.unitsRaw||0);},0);
+  var realizedPnl = CAPITAL_SUMMARY.realizedPnl||0;
+  var pnlColor = realizedPnl>0 ? 'var(--green)' : (realizedPnl<0 ? 'var(--red)' : 'var(--fg-1)');
   var cards='<div class="mrow" style="margin-bottom:16px">'
     +'<div class="mc"><div class="lbl">No. of Transactions</div><div class="val">'+all.length+'</div><div class="sub">Subscriptions &amp; redemptions</div></div>'
-    +'<div class="mc"><div class="lbl">Total Invested</div><div class="val b">RM '+totalSub.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="sub">Approved subscriptions</div></div>'
+    +'<div class="mc"><div class="lbl">Total Invested</div><div class="val b">'+fmtMoneyOrDash(CAPITAL_SUMMARY.totalCost)+'</div><div class="sub">AVCO cost basis</div></div>'
     +'<div class="mc"><div class="lbl">Net Units</div><div class="val">'+totalUnits.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4})+'</div><div class="sub">Approved, net of redemptions</div></div>'
-    +'<div class="mc"><div class="lbl">IRR</div><div class="val">—</div><div class="sub">To be calculated</div></div>'
+    +'<div class="mc"><div class="lbl">Realized P&amp;L</div><div class="val" style="color:'+pnlColor+'">'+fmtMoneyOrDash(realizedPnl)+'</div><div class="sub">From redemptions, AVCO method</div></div>'
     +'</div>';
   // Same base colours as the admin Capital Injection table (tag-sub/tag-red-type/pill-green/pill-yellow/pill-red)
   // Solid fill + white text, per feedback (was pale badge style before)
@@ -509,7 +510,8 @@ function pgTransactions() {
     var sc = STATUS_COL[t.status] || {bg:'var(--gray-100)',fg:'var(--fg-2)'};
     var unitsColor = t.unitsRaw>0 ? 'var(--green)' : (t.unitsRaw<0 ? 'var(--red)' : 'var(--fg-1)');
     var unitsTxt = (t.unitsRaw>0?'+':'')+t.unitsRaw.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});
-    return '<tr>'
+    var refEsc = String(t.ref).replace(/'/g,"\\'");
+    return '<tr style="cursor:pointer" onclick="openTxDoc(\''+refEsc+'\')" title="Click to view document">'
       +'<td style="'+LP+'">'+t.date+'</td>'
       +'<td style="'+LP+'"><span class="pill" style="background:'+tc.bg+';color:'+tc.fg+'">'+t.type+'</span></td>'
       +'<td style="'+LP+'">'+t.ref+'</td>'
@@ -2543,6 +2545,39 @@ function openSR(type){
 function closeSR(){
   document.querySelectorAll('.sr-modal').forEach(function(m){m.classList.remove('vis');});
   document.getElementById('srScrim').classList.remove('vis');
+}
+
+// ── Transaction document viewer (Transactions page row click) ──────────────
+function openTxDoc(ref){
+  var t = TXS.filter(function(x){return x.ref===ref;})[0];
+  var refEl = document.getElementById('txDocRef');
+  var body  = document.getElementById('txDocBody');
+  var modal = document.getElementById('txDocModal');
+  var scrim = document.getElementById('txDocScrim');
+  if(!modal || !scrim || !body) return; // modal not present on this page
+  if(refEl) refEl.textContent = ref;
+  if(t && t.doc){
+    var url = t.doc;
+    var ext = (url.split('?')[0].split('.').pop() || '').toLowerCase();
+    var html;
+    if(['jpg','jpeg','png','gif','webp'].indexOf(ext) > -1){
+      html = '<img src="'+url+'" style="width:100%;border-radius:8px;border:1px solid var(--border);display:block">';
+    } else {
+      html = '<iframe src="'+url+'" title="Document" style="width:100%;height:460px;border-radius:8px;border:1px solid var(--border);display:block"></iframe>';
+    }
+    html += '<a href="'+url+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;font-size:.83rem;font-weight:600;color:var(--blue);text-decoration:none;padding:7px 13px;border:1px solid var(--blue);border-radius:8px;margin-top:12px">↗ Open in new tab</a>';
+    body.innerHTML = html;
+  } else {
+    body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:260px;color:var(--fg-3);font-size:.85rem;gap:10px"><span style="font-size:2.5rem">📄</span>No document attached</div>';
+  }
+  modal.classList.add('vis');
+  scrim.classList.add('vis');
+}
+function closeTxDoc(){
+  var modal = document.getElementById('txDocModal');
+  var scrim = document.getElementById('txDocScrim');
+  if(modal) modal.classList.remove('vis');
+  if(scrim) scrim.classList.remove('vis');
 }
 function simFileUpload(who){
   if(who==='sub'){subFileSet=true;document.getElementById('subDrop').classList.add('filled');document.getElementById('subFname').textContent='deposit-slip.pdf · attached';document.getElementById('sfFile').classList.remove('show-err');}

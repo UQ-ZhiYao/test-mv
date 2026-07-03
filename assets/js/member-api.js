@@ -182,7 +182,7 @@ async function mpLoadCapitalSummary(userId) {
 /* ── Transactions (from capital_injection — this member's own rows) ── */
 async function mpLoadTransactions(userId) {
   const { data, error } = await sb.from('capital_injection')
-    .select('reference_id, type, amount, units, nta, date, status')
+    .select('reference_id, type, amount, units, nta, date, status, document')
     .eq('uid', userId)
     .order('date', { ascending: false });
   if (error) throw error;
@@ -201,7 +201,8 @@ async function mpLoadTransactions(userId) {
               ? '\u2212RM ' + Math.abs(amt).toLocaleString('en-MY',{minimumFractionDigits:2})
               : '+RM ' + Math.abs(amt).toLocaleString('en-MY',{minimumFractionDigits:2}),
       amtRaw: t.type === 'Redemption' ? -Math.abs(amt) : Math.abs(amt),
-      status: t.status || 'Pending'
+      status: t.status || 'Pending',
+      doc:    t.document || null
     };
   });
 }
