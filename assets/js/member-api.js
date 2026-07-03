@@ -361,6 +361,141 @@ async function mpLoadFundOverview() {
   return data;
 }
 
+/* ── Income Statement (fund-wide, per financial year) ────────
+   Revenue        = Dividend Income (dividend, status='Received', by ex_date)
+                   + Interest Income (transaction_others, category='Interests')
+   Management Cost = Δ nta_daily.management_fees over the FY (cumulative column,
+                     so FY cost = value at end_date − value at start_date)
+                   + remuneration rows dated within the FY
+   Gross Income    = Revenue − Management Cost
+   Realised P&L    = settlement.pnl dated within the FY
+   Other Inc/Exp   = transaction_others where category != 'Interests'
+   Unrealised P&L  = solved backward (see below) — the only line we can't
+                     source directly from a table.
+   Profit before Tax = Gross Income + Realised P&L + Unrealised P&L + Other
+   Tax             = 0 (none charged to date)
+   Net Income      = Profit before Tax − Tax
+
+   Unrealised P&L derivation ("special case 1"):
+   Total Equity = Contributed Capital + Cumulative Net Income − Cumulative
+   Distributions Paid  (standard equity roll-forward identity), so:
+     NetIncome(FY) = TotalEquity(FY end) − TotalCapital(FY end)
+                     − CumulativeNetIncomeBeforeFY
+                     + CumulativeDistributionsPaid(through FY end)
+   That gives an independent, balance-sheet-derived Net Income for the FY.
+   Since Gross Income, Realised P&L and Other Inc/Exp are all independently
+   known, whatever's left over must be the Unrealised P&L:
+     UnrealisedP&L(FY) = NetIncome(FY) − GrossIncome − RealisedP&L − OtherIncExp
+   FYs are processed oldest-first so each FY's cumulative-net-income-before
+   figure is built up from the ones already solved.                     */
+async function mpLoadIncomeStatement() {
+  const pageSize = 1000;
+  async function fetchAllNta() {
+    let all = [], page = 0;
+    while (true) {
+      const { data, error } = await sb.from('nta_daily')
+        .select('date, total_equity, management_fees')
+        .order('date', { ascending: true })
+        .range(page * pageSize, page * pageSize + pageSize - 1);
+      if (error) throw error;
+      if (!data || !data.length) break;
+      all = all.concat(data);
+      if (data.length < pageSize) break;
+      page++;
+    }
+    return all;
+  }
+
+  const [fyRes, divRes, otherRes, remRes, settlRes, ciRes, distRes, ntaRows] = await Promise.all([
+    sb.from('fy_settings').select('*').order('start_date', { ascending: true }),
+    sb.from('dividend').select('amount, ex_date, status'),
+    sb.from('transaction_others').select('amount, date, category'),
+    sb.from('remuneration').select('amount, date'),
+    sb.from('settlement').select('pnl, date'),
+    sb.from('capital_injection').select('amount, date, status').eq('status', 'Approved'),
+    sb.from('distributions').select('amount, pay_date, status'),
+    fetchAllNta()
+  ]);
+  if (fyRes.error) throw fyRes.error;
+  const FYS       = fyRes.data || [];
+  const divRows   = divRes.data || [];
+  const otherRows = otherRes.data || [];
+  const remRows   = remRes.data || [];
+  const settlRows = settlRes.data || [];
+  const ciRows    = ciRes.data || [];
+  const distRows  = distRes.data || [];
+
+  function ntaAtOrBefore(dateStr) {
+    let result = null;
+    for (let i = 0; i < ntaRows.length; i++) {
+      if (ntaRows[i].date <= dateStr) result = ntaRows[i]; else break;
+    }
+    return result;
+  }
+  function inRange(d, start, end) { return d && d >= start && d <= end; }
+  function isInterest(cat) { return (cat || '').trim().toLowerCase() === 'interests'; }
+
+  let cumNetIncomeBefore = 0;
+  const rows = FYS.map(function(fy) {
+    const start = fy.start_date, end = fy.end_date;
+
+    const dividendIncome = divRows
+      .filter(function(r) { return r.status === 'Received' && inRange(r.ex_date, start, end); })
+      .reduce(function(s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    const interestIncome = otherRows
+      .filter(function(r) { return isInterest(r.category) && inRange(r.date, start, end); })
+      .reduce(function(s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    const revenue = dividendIncome + interestIncome;
+
+    const ntaEnd = ntaAtOrBefore(end);
+    const ntaStart = ntaAtOrBefore(start);
+    const mgmtFeeDelta = (ntaEnd ? parseFloat(ntaEnd.management_fees) || 0 : 0)
+                        - (ntaStart ? parseFloat(ntaStart.management_fees) || 0 : 0);
+    const remInFY = remRows
+      .filter(function(r) { return inRange(r.date, start, end); })
+      .reduce(function(s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    const managementCost = mgmtFeeDelta + remInFY;
+
+    const grossIncome = revenue - managementCost;
+
+    const realizedPnl = settlRows
+      .filter(function(r) { return inRange(r.date, start, end); })
+      .reduce(function(s, r) { return s + (parseFloat(r.pnl) || 0); }, 0);
+
+    const otherIncomeExpense = otherRows
+      .filter(function(r) { return !isInterest(r.category) && inRange(r.date, start, end); })
+      .reduce(function(s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+
+    // Special case 1 — equity roll-forward derived Net Income
+    const totalEquityEnd  = ntaEnd ? (parseFloat(ntaEnd.total_equity) || 0) : 0;
+    const totalCapitalEnd = ciRows
+      .filter(function(r) { return r.date <= end; })
+      .reduce(function(s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    const cumDistPaidThroughEnd = distRows
+      .filter(function(r) { return r.status === 'Paid' && r.pay_date && r.pay_date <= end; })
+      .reduce(function(s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+
+    const netIncomeFromEquity = totalEquityEnd - totalCapitalEnd - cumNetIncomeBefore + cumDistPaidThroughEnd;
+    const unrealizedPnl = netIncomeFromEquity - grossIncome - realizedPnl - otherIncomeExpense;
+
+    const profitBeforeTax = grossIncome + realizedPnl + unrealizedPnl + otherIncomeExpense;
+    const tax = 0;
+    const netIncome = profitBeforeTax - tax;
+
+    cumNetIncomeBefore += netIncome;
+
+    return {
+      fy: fy.label, startDate: start, endDate: end,
+      dividendIncome: dividendIncome, interestIncome: interestIncome, revenue: revenue,
+      managementCost: managementCost, grossIncome: grossIncome,
+      realizedPnl: realizedPnl, unrealizedPnl: unrealizedPnl, otherIncomeExpense: otherIncomeExpense,
+      profitBeforeTax: profitBeforeTax, tax: tax, netIncome: netIncome
+    };
+  });
+
+  return rows;
+}
+
 /* ── Password update ─────────────────────────────────────── */
 async function mpUpdatePassword(newPassword) {
   const { error } = await sb.auth.updateUser({ password: newPassword });

@@ -295,6 +295,15 @@ var S = { page:'financialresults', period:'ytd', txf:'all' };
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
+  return (typeof mpLoadIncomeStatement==='function') ? mpLoadIncomeStatement() : [];
+}).then(function(rows){
+  INCOME_STATEMENT = rows || [];
+  INCOME_STATEMENT_ERROR = null;
+}).catch(function(e){
+  INCOME_STATEMENT = [];
+  INCOME_STATEMENT_ERROR = (e && e.message) || 'Unknown error';
+  console.warn('Income statement load failed:', INCOME_STATEMENT_ERROR);
+}).finally(function(){
   document.getElementById('mainContent').innerHTML=pgFinancialResults();renderNotifs();
 });
 </script>
