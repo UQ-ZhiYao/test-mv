@@ -29,13 +29,26 @@ async function mpSaveProfile(userId, updates) {
 }
 
 /* ── NTA History (from nta_daily: date, nta) ────────────────
-   Buckets: YTD / 1Y / 3Y / ALL (no 1D — daily granularity IS the data) */
+   Buckets: YTD / 1Y / 3Y / ALL (no 1D — daily granularity IS the data)
+   Paginated: a daily table since fund inception easily exceeds
+   PostgREST's default ~1000-row response cap, which silently
+   truncated the series (e.g. stopping years short of "today"). */
 async function mpLoadNTA() {
-  const { data, error } = await sb.from('nta_daily')
-    .select('date, nta')
-    .order('date', { ascending: true });
-  if (error) throw error;
-  const all = (data || []).filter(r => r.date && r.nta !== null && r.nta !== undefined);
+  const pageSize = 1000;
+  let all = [];
+  let page = 0;
+  while (true) {
+    const { data, error } = await sb.from('nta_daily')
+      .select('date, nta')
+      .order('date', { ascending: true })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    if (error) throw error;
+    if (!data || !data.length) break;
+    all = all.concat(data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+  all = all.filter(r => r.date && r.nta !== null && r.nta !== undefined);
   const now = new Date();
 
   function bucket(rows) {
