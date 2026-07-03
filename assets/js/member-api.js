@@ -665,12 +665,10 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
       .reduce(function(s, r) { return s + (parseFloat(r.cashflow) || 0); }, 0);
 
     const receivables = bs.dividendReceivables || 0;
-    const changeReceivables = prevReceivables === null ? 0 : (prevReceivables - receivables);
+    const changeReceivables = receivables - (prevReceivables === null ? 0 : prevReceivables);
 
-    // Accrual Fees is a liability, so the sign convention flips vs. an
-    // asset: an INCREASE in the liability is a SOURCE of cash (positive).
     const accrualFees = bs.accrualFees || 0;
-    const changeAccrualFees = prevAccrualFees === null ? 0 : (accrualFees - prevAccrualFees);
+    const changeAccrualFees = accrualFees - (prevAccrualFees === null ? 0 : prevAccrualFees);
 
     const cashflowFromOps = profitBeforeTax + unrealizedAdjustment + realizedAdjustment
       + proceedsSecurities + proceedsOtherAssets + changeReceivables + changeAccrualFees;
