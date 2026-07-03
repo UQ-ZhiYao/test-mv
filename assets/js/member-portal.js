@@ -424,12 +424,22 @@ function productColorMap(){
   return m;
 }
 
-function piePanel(title, entries, colMap) {
+// Dark blue → light blue → grey gradient, assigned by rank (largest slice = darkest)
+function pieGradientColor(idx, total){
+  var stops=[[13,71,161],[21,101,192],[30,136,229],[66,165,245],[144,202,249],[176,190,197],[156,163,175]];
+  if(total<=1) return 'rgb('+stops[0].join(',')+')';
+  var t=idx/(total-1), pos=t*(stops.length-1);
+  var i0=Math.floor(pos), i1=Math.min(stops.length-1,i0+1), f=pos-i0;
+  var c0=stops[i0], c1=stops[i1];
+  var r=Math.round(c0[0]+(c1[0]-c0[0])*f), g=Math.round(c0[1]+(c1[1]-c0[1])*f), b=Math.round(c0[2]+(c1[2]-c0[2])*f);
+  return 'rgb('+r+','+g+','+b+')';
+}
+function piePanel(title, entries) {
   var cx=150,cy=150,R=132,ir=100;
   var total=entries.reduce(function(s,e){return s+e[1];},0);
   var ang=-Math.PI/2;
-  var paths=entries.map(function(e){
-    var col=colMap[e[0]]||'#9CA3AF';
+  var paths=entries.map(function(e,idx){
+    var col=pieGradientColor(idx,entries.length);
     var sweep=(e[1]/total)*2*Math.PI;
     var ea=ang+sweep;
     var x1=(cx+R*Math.cos(ang)).toFixed(2),y1=(cy+R*Math.sin(ang)).toFixed(2);
@@ -440,7 +450,7 @@ function piePanel(title, entries, colMap) {
     var d='M'+x1+' '+y1+' A'+R+' '+R+' 0 '+la+' 1 '+x2+' '+y2+' L'+x3+' '+y3+' A'+ir+' '+ir+' 0 '+la+' 0 '+x4+' '+y4+'Z';
     ang=ea;
     var tipLabel=e[0].replace(/"/g,'&quot;')+': '+e[1].toFixed(1)+'%';
-    return '<path d="'+d+'" fill="'+col+'" stroke="none" data-tip="'+tipLabel+'" onmouseenter="showPieTip(event,this.dataset.tip)" onmouseout="hidePieTip()" style="cursor:pointer"/>';
+    return '<path d="'+d+'" fill="'+col+'" stroke="none" data-tip="'+tipLabel+'" onmouseenter="showPieTip(event,this.dataset.tip)" onmousemove="showPieTip(event,this.dataset.tip)" onmouseout="hidePieTip()" style="cursor:pointer"/>';
   }).join('');
   return '<div class="panel" style="display:flex;flex-direction:column">'
     +'<div class="ph"><h3>'+title+'</h3></div>'
@@ -456,6 +466,7 @@ function piePanel(title, entries, colMap) {
 
 function pgHoldings() {
   var htHold = holdingsTotals();
+  var myValue = (NTA_PRICE>0 && CAPITAL_SUMMARY.unitsHeld) ? CAPITAL_SUMMARY.unitsHeld*NTA_PRICE : null;
   var secs={},insts={};
   HOLDINGS.forEach(function(h){
     secs[h.sec]=(secs[h.sec]||0)+h.al;
@@ -463,6 +474,11 @@ function pgHoldings() {
   });
   var secEntries=Object.entries(secs).sort(function(a,b){return b[1]-a[1];});
   var instEntries=Object.entries(insts).sort(function(a,b){return b[1]-a[1];});
+  var topSec = secEntries.length ? secEntries[0] : null;
+  var FOCUS_THRESHOLD = 40; // % — below this, portfolio reads as diversified rather than concentrated
+  var isFocused = topSec && topSec[1] >= FOCUS_THRESHOLD;
+  var focusLabel = isFocused ? topSec[0] : 'Diversify';
+  var focusSub   = isFocused ? (topSec[1].toFixed(1)+'% of portfolio') : 'No dominant sector';
   var hRows=HOLDINGS.map(function(h){
     var col=SC[h.sec]||'#9CA3AF';
     return '<tr>'
@@ -472,11 +488,11 @@ function pgHoldings() {
       +'<td><div class="ac"><div class="ac-bar"><span style="width:'+Math.min(100,Math.round(h.al/14.2*100))+'%;background:'+(h.inst==='Cash'?'var(--orange)':'var(--blue)')+'"></span></div><span class="ac-pct">'+h.al.toFixed(1)+'%</span></div></td>'
       +'</tr>';
   }).join('');
-  return '<div class="ph-xl"><h1>My <span class="acc">Holdings</span></h1><p>Full portfolio breakdown as of '+new Date().toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})+' · Total value '+fmtMoneyOrDash(htHold.value)+'</p></div>'
+  return '<div class="ph-xl"><h1>My <span class="acc">Holdings</span></h1><p>Full portfolio breakdown as of '+new Date().toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'})+'</p></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr 220px;gap:14px;margin-bottom:16px;align-items:start">'
-    +piePanel('Sector Allocation',secEntries,SC)
-    +piePanel('Instrument Type',instEntries,productColorMap())
-    +'<div style="display:flex;flex-direction:column;gap:12px"><div class="mc"><div class="lbl">Total Value</div><div class="val">'+fmtMoneyOrDash(htHold.value)+'</div><div class="sub">—</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val'+(htHold.pnl>0?' g':'')+'">'+fmtMoneyOrDash(htHold.pnl)+'</div><div class="sub">'+((htHold.value!==null&&htHold.cost)?('▲ '+((htHold.pnl/htHold.cost)*100).toFixed(2)+'% total return'):'—')+'</div></div><div class="mc"><div class="lbl">Positions</div><div class="val">'+HOLDINGS.length+'</div><div class="sub">Across all instruments</div></div></div>'
+    +piePanel('Sector Allocation',secEntries)
+    +piePanel('Instrument Type',instEntries)
+    +'<div style="display:flex;flex-direction:column;gap:12px"><div class="mc"><div class="lbl">Total Portfolio Value</div><div class="val">'+fmtMoneyOrDash(myValue)+'</div><div class="sub">—</div></div><div class="mc"><div class="lbl">Focus Sector</div><div class="val">'+focusLabel+'</div><div class="sub">'+focusSub+'</div></div><div class="mc"><div class="lbl">Positions</div><div class="val">'+HOLDINGS.length+'</div><div class="sub">Across all instruments</div></div></div>'
     +'</div>'
     +'<div class="panel"><div class="ph"><h3>All Positions</h3></div>'
     +'<table class="tbl"><thead><tr><th>Instrument</th><th>Product</th><th>Sector</th><th style="width:160px">Allocation</th></tr></thead><tbody>'+(hRows||'<tr><td colspan="4" style="padding:20px;color:var(--fg-3)">No holdings on record</td></tr>')+'</tbody></table></div>';
@@ -2703,7 +2719,17 @@ function doLogin(){
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 // Run immediately — script is at end of body so DOM is ready
-function showPieTip(e,txt){var t=document.getElementById('pieTip');if(!t)return;t.textContent=txt;t.style.opacity='1';var x=e.clientX+14,y=e.clientY-36;t.style.left=x+'px';t.style.top=y+'px';}
+function ensurePieTip(){
+  var t=document.getElementById('pieTip');
+  if(!t){
+    t=document.createElement('div');
+    t.id='pieTip';
+    t.style.cssText='position:fixed;opacity:0;transition:opacity .12s;pointer-events:none;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:7px 11px;font-size:.78rem;font-weight:600;color:#0F172A;box-shadow:0 6px 20px rgba(0,0,0,.13);z-index:999;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  return t;
+}
+function showPieTip(e,txt){var t=ensurePieTip();t.textContent=txt;t.style.opacity='1';t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-36)+'px';}
 function hidePieTip(){var t=document.getElementById('pieTip');if(t)t.style.opacity='0';}
 document.addEventListener('mousemove',function(e){var t=document.getElementById('pieTip');if(t&&t.style.opacity!=='0'){t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-36)+'px';}});
 // [init removed for standalone page]
