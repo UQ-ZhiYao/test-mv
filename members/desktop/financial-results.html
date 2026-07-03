@@ -305,6 +305,16 @@ loadLiveData().then(function(){
 
   if(results[1].status==='fulfilled'){ BALANCE_SHEET = results[1].value || []; BALANCE_SHEET_ERROR = null; }
   else { BALANCE_SHEET = []; BALANCE_SHEET_ERROR = (results[1].reason && results[1].reason.message) || 'Unknown error'; console.warn('Balance sheet load failed:', BALANCE_SHEET_ERROR); }
+
+  // Cash flow is derived from the two statements above, so it runs after them
+  return (typeof mpLoadCashFlow==='function') ? mpLoadCashFlow(INCOME_STATEMENT, BALANCE_SHEET) : [];
+}).then(function(cfRows){
+  CASH_FLOW = cfRows || [];
+  CASH_FLOW_ERROR = null;
+}).catch(function(e){
+  CASH_FLOW = [];
+  CASH_FLOW_ERROR = (e && e.message) || 'Unknown error';
+  console.warn('Cash flow load failed:', CASH_FLOW_ERROR);
 }).finally(function(){
   document.getElementById('mainContent').innerHTML=pgFinancialResults();renderNotifs();
 });

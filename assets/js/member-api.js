@@ -583,6 +583,97 @@ async function mpLoadBalanceSheet() {
   return rows;
 }
 
+/* ── Cash Flow (fund-wide, per financial year) ───────────────
+   Reuses Income Statement (Profit before Tax) and Balance Sheet
+   (Securities / Other Investments / Dividend Receivables) rows already
+   loaded on the page — no need to re-derive them from nta_daily here.
+   Changes in operating assets follow the standard indirect-method sign
+   convention: an INCREASE in a non-cash asset is a USE of cash
+   (negative), a decrease is a SOURCE of cash (positive) —
+   change = previous balance − current balance.
+   Cash beginning/ending is chained forward FY by FY; the very first
+   FY's beginning balance is seeded from nta_daily.cash at/just before
+   that FY's start_date (there's no prior FY to chain from).          */
+async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
+  const [fyRes, ciRes, distRes] = await Promise.all([
+    sb.from('fy_settings').select('*').order('start_date', { ascending: true }),
+    sb.from('capital_injection').select('amount, date, status').eq('status', 'Approved'),
+    sb.from('distributions').select('amount, pay_date, status')
+  ]);
+  if (fyRes.error) throw fyRes.error;
+  const FYS      = fyRes.data || [];
+  const ciRows   = ciRes.data || [];
+  const distRows = distRes.data || [];
+
+  function inRange(d, start, end) { return d && d >= start && d <= end; }
+
+  const isByFy = {}; (incomeStatementRows || []).forEach(function(r) { isByFy[r.fy] = r; });
+  const bsByFy = {}; (balanceSheetRows   || []).forEach(function(r) { bsByFy[r.fy] = r; });
+
+  // Seed cash-beginning for the first FY from nta_daily, since there's
+  // no prior FY to chain the opening balance from.
+  let seedCash = 0;
+  if (FYS.length) {
+    const { data } = await sb.from('nta_daily')
+      .select('date, cash')
+      .lte('date', FYS[0].start_date)
+      .order('date', { ascending: false })
+      .limit(1);
+    if (data && data.length) seedCash = parseFloat(data[0].cash) || 0;
+  }
+
+  let prevSecurities = null, prevOtherAssets = null, prevReceivables = null, prevCashEnd = null;
+
+  const rows = FYS.map(function(fy) {
+    const start = fy.start_date, end = fy.end_date;
+    const is = isByFy[fy.label] || {};
+    const bs = bsByFy[fy.label] || {};
+
+    const profitBeforeTax = is.profitBeforeTax || 0;
+
+    const securities  = bs.securities || 0;
+    const otherAssets  = bs.otherInvestments || 0;
+    const receivables  = bs.dividendReceivables || 0;
+
+    const changeSecurities  = prevSecurities  === null ? 0 : (prevSecurities  - securities);
+    const changeOtherAssets = prevOtherAssets === null ? 0 : (prevOtherAssets - otherAssets);
+    const changeReceivables = prevReceivables === null ? 0 : (prevReceivables - receivables);
+
+    const cashflowFromOps = profitBeforeTax + changeSecurities + changeOtherAssets + changeReceivables;
+    const incomeTaxPaid = 0;
+    const netCashOperating = cashflowFromOps + incomeTaxPaid;
+
+    const netCashInvesting = 0;
+
+    const dividendPaid = -distRows
+      .filter(function(r) { return r.status === 'Paid' && inRange(r.pay_date, start, end); })
+      .reduce(function(s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    const issuanceOfShares = ciRows
+      .filter(function(r) { return inRange(r.date, start, end); })
+      .reduce(function(s, r) { return s + (parseFloat(r.amount) || 0); }, 0);
+    const netCashFinancing = dividendPaid + issuanceOfShares;
+
+    const netIncreaseInCash = netCashOperating + netCashInvesting + netCashFinancing;
+
+    const cashBeginning = prevCashEnd === null ? seedCash : prevCashEnd;
+    const cashEnding = cashBeginning + netIncreaseInCash;
+
+    prevSecurities = securities; prevOtherAssets = otherAssets; prevReceivables = receivables; prevCashEnd = cashEnding;
+
+    return {
+      fy: fy.label, startDate: start, endDate: end,
+      profitBeforeTax: profitBeforeTax,
+      changeSecurities: changeSecurities, changeOtherAssets: changeOtherAssets, changeReceivables: changeReceivables,
+      cashflowFromOps: cashflowFromOps, incomeTaxPaid: incomeTaxPaid, netCashOperating: netCashOperating,
+      netCashInvesting: netCashInvesting,
+      dividendPaid: dividendPaid, issuanceOfShares: issuanceOfShares, netCashFinancing: netCashFinancing,
+      netIncreaseInCash: netIncreaseInCash, cashBeginning: cashBeginning, cashEnding: cashEnding
+    };
+  });
+
+  return rows;
+}
+
 /* ── Password update ─────────────────────────────────────── */
 async function mpUpdatePassword(newPassword) {
   const { error } = await sb.auth.updateUser({ password: newPassword });

@@ -34,6 +34,8 @@ let INCOME_STATEMENT = [];
 let INCOME_STATEMENT_ERROR = null;
 let BALANCE_SHEET = [];
 let BALANCE_SHEET_ERROR = null;
+let CASH_FLOW = [];
+let CASH_FLOW_ERROR = null;
 
 function mpInitials(name){
   if(!name) return '—';
@@ -2486,18 +2488,32 @@ function pgFinancialResults(){
         +'</tbody></table>';
     }
   } else if(activeFRTab==='cashflow'){
-    chart=barChartFR(activeFY,[
-      {v:slice(CASHFLOW.fromOps),color:'#2E7D32',label:'Operating'},
-      {v:slice(CASHFLOW.fromFin),color:'#1565C0',label:'Financing'},
-    ]);
-    table='<table style="width:100%;border-collapse:collapse">'+thead()+'<tbody>'
-      +tRow('Cash from Operations (RM)',CASHFLOW.fromOps,fmt,false)
-      +tRow('Cash from Investing (RM)',CASHFLOW.fromInv,function(v){return v<0?'('+fmt(-v)+')':fmt(v);},false)
-      +tRow('Cash from Financing (RM)',CASHFLOW.fromFin,fmt,false)
-      +tRow('Net Change in Cash (RM)',CASHFLOW.netChange,fmt,true)
-      +tRow('Opening Cash (RM)',CASHFLOW.openingCash,fmt,false)
-      +tRow('Closing Cash (RM)',CASHFLOW.closingCash,fmt,true)
-      +'</tbody></table>';
+    if(CASH_FLOW_ERROR){
+      table='<div style="padding:24px;color:var(--red);font-size:.86rem">Could not load cash flow — '+CASH_FLOW_ERROR+'</div>';
+    } else if(!CASH_FLOW.length){
+      table='<div style="padding:24px;color:var(--fg-3);font-size:.86rem">No financial years defined yet — add rows to fy_settings to see the cash flow statement.</div>';
+    } else {
+      chart=barChartFR(CASH_FLOW.map(function(r){return r.fy;}),[
+        {v:CASH_FLOW.map(function(r){return r.netIncreaseInCash;}), color:'#1565C0', label:'Net Increase in Cash'},
+        {v:CASH_FLOW.map(function(r){return r.cashEnding;}),        color:'#2E7D32', label:'Cash at FY End'}
+      ]);
+      table='<table style="width:100%;border-collapse:collapse">'+fsThead(CASH_FLOW,'RM')+'<tbody>'
+        +fsRow(CASH_FLOW,'Profit before Tax','profitBeforeTax',false)
+        +fsRow(CASH_FLOW,'Changes in Securities','changeSecurities',false)
+        +fsRow(CASH_FLOW,'Changes in Other Assets','changeOtherAssets',false)
+        +fsRow(CASH_FLOW,'Changes in Receivables','changeReceivables',false)
+        +fsRow(CASH_FLOW,'Cashflow from Operations','cashflowFromOps',true,null,true)
+        +fsRow(CASH_FLOW,'Income Tax Paid','incomeTaxPaid',false)
+        +fsRow(CASH_FLOW,'Net Cash from Operating Activities','netCashOperating',true,null,true)
+        +fsRow(CASH_FLOW,'Net Cash from Investing Activities','netCashInvesting',true,null,true)
+        +fsRow(CASH_FLOW,'Dividend Paid','dividendPaid',false)
+        +fsRow(CASH_FLOW,'Issuance of New Shares','issuanceOfShares',false)
+        +fsRow(CASH_FLOW,'Net Cash from Financing Activities','netCashFinancing',true,null,true)
+        +fsRow(CASH_FLOW,'Net Increase in Cash &amp; Bank Balances','netIncreaseInCash',true,null,true)
+        +fsRow(CASH_FLOW,'Cash &amp; Bank Balances at Beginning of FY','cashBeginning',false)
+        +fsRow(CASH_FLOW,'Cash &amp; Bank Balances at End of FY','cashEnding',true,null,true)
+        +'</tbody></table>';
+    }
   } else {
     chart=lineChartFR(activeFY,[
       {v:slice(RATIOS.roe),      color:'#1565C0',label:'ROE (%)'},
