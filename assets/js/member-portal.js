@@ -256,6 +256,18 @@ function distTotals(){
 }
 function fmtMoneyOrDash(n){ return (n===null||n===undefined||isNaN(n)) ? '—' : 'RM '+n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
+// distributions.type in the DB may be stored as "Interim Dividend",
+// "Final Dividend", etc. rather than the short form — match by
+// substring so colouring/grouping works regardless of exact wording.
+function normalizeDistType(t){
+  if(!t) return 'Other';
+  var low = String(t).toLowerCase();
+  if(low.indexOf('interim')>-1) return 'Interim';
+  if(low.indexOf('final')>-1) return 'Final';
+  if(low.indexOf('special')>-1) return 'Special';
+  return t;
+}
+
 // ── IRR — Newton's method on a signed cashflow timeline ─────────────────────
 // cashflows: [{date:'YYYY-MM-DD', amount:number}] — investments negative,
 // redemptions/distributions/current market value positive. Returns an
@@ -358,7 +370,7 @@ function pgDashboard() {
   var fyTotal = fyDists.reduce(function(a,d){return a+d.amt;},0);
   var fyDpsSum = fyDists.reduce(function(a,d){return a+(parseFloat(d.dps)||0);},0);
   var fyByType = {};
-  fyDists.forEach(function(d){ fyByType[d.type] = (fyByType[d.type]||0) + d.amt; });
+  fyDists.forEach(function(d){ var nt=normalizeDistType(d.type); fyByType[nt] = (fyByType[nt]||0) + d.amt; });
   var typeOrder = ['Interim','Final','Special'];
   var orderedTypes = typeOrder.filter(function(t){return fyByType[t];})
     .concat(Object.keys(fyByType).filter(function(t){return typeOrder.indexOf(t)===-1;}));
@@ -525,7 +537,7 @@ function pgDistributions() {
     var amtCol = d.amt>0 ? 'var(--green)' : 'var(--fg-3)';
     var amtTxt = d.amt>0 ? ('+RM '+d.amt.toFixed(2)) : '—';
     return '<tr><td style="font-weight:700">'+(d.fy||'—')+'</td>'
-      +'<td><span class="pill" style="background:'+(tBg[d.type]||'var(--gray-100)')+';color:'+(tC[d.type]||'var(--fg-2)')+'">'+d.type+'</span></td>'
+      +'<td><span class="pill" style="background:'+(tBg[normalizeDistType(d.type)]||'var(--gray-100)')+';color:'+(tC[normalizeDistType(d.type)]||'var(--fg-2)')+'">'+d.type+'</span></td>'
       +'<td>'+d.ex+'</td><td>'+d.pay+'</td>'
       +'<td style="text-align:right;font-weight:600">'+d.dps+'</td>'
       +'<td style="text-align:right">'+u+'</td>'
