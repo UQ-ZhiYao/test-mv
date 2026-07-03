@@ -2261,18 +2261,18 @@ function pgFinancialResults(){
     var niceMax=Math.ceil(max/step)*step;
     return {min:niceMin,max:niceMax,step:step};
   }
-  // k at 6 digits (100,000+), mil at 9 digits (100,000,000+)
+  // k at 6 digits (100,000+), mil at 9 digits (100,000,000+) — always
+  // whole numbers ("#,##0"), never a decimal point, for consistency
+  // across every axis on every chart.
   function fmtAxisNum(v){
     var av=Math.abs(v);
     var sign=v<0?'−':'';
     if(av>=100000000){
-      var m=av/1000000;
-      return sign+(m%1===0?m.toFixed(0):m.toFixed(1))+'mil';
+      return sign+Math.round(av/1000000).toLocaleString('en-MY')+'mil';
     } else if(av>=100000){
-      var k=av/1000;
-      return sign+(k%1===0?k.toFixed(0):k.toFixed(1))+'k';
+      return sign+Math.round(av/1000).toLocaleString('en-MY')+'k';
     }
-    return sign+av.toLocaleString('en-MY',{maximumFractionDigits:0});
+    return sign+Math.round(av).toLocaleString('en-MY');
   }
   function barChartFR(fyLabels,series){
     var n=fyLabels.length;
@@ -2355,7 +2355,7 @@ function pgFinancialResults(){
     for(var tv=0; tv<=mx+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
     var grid=ticks.map(function(v){
       var yy=py(v).toFixed(1);
-      var vStr=(v%1===0?v.toFixed(0):v.toFixed(1))+'%';
+      var vStr=Math.round(v)+'%';
       return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'+
              '<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7" fill="#374151">'+vStr+'</text>';
     }).join('');
@@ -2467,8 +2467,8 @@ function pgFinancialResults(){
       table='<div style="padding:24px;color:var(--fg-3);font-size:.86rem">No financial years defined yet — add rows to fy_settings to see the balance sheet.</div>';
     } else {
       chart=barChartFR(BALANCE_SHEET.map(function(r){return r.fy;}),[
-        {v:BALANCE_SHEET.map(function(r){return r.totalAssets;}), color:'#1565C0', label:'Total Assets'},
-        {v:BALANCE_SHEET.map(function(r){return r.totalEquity;}), color:'#2E7D32', label:'Total Equity'}
+        {v:BALANCE_SHEET.map(function(r){return r.totalAssets;}), color:'#1565C0', label:'Assets'},
+        {v:BALANCE_SHEET.map(function(r){return r.totalEquity;}), color:'#2E7D32', label:'Equities'}
       ]);
       table='<table style="width:100%;border-collapse:collapse">'+fsThead(BALANCE_SHEET,'RM')+'<tbody>'
         +fsRow(BALANCE_SHEET,'Securities','securities',false)
