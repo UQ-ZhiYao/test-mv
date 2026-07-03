@@ -133,10 +133,17 @@ async function mpLoadHoldings(investorId) {
                 down units+cost at the running average (never at the
                 redemption's own price) — same method used for trade
                 settlement in the admin repo.
-   Total Cost = Avg Cost × Units Held.                                */
+   Total Cost = Avg Cost × Units Held.
+   Realised P&L (redemption leg) = AVCO gain/loss on each redemption:
+   units_redeemed × (sale price − running AVCO cost), same method as
+   trade settlement in the admin repo. Sale price is taken from the
+   row's own `nta` (the NTA the redemption was executed at).
+   Also returns a signed cashflow timeline (Subscriptions negative,
+   Redemptions positive) for IRR — distributions and today's market
+   value are appended by the caller.                                */
 async function mpLoadCapitalSummary(userId) {
   const { data, error } = await sb.from('capital_injection')
-    .select('type, amount, units, date, status')
+    .select('type, amount, units, nta, date, status')
     .eq('uid', userId)
     .eq('status', 'Approved')
     .order('date', { ascending: true });
@@ -145,23 +152,31 @@ async function mpLoadCapitalSummary(userId) {
 
   const unitsHeld = rows.reduce((s, r) => s + (parseFloat(r.units) || 0), 0);
 
-  let runUnits = 0, runCost = 0;
+  let runUnits = 0, runCost = 0, realizedPnl = 0;
+  const cashflows = [];
   rows.forEach(function(r) {
     const u = parseFloat(r.units) || 0;
+    const amt = Math.abs(parseFloat(r.amount) || 0);
     if (u > 0) {
-      runCost  += Math.abs(parseFloat(r.amount) || 0);
+      runCost  += amt;
       runUnits += u;
-    } else if (u < 0 && runUnits > 0) {
+      cashflows.push({ date: r.date, amount: -amt });
+    } else if (u < 0) {
       const sellUnits = Math.min(Math.abs(u), runUnits);
-      const avgCost = runCost / runUnits;
-      runUnits -= sellUnits;
-      runCost   = runUnits > 0 ? runCost - avgCost * sellUnits : 0;
+      if (runUnits > 0 && sellUnits > 0) {
+        const avgCost   = runCost / runUnits;
+        const salePrice = (r.nta != null && r.nta !== '') ? parseFloat(r.nta) : (sellUnits > 0 ? amt / sellUnits : 0);
+        realizedPnl += (salePrice - avgCost) * sellUnits;
+        runUnits -= sellUnits;
+        runCost   = runUnits > 0 ? runCost - avgCost * sellUnits : 0;
+      }
+      cashflows.push({ date: r.date, amount: amt });
     }
   });
   const avgCost   = runUnits > 0 ? runCost / runUnits : 0;
   const totalCost = avgCost * unitsHeld;
 
-  return { unitsHeld: unitsHeld, avgCost: avgCost, totalCost: totalCost };
+  return { unitsHeld: unitsHeld, avgCost: avgCost, totalCost: totalCost, realizedPnl: realizedPnl, cashflows: cashflows };
 }
 
 /* ── Transactions (from capital_injection — this member's own rows) ── */

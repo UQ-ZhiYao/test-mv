@@ -27,7 +27,7 @@ let LIVE_DATA_READY = false;
 let PROFILE = null;
 let AUTH_USER = null;
 let INVESTOR_ID = null;
-let CAPITAL_SUMMARY = { unitsHeld: 0, avgCost: 0, totalCost: 0 };
+let CAPITAL_SUMMARY = { unitsHeld: 0, avgCost: 0, totalCost: 0, realizedPnl: 0, cashflows: [] };
 let PRODUCT_TYPES = {};
 let NTA_LOAD_ERROR = null;
 
@@ -256,6 +256,50 @@ function distTotals(){
 }
 function fmtMoneyOrDash(n){ return (n===null||n===undefined||isNaN(n)) ? '—' : 'RM '+n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
+// ── IRR — Newton's method on a signed cashflow timeline ─────────────────────
+// cashflows: [{date:'YYYY-MM-DD', amount:number}] — investments negative,
+// redemptions/distributions/current market value positive. Returns an
+// annualised percentage, or null if it can't be solved (no sign change,
+// too few points, or failed to converge).
+function computeXIRR(cashflows){
+  if(!cashflows || cashflows.length<2) return null;
+  var pts = cashflows
+    .map(function(c){ return { t:new Date(c.date).getTime(), amt:c.amount }; })
+    .filter(function(p){ return !isNaN(p.t); })
+    .sort(function(a,b){ return a.t-b.t; });
+  if(pts.length<2) return null;
+  var t0 = pts[0].t;
+  var yrs = pts.map(function(p){ return (p.t-t0)/(365*86400000); });
+  var hasPos=false, hasNeg=false;
+  pts.forEach(function(p){ if(p.amt>0) hasPos=true; if(p.amt<0) hasNeg=true; });
+  if(!hasPos || !hasNeg) return null;
+
+  function npv(r){
+    var s=0;
+    for(var i=0;i<pts.length;i++){ s += pts[i].amt/Math.pow(1+r,yrs[i]); }
+    return s;
+  }
+  function dnpv(r){
+    var s=0;
+    for(var i=0;i<pts.length;i++){ if(yrs[i]>0) s += -yrs[i]*pts[i].amt/Math.pow(1+r,yrs[i]+1); }
+    return s;
+  }
+
+  var r=0.1;
+  for(var iter=0; iter<100; iter++){
+    var f=npv(r), fp=dnpv(r);
+    if(!isFinite(f)) return null;
+    if(Math.abs(fp)<1e-10) break;
+    var rNext=r-f/fp;
+    if(!isFinite(rNext)) break;
+    if(rNext<=-0.999) rNext=-0.999;
+    if(Math.abs(rNext-r)<1e-7){ r=rNext; break; }
+    r=rNext;
+  }
+  if(!isFinite(r) || Math.abs(npv(r))>1) return null;
+  return r*100;
+}
+
 function pgDashboard() {
   var txRows=ACTIVITY.map(function(t){
     var ic=t.type==='Distribution'?'dist':t.type==='Redemption'?'red-ic':'sub';
@@ -282,6 +326,19 @@ function pgDashboard() {
   else if(retPct>0){ portfolioRetLbl='▲ '+retPct.toFixed(2)+'% total return'; portfolioRetColor='var(--green)'; }
   else { portfolioRetLbl='0.00% total return'; portfolioRetColor='var(--fg-1)'; }
   var pnlColor = myPnl>0 ? 'var(--green)' : (myPnl<0 ? 'var(--red)' : 'var(--fg-1)');
+  var realisedPnl = (cs.realizedPnl||0) + (dt ? dt.total : 0);
+  var realisedColor = realisedPnl>0 ? 'var(--green)' : (realisedPnl<0 ? 'var(--red)' : 'var(--fg-1)');
+  var totalPnl = (myPnl===null && !realisedPnl) ? null : (myPnl||0)+realisedPnl;
+  var totalPnlColor = totalPnl>0 ? 'var(--green)' : (totalPnl<0 ? 'var(--red)' : 'var(--fg-1)');
+  var irrCashflows = (cs.cashflows||[]).slice();
+  DISTS.filter(function(d){return d.status==='Paid'&&d.amt>0;}).forEach(function(d){
+    irrCashflows.push({date: d.payRaw||d.exRaw, amount:d.amt});
+  });
+  if(myValue!==null && cs.unitsHeld>0){
+    irrCashflows.push({date: new Date().toISOString().slice(0,10), amount: myValue});
+  }
+  var irr = computeXIRR(irrCashflows);
+  var irrColor = (irr===null) ? 'var(--fg-1)' : (irr>0 ? 'var(--green)' : (irr<0 ? 'var(--red)' : 'var(--fg-1)'));
   var ntaStats = ntaHasData(S.period) ? (function(){
     var v = NTA[S.period].v;
     return { cur: v[v.length-1], hi: Math.max.apply(null,v), lo: Math.min.apply(null,v) };
@@ -292,7 +349,7 @@ function pgDashboard() {
     : ('<div class="dbig">—</div><div class="dsub">No distributions on record</div>');
   return '<div class="ph-xl"><h1>My <span class="acc">Portfolio</span></h1><p>Welcome back, '+memberName+'. Here\'s your investment with ZY-Invest as of '+todayStr+'.</p></div>'
     +'<div class="split"><div class="col-main">'
-    +'<div class="mrow"><div class="mc"><div class="lbl">Units Held</div><div class="val">'+(cs.unitsHeld?cs.unitsHeld.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4}):'—')+'</div><div class="sub">Total cost '+fmtMoneyOrDash(cs.totalCost)+'</div></div><div class="mc"><div class="lbl">Current NTA</div><div class="val b">'+(NTA_PRICE>0?('RM '+NTA_PRICE.toFixed(4)):'—')+'</div><div class="sub">Avg cost '+(cs.avgCost?('RM '+cs.avgCost.toFixed(4)+'/unit'):'—')+'</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val" style="color:'+pnlColor+'">'+fmtMoneyOrDash(myPnl)+'</div><div class="sub">Realised —</div></div><div class="mc"><div class="lbl">Annualised IRR</div><div class="val">—</div><div class="sub">Total P&L —</div></div></div>'
+    +'<div class="mrow"><div class="mc"><div class="lbl">Units Held</div><div class="val">'+(cs.unitsHeld?cs.unitsHeld.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4}):'—')+'</div><div class="sub">Total cost '+fmtMoneyOrDash(cs.totalCost)+'</div></div><div class="mc"><div class="lbl">Current NTA</div><div class="val b">'+(NTA_PRICE>0?('RM '+NTA_PRICE.toFixed(4)):'—')+'</div><div class="sub">Avg cost '+(cs.avgCost?('RM '+cs.avgCost.toFixed(4)+'/unit'):'—')+'</div></div><div class="mc"><div class="lbl">Unrealised P&L</div><div class="val" style="color:'+pnlColor+'">'+fmtMoneyOrDash(myPnl)+'</div><div class="sub" style="color:'+realisedColor+'">Realised '+fmtMoneyOrDash(realisedPnl)+'</div></div><div class="mc"><div class="lbl">Annualised IRR</div><div class="val" style="color:'+irrColor+'">'+(irr===null?'—':(irr>=0?'+':'')+irr.toFixed(1)+'%')+'</div><div class="sub" style="color:'+totalPnlColor+'">Total P&L '+fmtMoneyOrDash(totalPnl)+'</div></div></div>'
     +'<div class="panel"><div class="ph"><h3>NTA per Unit</h3><div class="seg">'+segBtn('YTD','ytd')+segBtn('1Y','1y')+segBtn('3Y','3y')+segBtn('ALL','all')+'</div></div>'
     +'<div class="chart-wrap"><div class="chart-main">'+(ntaHasData(S.period)?chartHTML(S.period):ntaEmptyState())+'</div><div class="chart-side"><div><div class="ck">Current NTA</div><div class="cv">'+(ntaStats?('RM '+ntaStats.cur.toFixed(4)):'—')+'</div></div><div><div class="ck">Highest NTA</div><div class="cv">'+(ntaStats?('RM '+ntaStats.hi.toFixed(4)):'—')+'</div></div><div><div class="ck">Lowest NTA</div><div class="cv">'+(ntaStats?('RM '+ntaStats.lo.toFixed(4)):'—')+'</div></div></div></div></div>'
     +'<div class="panel"><div class="ph"><h3>Your Holdings</h3><button class="lnk" onclick="navigate(\'holdings\')">View all →</button></div><table class="tbl"><thead><tr><th>Holding</th><th>Product</th><th>Sector</th><th style="width:36%">Allocation</th></tr></thead><tbody>'+(hl||'<tr><td colspan="4" style="padding:16px 20px;color:var(--fg-3)">No holdings on record</td></tr>')+moreRow+'</tbody></table></div>'
