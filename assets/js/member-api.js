@@ -417,6 +417,13 @@ async function mpLoadIncomeStatement() {
     fetchAllNta()
   ]);
   if (fyRes.error) throw fyRes.error;
+  // Surface anything that came back empty-but-erroring (e.g. RLS) so it's
+  // visible in the console instead of silently showing as RM 0.00.
+  [['dividend', divRes], ['transaction_others', otherRes], ['remuneration', remRes],
+   ['settlement', settlRes], ['capital_injection', ciRes], ['distributions', distRes]]
+    .forEach(function(pair) {
+      if (pair[1].error) console.warn('Income statement: "' + pair[0] + '" query failed — ' + pair[1].error.message);
+    });
   const FYS       = fyRes.data || [];
   const divRows   = divRes.data || [];
   const otherRows = otherRes.data || [];

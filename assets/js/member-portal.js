@@ -2226,42 +2226,51 @@ function pgFinancialResults(){
   });
 
   // Bar chart with hover, right-axis, right-aligned plot area
+  function fmtFull(v){
+    var n=v||0;
+    return Math.abs(n).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
   function barChartFR(fyLabels,series){
-    var maxFY=7;
     var n=fyLabels.length;
     // Width scales with n, capped at 7 FY
-    var barW=36, groupGap=24, padL=16, padR=48, padYT=14, padYB=24;
+    var barW=36, groupGap=24, padL=16, padR=58, padYT=14, padYB=24;
     var SEG=68;
     var W=padL+n*SEG+padR, H=240;
     var pctW=Math.min(100,(n/8*100)).toFixed(1)+'%';
     barW=Math.min(28,Math.floor((SEG-groupGap)/series.length-4));
-    var allV=series.reduce(function(a,s){return a.concat(s.v);},[]).filter(function(v){return v>0;});
-    var mx=Math.max.apply(null,allV)||1;
+    var allV=series.reduce(function(a,s){return a.concat(s.v);},[]);
+    var mx=Math.max.apply(null,allV.concat([0]));
+    var mn=Math.min.apply(null,allV.concat([0]));
+    if(mx===mn){ mx+=1; mn-=1; }
+    var rng=mx-mn;
+    var plotH=H-padYT-padYB;
+    function yFor(v){ return padYT+(mx-v)/rng*plotH; }
+    var zeroY=yFor(0);
     function bx(gi,si){return padL+gi*SEG+(SEG-groupGap-(series.length*barW+(series.length-1)*4))/2+si*(barW+4);}
-    function bH(v){return Math.max(0,(v/mx)*(H-padYT-padYB));}
-    function bY(v){return H-padYB-bH(v);}
-    // Grid lines (right axis)
-    var grid=[0.25,0.5,0.75,1].map(function(f){
-      var yy=(H-padYB-f*(H-padYT-padYB)).toFixed(1);
-      var v=mx*f;
-      var vStr=v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v.toFixed(2);
+    // Grid lines across the actual value range (supports negative)
+    var grid=[0,0.25,0.5,0.75,1].map(function(f){
+      var v=mn+f*rng;
+      var yy=yFor(v).toFixed(1);
+      var vStr=(v<0?'−':'')+fmtFull(v);
       return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'+
              '<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#374151">'+vStr+'</text>';
     }).join('');
-    // Bars (no individual hover)
+    var zeroLine=(mn<0&&mx>0)?('<line x1="'+padL+'" y1="'+zeroY.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+zeroY.toFixed(1)+'" stroke="#CBD5E1" stroke-width="1.2"/>'):'';
+    // Bars — extend from the zero baseline up (positive) or down (negative)
     var bars='';
     series.forEach(function(s,si){
       s.v.forEach(function(v,gi){
-        if(v<=0) return;
-        var h=bH(v).toFixed(1),y=bY(v).toFixed(1),x=bx(gi,si).toFixed(1);
-        bars+='<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" fill="'+s.color+'" rx="2"/>';
+        var yTop=yFor(Math.max(0,v)), yBot=yFor(Math.min(0,v));
+        var h=Math.max(0.5,yBot-yTop);
+        var x=bx(gi,si).toFixed(1);
+        bars+='<rect x="'+x+'" y="'+yTop.toFixed(1)+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+s.color+'" rx="2"/>';
       });
     });
     // Group hover overlay per FY
     var overlays=fyLabels.map(function(fy,gi){
       var tipLines=series.map(function(s){
         var v=s.v[gi];
-        return s.color+'::'+s.label+': '+(v>0?(v>=1000000?(v/1000000).toFixed(2)+'M':v>=1000?(v/1000).toFixed(0)+'K':v.toFixed(2)):'—');
+        return s.color+'::'+s.label+': '+(v<0?('−'+fmtFull(v)):fmtFull(v));
       });
       var tip='FY:'+fy+'|'+tipLines.join('|');
       var ox=(padL+gi*SEG).toFixed(1);
@@ -2276,7 +2285,7 @@ function pgFinancialResults(){
     }).join('')+'</div>';
     return '<div style="width:100%">'
       +'<div style="width:'+pctW+';min-width:'+W+'px;max-width:100%;margin-left:auto;position:relative;overflow:visible">'
-      +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">'+grid+bars+overlays+xL+'</svg>'
+      +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">'+grid+zeroLine+bars+overlays+xL+'</svg>'
       +'<div id="frTipEl" style="display:none;position:absolute;background:#0F172A;color:#fff;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;"></div>'
       +'</div></div>'+leg;
   }
@@ -2364,7 +2373,7 @@ function pgFinancialResults(){
           +INCOME_STATEMENT.map(function(r){
             var v=r[key]||0;
             var vc=v<0?'color:var(--red)':(bold&&v>0?'color:var(--green)':'');
-            var txt=v<0?('('+fmt(Math.abs(v))+')'):fmt(v);
+            var txt=v===0?'—':(v<0?('('+fmtFull(v)+')'):fmtFull(v));
             return '<td style="padding:9px 16px;text-align:right;'+style+(vc?';'+vc:'')+'">'+txt+'</td>';
           }).join('')
           +'</tr>';
