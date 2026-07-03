@@ -608,6 +608,10 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     sb.from('transaction_trading').select('cashflow, product, trade_date')
   ]);
   if (fyRes.error) throw fyRes.error;
+  [['capital_injection', ciRes], ['distributions', distRes], ['transaction_trading', tradeRes]]
+    .forEach(function(pair) {
+      if (pair[1].error) console.warn('Cash flow: "' + pair[0] + '" query failed — ' + pair[1].error.message);
+    });
   const FYS       = fyRes.data || [];
   const ciRows    = ciRes.data || [];
   const distRows  = distRes.data || [];
@@ -643,13 +647,10 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     // (indirect method): a gain is subtracted, a loss is added back.
     const unrealizedAdjustment = -(is.unrealizedPnl || 0);
 
-    const receivables = bs.dividendReceivables || 0;
-    const changeReceivables = prevReceivables === null ? 0 : (prevReceivables - receivables);
-
-    const cashflowFromOps = profitBeforeTax + unrealizedAdjustment + changeReceivables;
-    const incomeTaxPaid = 0;
-    const netCashOperating = cashflowFromOps + incomeTaxPaid;
-
+    // Unit trust convention: buying/selling the fund's own securities IS
+    // the core operating activity (not "investing" — that's how a fund
+    // makes its return), so these sit under Operating, before the
+    // receivables working-capital adjustment.
     const fyTrades = tradeRows.filter(function(r) { return inRange(r.trade_date, start, end); });
     const proceedsSecurities = fyTrades
       .filter(function(r) { return isSecuritiesProduct(r.product); })
@@ -657,7 +658,15 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     const proceedsOtherAssets = fyTrades
       .filter(function(r) { return !isSecuritiesProduct(r.product); })
       .reduce(function(s, r) { return s + (parseFloat(r.cashflow) || 0); }, 0);
-    const netCashInvesting = proceedsSecurities + proceedsOtherAssets;
+
+    const receivables = bs.dividendReceivables || 0;
+    const changeReceivables = prevReceivables === null ? 0 : (prevReceivables - receivables);
+
+    const cashflowFromOps = profitBeforeTax + unrealizedAdjustment + proceedsSecurities + proceedsOtherAssets + changeReceivables;
+    const incomeTaxPaid = 0;
+    const netCashOperating = cashflowFromOps + incomeTaxPaid;
+
+    const netCashInvesting = 0;
 
     const dividendPaid = -distRows
       .filter(function(r) { return r.status === 'Paid' && inRange(r.pay_date, start, end); })
