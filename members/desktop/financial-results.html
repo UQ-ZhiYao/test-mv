@@ -306,15 +306,19 @@ loadLiveData().then(function(){
   if(results[1].status==='fulfilled'){ BALANCE_SHEET = results[1].value || []; BALANCE_SHEET_ERROR = null; }
   else { BALANCE_SHEET = []; BALANCE_SHEET_ERROR = (results[1].reason && results[1].reason.message) || 'Unknown error'; console.warn('Balance sheet load failed:', BALANCE_SHEET_ERROR); }
 
-  // Cash flow is derived from the two statements above, so it runs after them
-  return (typeof mpLoadCashFlow==='function') ? mpLoadCashFlow(INCOME_STATEMENT, BALANCE_SHEET) : [];
-}).then(function(cfRows){
-  CASH_FLOW = cfRows || [];
-  CASH_FLOW_ERROR = null;
-}).catch(function(e){
-  CASH_FLOW = [];
-  CASH_FLOW_ERROR = (e && e.message) || 'Unknown error';
-  console.warn('Cash flow load failed:', CASH_FLOW_ERROR);
+  // Cash Flow and Ratio Analysis are both derived from the two statements
+  // above, so they run after them — but don't depend on each other, so
+  // they load in parallel.
+  return Promise.allSettled([
+    (typeof mpLoadCashFlow==='function') ? mpLoadCashFlow(INCOME_STATEMENT, BALANCE_SHEET) : Promise.resolve([]),
+    (typeof mpLoadRatioAnalysis==='function') ? mpLoadRatioAnalysis(INCOME_STATEMENT, BALANCE_SHEET) : Promise.resolve([])
+  ]);
+}).then(function(results){
+  if(results[0].status==='fulfilled'){ CASH_FLOW = results[0].value || []; CASH_FLOW_ERROR = null; }
+  else { CASH_FLOW = []; CASH_FLOW_ERROR = (results[0].reason && results[0].reason.message) || 'Unknown error'; console.warn('Cash flow load failed:', CASH_FLOW_ERROR); }
+
+  if(results[1].status==='fulfilled'){ RATIO_ANALYSIS = results[1].value || []; RATIO_ANALYSIS_ERROR = null; }
+  else { RATIO_ANALYSIS = []; RATIO_ANALYSIS_ERROR = (results[1].reason && results[1].reason.message) || 'Unknown error'; console.warn('Ratio analysis load failed:', RATIO_ANALYSIS_ERROR); }
 }).finally(function(){
   document.getElementById('mainContent').innerHTML=pgFinancialResults();renderNotifs();
 });

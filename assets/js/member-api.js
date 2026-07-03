@@ -711,6 +711,94 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
   return rows;
 }
 
+/* ── Ratio Analysis (fund-wide, per financial year) ──────────
+   Reuses Income Statement (Revenue, Gross Income, Profit before Tax,
+   Net Income) and Balance Sheet (Total Assets, Total Liabilities,
+   Total Equity, Cash, NTA per Share) rows already loaded on the page.
+   "Average of assets" = (this FY's Total Assets + previous FY's Total
+   Assets) / 2 — previous defaults to 0 for the first FY, same
+   convention as the Cash Flow tab's "Changes in" rows.
+   The "Others" trading stats exclude Cash Funds product entirely.     */
+async function mpLoadRatioAnalysis(incomeStatementRows, balanceSheetRows) {
+  const [fyRes, distRes, tradeRes] = await Promise.all([
+    sb.from('fy_settings').select('*').order('start_date', { ascending: true }),
+    sb.from('distributions').select('dps, ex_date, status'),
+    sb.from('transaction_trading').select('product, trade_date, units, price, fee')
+  ]);
+  if (fyRes.error) throw fyRes.error;
+  const FYS      = fyRes.data || [];
+  const distRows = distRes.data || [];
+  const tradeRows = tradeRes.data || [];
+
+  function inRange(d, start, end) { return d && d >= start && d <= end; }
+  function isCashFunds(p) { return (p || '').trim().toLowerCase() === 'cash funds'; }
+
+  const isByFy = {}; (incomeStatementRows || []).forEach(function(r) { isByFy[r.fy] = r; });
+  const bsByFy = {}; (balanceSheetRows   || []).forEach(function(r) { bsByFy[r.fy] = r; });
+
+  let prevTotalAssets = null;
+
+  const rows = FYS.map(function(fy) {
+    const start = fy.start_date, end = fy.end_date;
+    const is = isByFy[fy.label] || {};
+    const bs = bsByFy[fy.label] || {};
+
+    const revenue        = is.revenue || 0;
+    const grossIncome    = is.grossIncome || 0;
+    const profitBeforeTax = is.profitBeforeTax || 0;
+    const netIncome      = is.netIncome || 0;
+
+    const totalAssets      = bs.totalAssets || 0;
+    const totalLiabilities = bs.totalLiabilities || 0;
+    const totalEquity      = bs.totalEquity || 0;
+    const cash             = bs.cash || 0;
+    const ntaPerShare      = bs.ntaPerShare || 0;
+
+    // ── Profitability ──
+    const grossMargin = revenue ? (grossIncome / revenue) * 100 : null;
+    const pbtMargin    = revenue ? (profitBeforeTax / revenue) * 100 : null;
+    const natMargin    = revenue ? (netIncome / revenue) * 100 : null;
+
+    // ── Return (average of assets, previous FY defaults to 0) ──
+    const avgAssets = (totalAssets + (prevTotalAssets === null ? 0 : prevTotalAssets)) / 2;
+    const yieldReturn    = avgAssets ? (revenue / avgAssets) * 100 : null;
+    const grossReturn    = avgAssets ? (grossIncome / avgAssets) * 100 : null;
+    const returnOnAsset  = avgAssets ? (netIncome / avgAssets) * 100 : null;
+
+    // ── Leverage ──
+    const gearingRatio     = totalEquity ? (totalLiabilities / totalEquity) * 100 : null;
+    const cashReserveRatio = totalAssets ? (cash / totalAssets) * 100 : null;
+
+    // ── Dividend ──
+    const dps = distRows
+      .filter(function(r) { return r.status === 'Paid' && inRange(r.ex_date, start, end); })
+      .reduce(function(s, r) { return s + (parseFloat(r.dps) || 0); }, 0);
+    const dividendYield = ntaPerShare ? ((dps / 100) / ntaPerShare) * 100 : null;
+
+    // ── Others (excludes Cash Funds) ──
+    const fyTrades = tradeRows.filter(function(r) { return inRange(r.trade_date, start, end) && !isCashFunds(r.product); });
+    const numTransactions = fyTrades.length;
+    const totalTradingAmount = fyTrades.reduce(function(s, r) { return s + Math.abs((parseFloat(r.units) || 0) * (parseFloat(r.price) || 0)); }, 0);
+    const totalTradingUnits  = fyTrades.reduce(function(s, r) { return s + Math.abs(parseFloat(r.units) || 0); }, 0);
+    const totalTradingFees   = fyTrades.reduce(function(s, r) { return s + (parseFloat(r.fee) || 0); }, 0);
+    const feesRate = totalTradingAmount ? (totalTradingFees / totalTradingAmount) * 100 : null;
+
+    prevTotalAssets = totalAssets;
+
+    return {
+      fy: fy.label, startDate: start, endDate: end,
+      grossMargin: grossMargin, pbtMargin: pbtMargin, natMargin: natMargin,
+      yieldReturn: yieldReturn, grossReturn: grossReturn, returnOnAsset: returnOnAsset,
+      gearingRatio: gearingRatio, cashReserveRatio: cashReserveRatio,
+      dps: dps, dividendYield: dividendYield,
+      numTransactions: numTransactions, totalTradingAmount: totalTradingAmount,
+      totalTradingUnits: totalTradingUnits, totalTradingFees: totalTradingFees, feesRate: feesRate
+    };
+  });
+
+  return rows;
+}
+
 /* ── Password update ─────────────────────────────────────── */
 async function mpUpdatePassword(newPassword) {
   const { error } = await sb.auth.updateUser({ password: newPassword });

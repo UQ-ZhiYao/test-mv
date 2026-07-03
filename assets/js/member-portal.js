@@ -36,6 +36,8 @@ let BALANCE_SHEET = [];
 let BALANCE_SHEET_ERROR = null;
 let CASH_FLOW = [];
 let CASH_FLOW_ERROR = null;
+let RATIO_ANALYSIS = [];
+let RATIO_ANALYSIS_ERROR = null;
 
 function mpInitials(name){
   if(!name) return '—';
@@ -2438,9 +2440,14 @@ function pgFinancialResults(){
   function fsSpacer(dataset){
     return '<tr><td colspan="'+(dataset.length+1)+'" style="padding:5px 0;border:none"></td></tr>';
   }
+  function fsSectionHeader(dataset,label){
+    return '<tr style="background:var(--gray-50)"><td colspan="'+(dataset.length+1)+'" style="padding:8px 16px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">'+label+'</td></tr>';
+  }
   var fmtUnits=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});};
   var fmtCents=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});};
   var fmtNta=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});};
+  var fmtPctAbs=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'%';};
+  var fmtCount=function(v){return Math.round(v).toLocaleString('en-MY');};
 
   var chart='',table='';
   if(activeFRTab==='income'){
@@ -2530,18 +2537,38 @@ function pgFinancialResults(){
         +'</tbody></table>';
     }
   } else {
-    chart=lineChartFR(activeFY,[
-      {v:slice(RATIOS.roe),      color:'#1565C0',label:'ROE (%)'},
-      {v:slice(RATIOS.netMargin),color:'#2E7D32',label:'Net Margin (%)'},
-    ]);
-    table='<table style="width:100%;border-collapse:collapse">'+thead()+'<tbody>'
-      +tRow('Return on Equity (%)',RATIOS.roe,fmtPct,false)
-      +tRow('Return on Assets (%)',RATIOS.roa,fmtPct,false)
-      +tRow('Net Profit Margin (%)',RATIOS.netMargin,fmtPct,true)
-      +tRow('Expense Ratio (%)',RATIOS.expenseRatio,fmtPct,false)
-      +tRow('Debt-to-Equity',RATIOS.debtEquity,function(v){return v?v.toFixed(3)+'x':'—';},false)
-      +tRow('Current Ratio',RATIOS.currentRatio,function(v){return v?v.toFixed(1)+'x':'—';},false)
-      +'</tbody></table>';
+    if(RATIO_ANALYSIS_ERROR){
+      table='<div style="padding:24px;color:var(--red);font-size:.86rem">Could not load ratio analysis — '+RATIO_ANALYSIS_ERROR+'</div>';
+    } else if(!RATIO_ANALYSIS.length){
+      table='<div style="padding:24px;color:var(--fg-3);font-size:.86rem">No financial years defined yet — add rows to fy_settings to see ratio analysis.</div>';
+    } else {
+      chart=lineChartFR(RATIO_ANALYSIS.map(function(r){return r.fy;}),[
+        {v:RATIO_ANALYSIS.map(function(r){return r.grossMargin||0;}), color:'#1565C0', label:'Gross Margin'},
+        {v:RATIO_ANALYSIS.map(function(r){return r.natMargin||0;}),   color:'#2E7D32', label:'NAT Margin'}
+      ]);
+      table='<table style="width:100%;border-collapse:collapse">'+fsThead(RATIO_ANALYSIS,'%')+'<tbody>'
+        +fsSectionHeader(RATIO_ANALYSIS,'Profitability')
+        +fsRow(RATIO_ANALYSIS,'Gross Margin','grossMargin',false,fmtPctAbs)
+        +fsRow(RATIO_ANALYSIS,'PBT Margin','pbtMargin',false,fmtPctAbs)
+        +fsRow(RATIO_ANALYSIS,'NAT Margin','natMargin',false,fmtPctAbs)
+        +fsSectionHeader(RATIO_ANALYSIS,'Return')
+        +fsRow(RATIO_ANALYSIS,'Yield Return','yieldReturn',false,fmtPctAbs)
+        +fsRow(RATIO_ANALYSIS,'Gross Return','grossReturn',false,fmtPctAbs)
+        +fsRow(RATIO_ANALYSIS,'Return on Asset','returnOnAsset',false,fmtPctAbs)
+        +fsSectionHeader(RATIO_ANALYSIS,'Leverage')
+        +fsRow(RATIO_ANALYSIS,'Gearing Ratio','gearingRatio',false,fmtPctAbs)
+        +fsRow(RATIO_ANALYSIS,'Cash Reserve Ratio','cashReserveRatio',false,fmtPctAbs)
+        +fsSectionHeader(RATIO_ANALYSIS,'Dividend')
+        +fsRow(RATIO_ANALYSIS,'Dividend per Share (sen)','dps',false,fmtCents)
+        +fsRow(RATIO_ANALYSIS,'Dividend Yield','dividendYield',false,fmtPctAbs)
+        +fsSectionHeader(RATIO_ANALYSIS,'Others (excl. Cash Funds)')
+        +fsRow(RATIO_ANALYSIS,'No. of Transactions','numTransactions',false,fmtCount)
+        +fsRow(RATIO_ANALYSIS,'Total Trading Amount (RM)','totalTradingAmount',false)
+        +fsRow(RATIO_ANALYSIS,'Total Trading Units','totalTradingUnits',false,fmtUnits)
+        +fsRow(RATIO_ANALYSIS,'Total Trading Fees (RM)','totalTradingFees',false)
+        +fsRow(RATIO_ANALYSIS,'Fees Rate','feesRate',false,fmtPctAbs)
+        +'</tbody></table>';
+    }
   }
 
   var tabs=[{id:'income',label:'Income Statement'},{id:'balance',label:'Balance Sheet'},{id:'cashflow',label:'Cash Flow'},{id:'ratios',label:'Ratio Analysis'}];
