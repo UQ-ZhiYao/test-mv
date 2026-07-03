@@ -635,7 +635,7 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     if (data && data.length) seedCash = parseFloat(data[0].cash) || 0;
   }
 
-  let prevReceivables = null, prevCashEnd = null;
+  let prevReceivables = null, prevAccrualFees = null, prevCashEnd = null;
 
   const rows = FYS.map(function(fy) {
     const start = fy.start_date, end = fy.end_date;
@@ -643,14 +643,19 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     const bs = bsByFy[fy.label] || {};
 
     const profitBeforeTax = is.profitBeforeTax || 0;
-    // Reverse out the non-cash unrealised P&L embedded in Profit before Tax
-    // (indirect method): a gain is subtracted, a loss is added back.
+    // Reverse out the non-cash Unrealised and Realised P&L embedded in
+    // Profit before Tax (indirect method): a gain is subtracted, a loss
+    // is added back. The actual cash effect of realised trades is
+    // captured separately via Net Proceeds below (the full sale/purchase
+    // cashflow, not just the accounting gain/loss), so reversing Realised
+    // P&L out here avoids double-counting rather than causing it.
     const unrealizedAdjustment = -(is.unrealizedPnl || 0);
+    const realizedAdjustment   = -(is.realizedPnl || 0);
 
     // Unit trust convention: buying/selling the fund's own securities IS
     // the core operating activity (not "investing" — that's how a fund
-    // makes its return), so these sit under Operating, before the
-    // receivables working-capital adjustment.
+    // makes its return), so these sit under Operating as their own lines
+    // (not part of "Adjustments for:"), before the working-capital items.
     const fyTrades = tradeRows.filter(function(r) { return inRange(r.trade_date, start, end); });
     const proceedsSecurities = fyTrades
       .filter(function(r) { return isSecuritiesProduct(r.product); })
@@ -662,7 +667,13 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     const receivables = bs.dividendReceivables || 0;
     const changeReceivables = prevReceivables === null ? 0 : (prevReceivables - receivables);
 
-    const cashflowFromOps = profitBeforeTax + unrealizedAdjustment + proceedsSecurities + proceedsOtherAssets + changeReceivables;
+    // Accrual Fees is a liability, so the sign convention flips vs. an
+    // asset: an INCREASE in the liability is a SOURCE of cash (positive).
+    const accrualFees = bs.accrualFees || 0;
+    const changeAccrualFees = prevAccrualFees === null ? 0 : (accrualFees - prevAccrualFees);
+
+    const cashflowFromOps = profitBeforeTax + unrealizedAdjustment + realizedAdjustment
+      + proceedsSecurities + proceedsOtherAssets + changeReceivables + changeAccrualFees;
     const incomeTaxPaid = 0;
     const netCashOperating = cashflowFromOps + incomeTaxPaid;
 
@@ -681,14 +692,15 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     const cashBeginning = prevCashEnd === null ? seedCash : prevCashEnd;
     const cashEnding = cashBeginning + netIncreaseInCash;
 
-    prevReceivables = receivables; prevCashEnd = cashEnding;
+    prevReceivables = receivables; prevAccrualFees = accrualFees; prevCashEnd = cashEnding;
 
     return {
       fy: fy.label, startDate: start, endDate: end,
-      profitBeforeTax: profitBeforeTax, unrealizedAdjustment: unrealizedAdjustment,
-      changeReceivables: changeReceivables,
+      profitBeforeTax: profitBeforeTax, unrealizedAdjustment: unrealizedAdjustment, realizedAdjustment: realizedAdjustment,
+      proceedsSecurities: proceedsSecurities, proceedsOtherAssets: proceedsOtherAssets,
+      changeReceivables: changeReceivables, changeAccrualFees: changeAccrualFees,
       cashflowFromOps: cashflowFromOps, incomeTaxPaid: incomeTaxPaid, netCashOperating: netCashOperating,
-      proceedsSecurities: proceedsSecurities, proceedsOtherAssets: proceedsOtherAssets, netCashInvesting: netCashInvesting,
+      netCashInvesting: netCashInvesting,
       dividendPaid: dividendPaid, issuanceOfShares: issuanceOfShares, netCashFinancing: netCashFinancing,
       netIncreaseInCash: netIncreaseInCash, cashBeginning: cashBeginning, cashEnding: cashEnding
     };
