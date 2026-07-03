@@ -497,23 +497,26 @@ function pgTransactions() {
     +'</div>';
   // Same base colours as the admin Capital Injection table (tag-sub/tag-red-type/pill-green/pill-yellow/pill-red)
   // Solid fill + white text, per feedback (was pale badge style before)
-  var TYPE_COL   = {Subscription:{bg:'#16A34A',fg:'#FFFFFF'}, Redemption:{bg:'#DC2626',fg:'#FFFFFF'}};
-  var STATUS_COL = {Approved:{bg:'#16A34A',fg:'#FFFFFF'}, Pending:{bg:'#D97706',fg:'#FFFFFF'}, Rejected:{bg:'#DC2626',fg:'#FFFFFF'}};
+  // Matches admin's actual rendering (principal-admin.js: tag-green/tag-red for Type,
+  // pill-ok/pill-warn/pill-rej for Status) — these classes use the theme's real
+  // --green/--red/--orange tokens, not the unused hex block in principal.html's <style>.
+  var TYPE_COL   = {Subscription:{bg:'var(--green-bg)',fg:'var(--green)'}, Redemption:{bg:'var(--red-bg)',fg:'var(--red)'}};
+  var STATUS_COL = {Approved:{bg:'var(--green-bg)',fg:'var(--green)'}, Pending:{bg:'var(--orange-bg)',fg:'var(--orange)'}, Rejected:{bg:'var(--red-bg)',fg:'var(--red)'}};
   var tabs=types.map(function(t){return '<button class="ftab'+(S.txf===t?' on':'')+'" onclick="filterTx(\''+t+'\')">'+(t==='all'?'All':t+'s')+'</button>';}).join('');
   var LP='padding-left:20px', RP='padding-right:20px;text-align:right';
   var rows=list.map(function(t){
     var tc = TYPE_COL[t.type]   || {bg:'var(--gray-100)',fg:'var(--fg-2)'};
     var sc = STATUS_COL[t.status] || {bg:'var(--gray-100)',fg:'var(--fg-2)'};
-    var unitsColor = t.unitsRaw>0 ? '#16A34A' : (t.unitsRaw<0 ? '#DC2626' : 'var(--fg-1)');
+    var unitsColor = t.unitsRaw>0 ? 'var(--green)' : (t.unitsRaw<0 ? 'var(--red)' : 'var(--fg-1)');
     var unitsTxt = (t.unitsRaw>0?'+':'')+t.unitsRaw.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});
     return '<tr>'
       +'<td style="'+LP+'">'+t.date+'</td>'
-      +'<td style="'+LP+'"><span class="pill" style="background:'+tc.bg+';color:'+tc.fg+';font-weight:700">'+t.type+'</span></td>'
+      +'<td style="'+LP+'"><span class="pill" style="background:'+tc.bg+';color:'+tc.fg+'">'+t.type+'</span></td>'
       +'<td style="'+LP+'">'+t.ref+'</td>'
       +'<td style="'+RP+'">'+t.amt.replace(/^[+\u2212]/,'')+'</td>'
       +'<td style="'+RP+'">'+t.nav+'</td>'
       +'<td style="'+RP+';color:'+unitsColor+'">'+unitsTxt+'</td>'
-      +'<td style="'+RP+'"><span class="pill" style="background:'+sc.bg+';color:'+sc.fg+';font-weight:700">'+t.status+'</span></td>'
+      +'<td style="'+RP+'"><span class="pill" style="background:'+sc.bg+';color:'+sc.fg+'">'+t.status+'</span></td>'
       +'</tr>';
   }).join('');
   return '<div class="ph-xl"><h1><span class="acc">Principal Transactions</span></h1><p>Subscription &amp; redemption history — principal movements only.</p></div>'
