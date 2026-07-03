@@ -2431,6 +2431,9 @@ function pgFinancialResults(){
       +dataset.map(function(r){return '<th style="padding:9px 16px;text-align:right;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--fg-3)">'+r.fy+'</th>';}).join('')
       +'</tr></thead>';
   }
+  function fsSpacer(dataset){
+    return '<tr><td colspan="'+(dataset.length+1)+'" style="padding:5px 0;border:none"></td></tr>';
+  }
   var fmtUnits=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});};
   var fmtCents=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});};
   var fmtNta=function(v){return v.toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4});};
@@ -2494,21 +2497,26 @@ function pgFinancialResults(){
       table='<div style="padding:24px;color:var(--fg-3);font-size:.86rem">No financial years defined yet — add rows to fy_settings to see the cash flow statement.</div>';
     } else {
       chart=barChartFR(CASH_FLOW.map(function(r){return r.fy;}),[
-        {v:CASH_FLOW.map(function(r){return r.netIncreaseInCash;}), color:'#1565C0', label:'Net Increase in Cash'},
-        {v:CASH_FLOW.map(function(r){return r.cashEnding;}),        color:'#2E7D32', label:'Cash at FY End'}
+        {v:CASH_FLOW.map(function(r){return r.netCashOperating;}), color:'#1565C0', label:'CF Operating'},
+        {v:CASH_FLOW.map(function(r){return r.netCashInvesting;}), color:'#E65100', label:'CF Investing'},
+        {v:CASH_FLOW.map(function(r){return r.netCashFinancing;}), color:'#2E7D32', label:'CF Financing'}
       ]);
       table='<table style="width:100%;border-collapse:collapse">'+fsThead(CASH_FLOW,'RM')+'<tbody>'
         +fsRow(CASH_FLOW,'Profit before Tax','profitBeforeTax',false)
+        +fsRow(CASH_FLOW,'Unrealised Gain / (Loss) on Securities','unrealizedAdjustment',false)
         +fsRow(CASH_FLOW,'Changes in Securities','changeSecurities',false)
         +fsRow(CASH_FLOW,'Changes in Other Assets','changeOtherAssets',false)
         +fsRow(CASH_FLOW,'Changes in Receivables','changeReceivables',false)
         +fsRow(CASH_FLOW,'Cashflow from Operations','cashflowFromOps',true,null,true)
         +fsRow(CASH_FLOW,'Income Tax Paid','incomeTaxPaid',false)
         +fsRow(CASH_FLOW,'Net Cash from Operating Activities','netCashOperating',true,null,true)
+        +fsSpacer(CASH_FLOW)
         +fsRow(CASH_FLOW,'Net Cash from Investing Activities','netCashInvesting',true,null,true)
+        +fsSpacer(CASH_FLOW)
         +fsRow(CASH_FLOW,'Dividend Paid','dividendPaid',false)
         +fsRow(CASH_FLOW,'Issuance of New Shares','issuanceOfShares',false)
         +fsRow(CASH_FLOW,'Net Cash from Financing Activities','netCashFinancing',true,null,true)
+        +fsSpacer(CASH_FLOW)
         +fsRow(CASH_FLOW,'Net Increase in Cash &amp; Bank Balances','netIncreaseInCash',true,null,true)
         +fsRow(CASH_FLOW,'Cash &amp; Bank Balances at Beginning of FY','cashBeginning',false)
         +fsRow(CASH_FLOW,'Cash &amp; Bank Balances at End of FY','cashEnding',true,null,true)

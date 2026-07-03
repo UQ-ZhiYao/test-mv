@@ -630,6 +630,9 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     const bs = bsByFy[fy.label] || {};
 
     const profitBeforeTax = is.profitBeforeTax || 0;
+    // Reverse out the non-cash unrealised P&L embedded in Profit before Tax
+    // (indirect method): a gain is subtracted, a loss is added back.
+    const unrealizedAdjustment = -(is.unrealizedPnl || 0);
 
     const securities  = bs.securities || 0;
     const otherAssets  = bs.otherInvestments || 0;
@@ -639,7 +642,7 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
     const changeOtherAssets = prevOtherAssets === null ? 0 : (prevOtherAssets - otherAssets);
     const changeReceivables = prevReceivables === null ? 0 : (prevReceivables - receivables);
 
-    const cashflowFromOps = profitBeforeTax + changeSecurities + changeOtherAssets + changeReceivables;
+    const cashflowFromOps = profitBeforeTax + unrealizedAdjustment + changeSecurities + changeOtherAssets + changeReceivables;
     const incomeTaxPaid = 0;
     const netCashOperating = cashflowFromOps + incomeTaxPaid;
 
@@ -662,7 +665,7 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
 
     return {
       fy: fy.label, startDate: start, endDate: end,
-      profitBeforeTax: profitBeforeTax,
+      profitBeforeTax: profitBeforeTax, unrealizedAdjustment: unrealizedAdjustment,
       changeSecurities: changeSecurities, changeOtherAssets: changeOtherAssets, changeReceivables: changeReceivables,
       cashflowFromOps: cashflowFromOps, incomeTaxPaid: incomeTaxPaid, netCashOperating: netCashOperating,
       netCashInvesting: netCashInvesting,
