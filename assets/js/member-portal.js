@@ -2592,17 +2592,20 @@ function buildCmpChart(seriesArr, dates, priceInfo){
     return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>';
   }).join('');
   // Hover overlay — one thin column per data point; hovering recomputes
-  // each series' Price/Change "as of" that date via cmpHoverAt(i).
+  // each series' Price/Change "as of" that date via cmpHoverAt(i), and
+  // moves the vertical dashed hover line to that x position.
   var colW=(W-padL-padR)/Math.max(1,n-1);
   var overlays=dates.map(function(d,i){
     var ox=Math.max(padL,px(i)-colW/2);
     return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="cmpHoverAt('+i+')" onmousemove="cmpHoverAt('+i+')" onmouseleave="cmpHoverReset()" style="cursor:crosshair"/>';
   }).join('');
-  // Expose raw (native-price) series + date axis for the hover handler —
-  // a plain global assignment (not embedded HTML/script), since script
-  // tags injected via innerHTML never execute.
+  var hoverLine='<line id="cmpHoverLine" x1="0" y1="'+padYT+'" x2="0" y2="'+(H-padYB)+'" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3,3" style="display:none;pointer-events:none"/>';
+  // Expose raw (native-price) series + date axis + pixel positions for the
+  // hover handler — a plain global assignment (not embedded HTML/script),
+  // since script tags injected via innerHTML never execute.
   window._cmpRaw = seriesArr.map(function(s){ return {name:s.name, color:s.color, raw:s.raw}; });
   window._cmpDates = dates.slice();
+  window._cmpPx = dates.map(function(_,i){ return px(i); });
   var priceBoxInner = priceInfo && priceInfo.length
     ? '<div style="font-size:.66rem;color:#94A3B8;margin-bottom:2px">'+cmpDateLabel(dates[dates.length-1])+'</div>'
       + priceInfo.map(function(o){ return cmpPriceLineHtml(o.name,o.color,o.price,o.chg,o.chgPct); }).join('')
@@ -2612,7 +2615,7 @@ function buildCmpChart(seriesArr, dates, priceInfo){
     : '';
   return '<div style="position:relative;width:100%">'
     +priceBox
-    +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:520px;display:block;overflow:visible">'+grid+baseline+paths+xLabels.join('')+overlays+'</svg>'
+    +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:520px;display:block;overflow:visible">'+grid+baseline+paths+hoverLine+xLabels.join('')+overlays+'</svg>'
     +'</div>';
 }
 
@@ -2620,16 +2623,19 @@ function cmpDateLabel(dateStr){
   var dt=new Date(dateStr+'T00:00:00');
   return dt.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});
 }
-function fmtCmpOhlc(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtCmpOhlc(v,dp){ dp=dp||2; return (v||0).toLocaleString('en-MY',{minimumFractionDigits:dp,maximumFractionDigits:dp}); }
 // Name keeps its series line color; Price/Change/Change% are colored
 // green or red by direction (change is period-over-period — vs the
 // previous data point — never vs the start of the whole window).
+// ZY-Invest's own NTA is shown to 4dp (its natural per-unit precision);
+// the external indices stay at 2dp.
 function cmpPriceLineHtml(name,color,price,chg,chgPct){
+  var dp=(name==='ZY-Invest')?4:2;
   var up=chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
   return '<div style="font-size:.68rem;font-weight:400;white-space:nowrap">'
     +'<span style="color:'+color+'">'+name+'</span> '
-    +'<span style="color:'+col+'">'+fmtCmpOhlc(price)+'</span> '
-    +'<span style="color:'+col+'">'+sign+fmtCmpOhlc(Math.abs(chg))+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)</span>'
+    +'<span style="color:'+col+'">'+fmtCmpOhlc(price,dp)+'</span> '
+    +'<span style="color:'+col+'">'+sign+fmtCmpOhlc(Math.abs(chg),dp)+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)</span>'
     +'</div>';
 }
 function cmpHoverAt(i){
@@ -2651,10 +2657,64 @@ function cmpHoverAt(i){
     html+=cmpPriceLineHtml(s.name,s.color,price,chg,chgPct);
   });
   box.innerHTML=html;
+  // Move the vertical dashed hover line to this data point.
+  var line=document.getElementById('cmpHoverLine');
+  if(line && window._cmpPx && window._cmpPx[i]!=null){
+    var xpos=window._cmpPx[i].toFixed(1);
+    line.setAttribute('x1',xpos); line.setAttribute('x2',xpos);
+    line.style.display='block';
+  }
 }
 function cmpHoverReset(){
   var dates=window._cmpDates;
   if(dates && dates.length) cmpHoverAt(dates.length-1);
+  var line=document.getElementById('cmpHoverLine');
+  if(line) line.style.display='none';
+}
+
+function pearsonCorr(a,b){
+  var xs=[],ys=[];
+  for(var i=0;i<a.length;i++){
+    if(a[i]!=null && b[i]!=null){ xs.push(a[i]); ys.push(b[i]); }
+  }
+  var n=xs.length;
+  if(n<2) return null;
+  var mx=xs.reduce(function(s,v){return s+v;},0)/n;
+  var my=ys.reduce(function(s,v){return s+v;},0)/n;
+  var cov=0,vx=0,vy=0;
+  for(var j=0;j<n;j++){ var dx=xs[j]-mx, dy=ys[j]-my; cov+=dx*dy; vx+=dx*dx; vy+=dy*dy; }
+  var denom=Math.sqrt(vx*vy);
+  return denom?cov/denom:null;
+}
+// Diverging heatmap: strong negative → red, 0 → near-white, strong positive → blue.
+function corrColor(v){
+  if(v==null) return '#F8FAFC';
+  var t=Math.max(-1,Math.min(1,v));
+  if(t>=0){
+    var g=Math.round(255-t*80), b=Math.round(255-t*30);
+    return 'rgb('+Math.round(255-t*185)+','+g+','+b+')';
+  } else {
+    var at=-t;
+    return 'rgb(255,'+Math.round(255-at*140)+','+Math.round(255-at*160)+')';
+  }
+}
+function buildCorrTable(retSeries){
+  if(!retSeries.length) return '';
+  var rows=retSeries.map(function(rowS){
+    var cells=retSeries.map(function(colS){
+      var v=(rowS.name===colS.name)?1:pearsonCorr(rowS.ret,colS.ret);
+      var txt=v==null?'—':v.toFixed(2);
+      return '<td style="padding:10px 14px;text-align:center;font-size:.82rem;font-weight:500;color:#1E293B;background:'+corrColor(v)+'">'+txt+'</td>';
+    }).join('');
+    return '<tr><td style="padding:10px 14px;display:flex;align-items:center;gap:8px;white-space:nowrap">'
+      +'<span style="width:9px;height:9px;border-radius:50%;background:'+rowS.color+';flex-shrink:0;display:inline-block"></span>'
+      +'<span style="font-size:.82rem;color:var(--fg-1)">'+rowS.name+'</span></td>'+cells+'</tr>';
+  }).join('');
+  var head='<th style="padding:9px 14px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)"></th>'
+    +retSeries.map(function(s){return '<th style="padding:9px 14px;text-align:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">'+s.name+'</th>';}).join('');
+  return '<div style="margin-bottom:16px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:4px">Correlation Matrix</h3>'
+    +'<p style="font-size:.78rem;color:var(--fg-3);margin:0 0 10px">Pearson correlation of week-over-week returns, selected period</p>'
+    +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)">'+head+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 function pgComparison(){
@@ -2668,7 +2728,7 @@ function pgComparison(){
     +'</div>';
 
   var CMP = COMPARISON_DATA;
-  var chart, legend;
+  var chart, legend, corrTable;
   if(CMP && CMP.fund && CMP.fund.length){
     var rawSeries=[
       {name:'ZY-Invest', color:'#1565C0', pts:CMP.fund},
@@ -2723,9 +2783,22 @@ function pgComparison(){
           +'<span style="font-size:.78rem;font-weight:400;color:'+(lastV==null?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+'">'+(lastV==null?'—':((up?'+':'')+ret+'%'))+'</span>'
           +'</div>';
       }).join('')+'</div>';
+
+    // Correlation matrix — Pearson correlation of week-over-week % returns
+    // (not the cumulative rebased curves, which would overstate correlation).
+    var retSeries=aligned.map(function(s){
+      var rets=[];
+      for(var i=1;i<s.raw.length;i++){
+        var a=s.raw[i-1],b=s.raw[i];
+        rets.push((a!=null&&b!=null&&a)?(b/a-1):null);
+      }
+      return {name:s.name,color:s.color,ret:rets};
+    });
+    corrTable = buildCorrTable(retSeries);
   } else {
     chart='<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">'+(COMPARISON_ERROR?('Could not load — '+COMPARISON_ERROR):'Loading comparison data…')+'</div>';
     legend='';
+    corrTable='';
   }
   var years=['FY22','FY23','FY24','FY25'];
   var annualRet=[
@@ -2759,6 +2832,7 @@ function pgComparison(){
   return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1><p>ZY-Invest vs FBM KLCI, S&amp;P 500 and MSCI — rebased to 0% return at the start of the selected period · Weekly data via Yahoo Finance.</p></div>'
     +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">Performance Comparison</h3>'+periodBar+'</div>'
     +chart+legend+'</div>'
+    +corrTable
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
     +'<div><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:10px">Annual Returns</h3>'
     +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)">'
