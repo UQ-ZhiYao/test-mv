@@ -1051,6 +1051,15 @@ function niceAxisScale(min,max,tickCount){
   var niceMax=Math.ceil(max/step)*step;
   return {min:niceMin,max:niceMax,step:step};
 }
+// Guarantees exactly 5 evenly-spaced gridlines (4 equal intervals) across a
+// nicely-rounded min/max — used by every bar/histogram chart for consistency.
+function fiveTicks(min,max){
+  var scale=niceAxisScale(min,max,5);
+  var step=(scale.max-scale.min)/4;
+  var ticks=[];
+  for(var i=0;i<5;i++){ ticks.push(scale.min+i*step); }
+  return {ticks:ticks,min:scale.min,max:scale.max,step:step};
+}
 
 function fmtChartNum(v){
   var av=Math.abs(v||0), sign=(v||0)<0?'−':'';
@@ -1499,10 +1508,15 @@ function pgFundOverview(){
     return chartSvg+leg;
   }
   function donut(segs,label,caption){
-    var s=200,cx=s/2,cy=s/2,R=s*0.42,ir=s*0.30;
-    var total=segs.reduce(function(a,x){return a+x.v;},0);
+    // Sort by value descending so the rank-based color gradient (dark blue
+    // = largest slice, grey = smallest) is always applied consistently,
+    // regardless of the order segments were passed in.
+    var sorted=segs.slice().sort(function(a,b){return b.v-a.v;});
+    var s=300,cx=s/2,cy=s/2,R=s*0.42,ir=s*0.30;
+    var total=sorted.reduce(function(a,x){return a+x.v;},0);
     var ang=-Math.PI/2,paths='';
-    segs.forEach(function(sg){
+    sorted.forEach(function(sg,idx){
+      var col=pieGradientColor(idx,sorted.length);
       var sweep=(sg.v/total)*2*Math.PI,ea=ang+sweep;
       var x1=(cx+R*Math.cos(ang)).toFixed(2),y1=(cy+R*Math.sin(ang)).toFixed(2);
       var x2=(cx+R*Math.cos(ea)).toFixed(2),y2=(cy+R*Math.sin(ea)).toFixed(2);
@@ -1512,23 +1526,24 @@ function pgFundOverview(){
       var d='M'+x1+' '+y1+' A'+R+' '+R+' 0 '+la+' 1 '+x2+' '+y2+' L'+x3+' '+y3+' A'+ir+' '+ir+' 0 '+la+' 0 '+x4+' '+y4+'Z';
       var pct=(sg.v/total*100).toFixed(1);
       var tipStr=sg.label+': '+fmtChartNum(sg.v)+' ('+pct+'%)';
-      paths+='<path d="'+d+'" fill="'+sg.color+'" stroke="none" data-tip="'+tipStr+'" onmouseenter="showPieTip(event,getTip(this))" onmousemove="showPieTip(event,getTip(this))" onmouseout="hidePieTip()" style="cursor:pointer"/>';
+      paths+='<path d="'+d+'" fill="'+col+'" stroke="none" data-tip="'+tipStr+'" onmouseenter="showPieTip(event,getTip(this))" onmousemove="showPieTip(event,getTip(this))" onmouseout="hidePieTip()" style="cursor:pointer"/>';
       ang=ea;
     });
-    var legend=segs.map(function(sg,i){
+    var legend=sorted.map(function(sg,idx){
+      var col=pieGradientColor(idx,sorted.length);
       var pct=(sg.v/total*100).toFixed(1);
       return '<div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#374151">'
-        +'<span style="width:8px;height:8px;border-radius:50%;background:'+sg.color+';flex-shrink:0;display:inline-block"></span>'
+        +'<span style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0;display:inline-block"></span>'
         +sg.label+' <span style="color:#9CA3AF">'+pct+'%</span></div>';
     }).join('');
-    return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:24px;flex:1;padding:8px 0">'
-      +'<svg viewBox="0 0 '+s+' '+s+'" style="width:'+s+'px;height:'+s+'px;flex-shrink:0">'
+    return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:20px;flex:1;padding:8px 0;min-height:0">'
+      +'<svg viewBox="0 0 '+s+' '+s+'" style="width:'+s+'px;height:'+s+'px;max-width:90%;max-height:100%;flex-shrink:0">'
       +paths
       +'<circle cx="'+cx+'" cy="'+cy+'" r="'+(ir-3)+'" fill="#fff" style="pointer-events:none"/>'
-      +'<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" font-weight="700" fill="#0F172A" style="pointer-events:none">'+label+'</text>'
-      +'<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6B7280" style="pointer-events:none">'+(caption||'total')+'</text>'
+      +'<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="19" font-weight="700" fill="#0F172A" style="pointer-events:none">'+label+'</text>'
+      +'<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" fill="#6B7280" style="pointer-events:none">'+(caption||'total')+'</text>'
       +'</svg>'
-      +'<div style="display:flex;flex-direction:column;gap:7px">'+legend+'</div>'
+      +'<div style="display:flex;flex-direction:column;gap:7px;min-width:0">'+legend+'</div>'
       +'</div>';
   }
 
@@ -1793,7 +1808,7 @@ function pgFundOverview(){
     var W=420,H=220,padX=16,padR=42,padY=20,n=data.length;
     var tipId=nextTipId();
     var rawMx=Math.max.apply(null,data)||1;
-    var scale=niceAxisScale(0,rawMx,5);
+    var scale=fiveTicks(0,rawMx);
     var mx=scale.max||1,barW=Math.min(22,(W-padX-padR)/n*0.20),gap=(W-padX-padR)/n;
     function bx(i){return padX+i*gap+gap/2-barW/2;}
     function bh(v){return Math.max(2,(v/mx)*(H-padY*2));}
@@ -1802,9 +1817,7 @@ function pgFundOverview(){
       return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+(colors[i]||'#1565C0')+'" rx="2"/>'
         +(showLabels?'<text x="'+(parseFloat(x)+barW/2).toFixed(1)+'" y="'+(parseFloat(y)-4).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#374151" font-weight="600">'+fmtV(v)+'</text>':'');
     }).join('');
-    var ticks=[];
-    for(var tv=0; tv<=mx+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
-    var grid=ticks.map(function(v){
+    var grid=scale.ticks.map(function(v){
       var yy=(H-padY-(v/mx)*(H-padY*2)).toFixed(1);
       return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
         +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtV(v)+'</text>';
@@ -1830,7 +1843,7 @@ function pgFundOverview(){
     var allV=series.reduce(function(a,s){return a.concat(s.v);},[]);
     var rawMx=Math.max.apply(null,allV.concat([0]));
     var rawMn=Math.min.apply(null,allV.concat([0]));
-    var scale=niceAxisScale(rawMn,rawMx,5);
+    var scale=fiveTicks(rawMn,rawMx);
     var mx=scale.max, mn=scale.min;
     if(mx===mn){ mx+=1; mn-=1; }
     var rng=mx-mn;
@@ -1848,9 +1861,7 @@ function pgFundOverview(){
         return '<rect x="'+x+'" y="'+yTop.toFixed(1)+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+col+'" rx="2"/>';
       }).join('');
     }).join('');
-    var ticks=[];
-    for(var tv=mn; tv<=mx+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
-    var grid=ticks.map(function(v){
+    var grid=scale.ticks.map(function(v){
       var yy=yFor(v).toFixed(1);
       return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
         +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
@@ -1880,7 +1891,7 @@ function pgFundOverview(){
     var tipId=nextTipId();
     var totals=labels.map(function(_,i){return series.reduce(function(a,s){return a+s.v[i];},0);});
     var rawMx=Math.max.apply(null,totals)||1;
-    var scalePre=niceAxisScale(0,rawMx,5);
+    var scalePre=fiveTicks(0,rawMx);
     var mx=scalePre.max||1,barW=Math.min(22,(W-padX-padR)/n*0.20),gap=(W-padX-padR)/n;
     function bx(i){return (padX+i*gap+gap/2-barW/2).toFixed(1);}
     function bh(v){return Math.max(2,((v/mx)*(H-padY*2)));}
@@ -1893,11 +1904,8 @@ function pgFundOverview(){
         rects+='<rect x="'+bx(i)+'" y="'+y.toFixed(1)+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+s.color+'" rx="1"/>';
       });
     });
-    var scale=scalePre;
-    var ticks=[];
-    for(var tv=0; tv<=scale.max+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
-    var grid=ticks.map(function(v){
-      var yy=(H-padY-(v/scale.max)*(H-padY*2)).toFixed(1);
+    var grid=scalePre.ticks.map(function(v){
+      var yy=(H-padY-(v/scalePre.max)*(H-padY*2)).toFixed(1);
       return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
         +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
     }).join('');
