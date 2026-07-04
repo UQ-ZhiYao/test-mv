@@ -2611,6 +2611,7 @@ function buildCmpChart(seriesArr, dates, priceInfo){
   // hover handler — a plain global assignment (not embedded HTML/script),
   // since script tags injected via innerHTML never execute.
   window._cmpRaw = seriesArr.map(function(s){ return {name:s.name, color:s.color, raw:s.raw}; });
+  window._cmpPct = seriesArr.map(function(s){ return s.v; });
   window._cmpDates = dates.slice();
   window._cmpPx = dates.map(function(_,i){ return px(i); });
   var priceBoxInner = priceInfo && priceInfo.length
@@ -2671,6 +2672,21 @@ function cmpHoverAt(i){
     line.setAttribute('x1',xpos); line.setAttribute('x2',xpos);
     line.style.display='block';
   }
+  // Legend accumulated return "as of" the hovered date (rebased % is
+  // already 0% at the filtered window's start, so v[i] IS the cumulative
+  // return from the start of the filtered range up to this date).
+  var pct=window._cmpPct;
+  if(pct){
+    pct.forEach(function(vArr,si){
+      var el=document.getElementById('cmpLegVal-'+si);
+      if(!el) return;
+      var v=null;
+      for(var k=i;k>=0;k--){ if(vArr[k]!=null){ v=vArr[k]; break; } }
+      var up=v!=null&&v>=0;
+      el.style.color=v==null?'var(--fg-3)':(up?'var(--green)':'var(--red)');
+      el.textContent=v==null?'—':((up?'+':'')+v.toFixed(1)+'%');
+    });
+  }
 }
 function cmpHoverReset(){
   var dates=window._cmpDates;
@@ -2694,34 +2710,43 @@ function pearsonCorr(a,b){
   return denom?cov/denom:null;
 }
 // Diverging heatmap: strong negative → red, 0 → near-white, strong positive → blue.
+// Diverging heatmap: strong negative → deep red, 0 → white, strong
+// positive → deep blue (dark blue = strong relation, white = neutral,
+// red = strong inverse relation).
 function corrColor(v){
   if(v==null) return '#F8FAFC';
   var t=Math.max(-1,Math.min(1,v));
+  function lerp(a,b,f){ return Math.round(a+(b-a)*f); }
   if(t>=0){
-    var g=Math.round(255-t*80), b=Math.round(255-t*30);
-    return 'rgb('+Math.round(255-t*185)+','+g+','+b+')';
+    var blue=[21,101,192]; // var(--blue) #1565C0
+    return 'rgb('+lerp(255,blue[0],t)+','+lerp(255,blue[1],t)+','+lerp(255,blue[2],t)+')';
   } else {
+    var red=[220,38,38]; // var(--red) #DC2626
     var at=-t;
-    return 'rgb(255,'+Math.round(255-at*140)+','+Math.round(255-at*160)+')';
+    return 'rgb('+lerp(255,red[0],at)+','+lerp(255,red[1],at)+','+lerp(255,red[2],at)+')';
   }
 }
 function buildCorrTable(retSeries){
   if(!retSeries.length) return '';
+  var colCount=1+retSeries.length;
+  var colWidth=(100/colCount).toFixed(2)+'%';
+  var colgroup='<colgroup>'+Array(colCount).fill('<col style="width:'+colWidth+'">').join('')+'</colgroup>';
   var rows=retSeries.map(function(rowS){
     var cells=retSeries.map(function(colS){
       var v=(rowS.name===colS.name)?1:pearsonCorr(rowS.ret,colS.ret);
       var txt=v==null?'—':v.toFixed(2);
-      return '<td style="padding:10px 14px;text-align:center;font-size:.82rem;font-weight:500;color:#1E293B;background:'+corrColor(v)+'">'+txt+'</td>';
+      var textCol=(v!=null && Math.abs(v)>0.55)?'#fff':'#1E293B';
+      return '<td style="padding:10px 12px;text-align:center;vertical-align:middle;white-space:normal;word-break:break-word;font-size:.82rem;font-weight:500;color:'+textCol+';background:'+corrColor(v)+'">'+txt+'</td>';
     }).join('');
-    return '<tr><td style="padding:10px 14px;display:flex;align-items:center;gap:8px;white-space:nowrap">'
+    return '<tr><td style="padding:10px 12px;text-align:left;white-space:normal;word-break:break-word"><div style="display:flex;align-items:center;gap:8px">'
       +'<span style="width:9px;height:9px;border-radius:50%;background:'+rowS.color+';flex-shrink:0;display:inline-block"></span>'
-      +'<span style="font-size:.82rem;color:var(--fg-1)">'+rowS.name+'</span></td>'+cells+'</tr>';
+      +'<span style="font-size:.82rem;color:var(--fg-1)">'+rowS.name+'</span></div></td>'+cells+'</tr>';
   }).join('');
-  var head='<th style="padding:9px 14px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)"></th>'
-    +retSeries.map(function(s){return '<th style="padding:9px 14px;text-align:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">'+s.name+'</th>';}).join('');
+  var head='<th style="padding:9px 12px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)"></th>'
+    +retSeries.map(function(s){return '<th style="padding:9px 12px;text-align:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3);white-space:normal;word-break:break-word">'+s.name+'</th>';}).join('');
   return '<div style="margin-bottom:16px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:4px">Correlation Matrix</h3>'
     +'<p style="font-size:.78rem;color:var(--fg-3);margin:0 0 10px">Pearson correlation of week-over-week returns, selected period</p>'
-    +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)">'+head+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+    +'<table style="width:100%;table-layout:fixed;border-collapse:collapse">'+colgroup+'<thead><tr style="border-bottom:1px solid var(--border)">'+head+'</tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 function pgComparison(){
@@ -2750,7 +2775,13 @@ function pgComparison(){
     rawSeries.forEach(function(s){ s.pts.forEach(function(p){ allDates.push(p.date); }); });
     allDates=Array.from(new Set(allDates)).sort();
     var latestDate=allDates[allDates.length-1];
-    var cutoff=cmpCutoffDate(period, latestDate, CMP.inception);
+    // Anchor "ALL" to the fund's own first NTA data point (CMP.fund[0]),
+    // not the separate capital_injection-derived inception date — those
+    // two can disagree (e.g. capital was injected before NTA computation
+    // started), which was cutting the window earlier than ZY-Invest
+    // actually has data and left it blank on the left side of the chart.
+    var fundInception = (CMP.fund && CMP.fund.length) ? CMP.fund[0].date : CMP.inception;
+    var cutoff=cmpCutoffDate(period, latestDate, fundInception);
     var windowDates=allDates.filter(function(d){ return d>=cutoff; });
     if(windowDates.length<2) windowDates=allDates;
 
@@ -2783,13 +2814,13 @@ function pgComparison(){
 
     chart = buildCmpChart(aligned, windowDates, priceInfo);
     legend = '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;justify-content:center;width:100%;">'
-      +aligned.map(function(s){
+      +aligned.map(function(s,si){
         var lastV=null; for(var i=s.v.length-1;i>=0;i--){ if(s.v[i]!=null){lastV=s.v[i];break;} }
         var ret=lastV!=null?lastV.toFixed(1):'—'; var up=lastV!=null&&lastV>=0;
         return '<div style="display:flex;align-items:center;gap:8px">'
           +'<span style="width:20px;height:3px;background:'+s.color+';display:inline-block;border-radius:2px"></span>'
           +'<span style="font-size:.78rem;color:var(--fg-2)">'+s.name+'</span>'
-          +'<span style="font-size:.78rem;font-weight:400;color:'+(lastV==null?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+'">'+(lastV==null?'—':((up?'+':'')+ret+'%'))+'</span>'
+          +'<span id="cmpLegVal-'+si+'" style="font-size:.78rem;font-weight:400;color:'+(lastV==null?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+'">'+(lastV==null?'—':((up?'+':'')+ret+'%'))+'</span>'
           +'</div>';
       }).join('')+'</div>';
 
@@ -2906,7 +2937,7 @@ function buildComparisonTable(yearList, yearReturns, periodMetrics){
   var metricsByName={}; periodMetrics.forEach(function(p){ metricsByName[p.name]=p; });
   var rows=yearReturns.map(function(yr){
     var m=metricsByName[yr.name]||{};
-    return '<tr style="border-bottom:1px solid var(--border);">'
+    return '<tr onmouseover="this.style.background=\'#F8FAFC\'" onmouseout="this.style.background=\'transparent\'" style="transition:background .12s;">'
       +'<td style="'+fundCellBase+'"><div style="display:flex;align-items:center;gap:8px">'
       +'<span style="width:10px;height:10px;border-radius:50%;background:'+yr.color+';flex-shrink:0;display:inline-block"></span>'
       +'<span style="font-size:.85rem;color:var(--fg-1)">'+yr.name+'</span></div></td>'
