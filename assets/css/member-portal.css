@@ -176,7 +176,7 @@ a{color:var(--blue);text-decoration:none;} img{display:block;max-width:100%;} bu
 .fov-2col{display:grid;grid-template-columns:1fr 1fr;gap:40px 10%;width:100%;}
 .fov-cc{display:flex;flex-direction:column;}
 .fov-ct{font-size:.82rem;font-weight:700;color:var(--fg-2);margin-bottom:8px;}
-.fov-ch{height:320px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden;}
+.fov-ch{height:360px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden;}
 
 .pie-tip{position:fixed;background:#0F172A;color:#fff;font-size:.78rem;font-weight:600;padding:5px 10px;border-radius:6px;pointer-events:none;z-index:300;opacity:0;transition:opacity .12s;white-space:nowrap;}
 /* Ticker */

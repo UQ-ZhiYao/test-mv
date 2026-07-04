@@ -1053,17 +1053,19 @@ function niceAxisScale(min,max,tickCount){
 }
 
 function fmtChartNum(v){
-  if(!v) return '—';
-  var av=Math.abs(v), sign=v<0?'−':'';
+  var av=Math.abs(v||0), sign=(v||0)<0?'−':'';
   if(av>=100000000) return sign+(av/1000000).toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'Mil';
   if(av>=100000) return sign+(av/1000).toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'k';
   return sign+av.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 function fmtChartPct(v){
-  if(!v) return '—';
-  var av=Math.abs(v), sign=v<0?'−':'';
+  var av=Math.abs(v||0), sign=(v||0)<0?'−':'';
   return sign+av.toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
 }
+// Tooltip-only variants — "-" for exactly zero, everything else formatted normally.
+// Axis labels and other displays keep showing 0.00/0.0% via fmtChartNum/fmtChartPct.
+function fmtTipNum(v){ return v ? fmtChartNum(v) : '—'; }
+function fmtTipPct(v){ return v ? fmtChartPct(v) : '—'; }
 function pgFundOverview(){
   // Each chart instance gets its own tooltip element id, since several
   // charts render on this page simultaneously and frTip()/frHide() target
@@ -1508,7 +1510,9 @@ function pgFundOverview(){
       var x4=(cx+ir*Math.cos(ang)).toFixed(2),y4=(cy+ir*Math.sin(ang)).toFixed(2);
       var la=sweep>Math.PI?1:0;
       var d='M'+x1+' '+y1+' A'+R+' '+R+' 0 '+la+' 1 '+x2+' '+y2+' L'+x3+' '+y3+' A'+ir+' '+ir+' 0 '+la+' 0 '+x4+' '+y4+'Z';
-      paths+='<path d="'+d+'" fill="'+sg.color+'" stroke="none"/>';
+      var pct=(sg.v/total*100).toFixed(1);
+      var tipStr=sg.label+': '+fmtChartNum(sg.v)+' ('+pct+'%)';
+      paths+='<path d="'+d+'" fill="'+sg.color+'" stroke="none" data-tip="'+tipStr+'" onmouseenter="showPieTip(event,getTip(this))" onmousemove="showPieTip(event,getTip(this))" onmouseout="hidePieTip()" style="cursor:pointer"/>';
       ang=ea;
     });
     var legend=segs.map(function(sg,i){
@@ -1520,9 +1524,9 @@ function pgFundOverview(){
     return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:24px;flex:1;padding:8px 0">'
       +'<svg viewBox="0 0 '+s+' '+s+'" style="width:'+s+'px;height:'+s+'px;flex-shrink:0">'
       +paths
-      +'<circle cx="'+cx+'" cy="'+cy+'" r="'+(ir-3)+'" fill="#fff"/>'
-      +'<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" font-weight="700" fill="#0F172A">'+label+'</text>'
-      +'<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6B7280">'+(caption||'total')+'</text>'
+      +'<circle cx="'+cx+'" cy="'+cy+'" r="'+(ir-3)+'" fill="#fff" style="pointer-events:none"/>'
+      +'<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" font-weight="700" fill="#0F172A" style="pointer-events:none">'+label+'</text>'
+      +'<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6B7280" style="pointer-events:none">'+(caption||'total')+'</text>'
       +'</svg>'
       +'<div style="display:flex;flex-direction:column;gap:7px">'+legend+'</div>'
       +'</div>';
@@ -1715,7 +1719,7 @@ function pgFundOverview(){
     var segW=(W-padX-padR)/Math.max(1,n-1);
     var overlays=labels.map(function(l,i){
       if(!l) return '';
-      var tipLines=series.map(function(s){ return s.color+'::'+(s.label||s.id)+': '+fmtChartNum(s.v[i]); });
+      var tipLines=series.map(function(s){ return s.color+'::'+(s.label||s.id)+': '+fmtTipNum(s.v[i]); });
       var tip='FY:'+l+'|'+tipLines.join('|');
       var ox=Math.max(0,px(i)-segW/2).toFixed(1);
       var cx=(px(i)/W).toFixed(4);
@@ -1740,7 +1744,7 @@ function pgFundOverview(){
     var lineMax=Math.max.apply(null,allLine)||1;
     var n=groups.length;
     var groupW=(W-padX-padR)/n;
-    var barW=Math.min(28,groupW*0.35);
+    var barW=Math.min(20,groupW*0.22);
     function bx(i){return (padX+i*groupW+groupW/2-barW/2).toFixed(1);}
     function barH(v){return Math.max(2,((v/barMax)*(H-padYT-padYB))).toFixed(1);}
     function barY(v){return (H-padYB-parseFloat(barH(v))).toFixed(1);}
@@ -1766,7 +1770,7 @@ function pgFundOverview(){
     var xL=groups.map(function(l,i){return '<text x="'+lx(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#6B7280">'+l+'</text>';}).join('');
     // Group hover overlay per FY — shows both the bar and line values together
     var overlays=groups.map(function(g,gi){
-      var tip='FY:'+g+'|'+barSeries.color+'::'+barSeries.label+': '+fmtChartNum(allBar[gi])+'|'+lineSeries.color+'::'+lineSeries.label+': '+fmtChartPct(allLine[gi]);
+      var tip='FY:'+g+'|'+barSeries.color+'::'+barSeries.label+': '+fmtTipNum(allBar[gi])+'|'+lineSeries.color+'::'+lineSeries.label+': '+fmtTipPct(allLine[gi]);
       var ox=(padX+gi*groupW).toFixed(1);
       var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
       return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
@@ -1785,11 +1789,12 @@ function pgFundOverview(){
   function bars(data,labels,colors,legendItems,showLabels,isPct){
     if(showLabels===undefined) showLabels=true;
     var fmtV=isPct?fmtChartPct:fmtChartNum;
+    var fmtVTip=isPct?fmtTipPct:fmtTipNum;
     var W=420,H=220,padX=16,padR=42,padY=20,n=data.length;
     var tipId=nextTipId();
     var rawMx=Math.max.apply(null,data)||1;
     var scale=niceAxisScale(0,rawMx,5);
-    var mx=scale.max||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
+    var mx=scale.max||1,barW=Math.min(22,(W-padX-padR)/n*0.20),gap=(W-padX-padR)/n;
     function bx(i){return padX+i*gap+gap/2-barW/2;}
     function bh(v){return Math.max(2,(v/mx)*(H-padY*2));}
     var bPaths=data.map(function(v,i){
@@ -1807,7 +1812,7 @@ function pgFundOverview(){
     var xL=labels.map(function(l,i){return '<text x="'+(bx(i)+barW/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#6B7280">'+l+'</text>';}).join('');
     // Group hover overlay per label
     var overlays=labels.map(function(l,i){
-      var tip='FY:'+l+'|'+(colors[i]||'#1565C0')+'::Value: '+fmtV(data[i]);
+      var tip='FY:'+l+'|'+(colors[i]||'#1565C0')+'::Value: '+fmtVTip(data[i]);
       var ox=(padX+i*gap).toFixed(1);
       var cx=((padX+i*gap+gap/2)/W).toFixed(4);
       return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
@@ -1832,7 +1837,7 @@ function pgFundOverview(){
     var plotH=H-padYT-padYB;
     function yFor(v){ return padYT+(mx-v)/rng*plotH; }
     var zeroY=yFor(0);
-    var groupW=(W-padX-padR)/n,barW=Math.min(16,groupW/ns*0.4);
+    var groupW=(W-padX-padR)/n,barW=Math.min(12,groupW/ns*0.28);
     function bx(gi,si){return padX+gi*groupW+groupW/2-(ns*barW+(ns-1)*3)/2+si*(barW+3);}
     var bPaths=series.map(function(s,si){
       return s.v.map(function(v,gi){
@@ -1857,7 +1862,7 @@ function pgFundOverview(){
     }).join('');
     // Group hover overlay per FY — shows all series values together
     var overlays=groups.map(function(g,gi){
-      var tipLines=series.map(function(s){ var dotCol=s.colorByValue?(s.v[gi]<0?'#DC2626':'#2E7D32'):s.color; return dotCol+'::'+s.label+': '+fmtChartNum(s.v[gi]); });
+      var tipLines=series.map(function(s){ var dotCol=s.colorByValue?(s.v[gi]<0?'#DC2626':'#2E7D32'):s.color; return dotCol+'::'+s.label+': '+fmtTipNum(s.v[gi]); });
       var tip='FY:'+g+'|'+tipLines.join('|');
       var ox=(padX+gi*groupW).toFixed(1);
       var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
@@ -1866,7 +1871,7 @@ function pgFundOverview(){
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+zeroLine+bPaths+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
-      +series.map(function(s){var sw=s.colorByValue?'linear-gradient(90deg,#2E7D32 50%,#DC2626 50%)':s.color;return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+sw+';display:inline-block"></span>'+s.label+(s.colorByValue?' (green=profit, red=loss)':'')+'</span>';}).join('')+'</div>';
+      +series.map(function(s){var sw=s.colorByValue?'linear-gradient(90deg,#2E7D32 50%,#DC2626 50%)':s.color;return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+sw+';display:inline-block"></span>'+s.label+'</span>';}).join('')+'</div>';
     return chartSvg+leg;
   }
   // Stacked bar — full width + legend
@@ -1876,7 +1881,7 @@ function pgFundOverview(){
     var totals=labels.map(function(_,i){return series.reduce(function(a,s){return a+s.v[i];},0);});
     var rawMx=Math.max.apply(null,totals)||1;
     var scalePre=niceAxisScale(0,rawMx,5);
-    var mx=scalePre.max||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
+    var mx=scalePre.max||1,barW=Math.min(22,(W-padX-padR)/n*0.20),gap=(W-padX-padR)/n;
     function bx(i){return (padX+i*gap+gap/2-barW/2).toFixed(1);}
     function bh(v){return Math.max(2,((v/mx)*(H-padY*2)));}
     var rects='';
@@ -1901,7 +1906,7 @@ function pgFundOverview(){
     }).join('');
     // Group hover overlay per label — shows all series values together
     var overlays=labels.map(function(l,i){
-      var tipLines=series.map(function(s){ return s.color+'::'+s.label+': '+fmtChartNum(s.v[i]); });
+      var tipLines=series.map(function(s){ return s.color+'::'+s.label+': '+fmtTipNum(s.v[i]); });
       var tip='FY:'+l+'|'+tipLines.join('|');
       var ox=(padX+i*gap).toFixed(1);
       var cx=((padX+i*gap+gap/2)/W).toFixed(4);
@@ -2490,7 +2495,7 @@ function pgFinancialResults(){
     }).join('');
     var leg='<div style="display:flex;gap:14px;margin-top:8px;justify-content:center">'+series.map(function(s){
       var swatch=s.colorByValue?'linear-gradient(90deg,#2E7D32 50%,#DC2626 50%)':s.color;
-      return '<span style="display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--fg-3)"><span style="width:9px;height:9px;border-radius:2px;background:'+swatch+';display:inline-block"></span>'+s.label+(s.colorByValue?' (green=profit, red=loss)':'')+'</span>';
+      return '<span style="display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--fg-3)"><span style="width:9px;height:9px;border-radius:2px;background:'+swatch+';display:inline-block"></span>'+s.label+'</span>';
     }).join('')+'</div>';
     return '<div style="width:100%">'
       +'<div style="width:'+pctW+';min-width:'+W+'px;max-width:100%;margin-left:auto;position:relative;overflow:visible">'
