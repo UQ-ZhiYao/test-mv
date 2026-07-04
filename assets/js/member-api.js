@@ -459,12 +459,21 @@ async function mpLoadNtaWeekly() {
   }
   const byWeek = {};
   const order = [];
+  let firstKey = null;
   all.forEach(function(r) {
     if (!r.date || r.nta == null) return;
     const key = isoWeekKey(new Date(r.date + 'T00:00:00'));
     const v = parseFloat(r.nta);
+    if (firstKey === null) firstKey = key;
     if (!byWeek[key]) { byWeek[key] = { date: r.date, close: v }; order.push(key); }
-    else { byWeek[key].date = r.date; byWeek[key].close = v; } // ascending order → last write wins
+    // Last write wins within a week (so each weekly point is that week's
+    // closing value) — EXCEPT for the very first ISO week in the whole
+    // series, which must keep its first day's exact date. Otherwise the
+    // fund's true first day (e.g. 13 Dec) gets silently pushed forward to
+    // the end of its ISO week by a later day in that same week, and the
+    // chart appears to start days late even though nta_daily has data
+    // from day one.
+    else if (key !== firstKey) { byWeek[key].date = r.date; byWeek[key].close = v; }
   });
   return order.map(function(key) { return byWeek[key]; });
 }
