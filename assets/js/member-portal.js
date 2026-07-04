@@ -2548,13 +2548,13 @@ function cmpCutoffDate(period, latestStr, inceptionStr){
 
 // Comparison line chart — rebased-% series, right-side axis, no letterboxing
 // (preserveAspectRatio="none" so the plot area always fills the card's
-// actual width instead of aspect-ratio-locked empty margins). ohlcInfo
-// draws a small per-index O/H/L/C + change readout over the top-left of
-// the plot, using each index's own native price scale (not the rebased %).
+// actual width instead of aspect-ratio-locked empty margins). priceInfo
+// draws a small per-index Price/Change readout over the top-left of the
+// plot, using each index's own native price scale (not the rebased %).
 // Hovering anywhere on the chart updates that readout to the hovered date;
 // moving away reverts to the latest date (same convention as the NTA
 // Performance candlestick's info line).
-function buildCmpChart(seriesArr, dates, ohlcInfo){
+function buildCmpChart(seriesArr, dates, priceInfo){
   var n=dates.length;
   if(n<2 || !seriesArr.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
   var W=1000,H=520,padL=8,padR=40,padYT=14,padYB=22;
@@ -2592,7 +2592,7 @@ function buildCmpChart(seriesArr, dates, ohlcInfo){
     return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>';
   }).join('');
   // Hover overlay — one thin column per data point; hovering recomputes
-  // O/H/L/C "as of" that date for every series via cmpHoverAt(i).
+  // each series' Price/Change "as of" that date via cmpHoverAt(i).
   var colW=(W-padL-padR)/Math.max(1,n-1);
   var overlays=dates.map(function(d,i){
     var ox=Math.max(padL,px(i)-colW/2);
@@ -2603,15 +2603,15 @@ function buildCmpChart(seriesArr, dates, ohlcInfo){
   // tags injected via innerHTML never execute.
   window._cmpRaw = seriesArr.map(function(s){ return {name:s.name, color:s.color, raw:s.raw}; });
   window._cmpDates = dates.slice();
-  var ohlcBoxInner = ohlcInfo && ohlcInfo.length
+  var priceBoxInner = priceInfo && priceInfo.length
     ? '<div style="font-size:.66rem;color:#94A3B8;margin-bottom:2px">'+cmpDateLabel(dates[dates.length-1])+'</div>'
-      + ohlcInfo.map(function(o){ return cmpOhlcLineHtml(o.name,o.color,o.o,o.h,o.l,o.c,o.chg,o.chgPct); }).join('')
+      + priceInfo.map(function(o){ return cmpPriceLineHtml(o.name,o.color,o.price,o.chg,o.chgPct); }).join('')
     : '';
-  var ohlcBox = ohlcBoxInner
-    ? '<div id="cmpOhlcBox" style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:3px;pointer-events:none">'+ohlcBoxInner+'</div>'
+  var priceBox = priceBoxInner
+    ? '<div id="cmpOhlcBox" style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:3px;pointer-events:none">'+priceBoxInner+'</div>'
     : '';
   return '<div style="position:relative;width:100%">'
-    +ohlcBox
+    +priceBox
     +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:520px;display:block;overflow:visible">'+grid+baseline+paths+xLabels.join('')+overlays+'</svg>'
     +'</div>';
 }
@@ -2621,16 +2621,14 @@ function cmpDateLabel(dateStr){
   return dt.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});
 }
 function fmtCmpOhlc(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-// Name keeps its series line color; the O/H/L/C letters are pure black;
-// only the numeric values and the change figure are colored green/red.
-function cmpOhlcLineHtml(name,color,o,h,l,c,chg,chgPct){
+// Name keeps its series line color; Price/Change/Change% are colored
+// green or red by direction (change is period-over-period — vs the
+// previous data point — never vs the start of the whole window).
+function cmpPriceLineHtml(name,color,price,chg,chgPct){
   var up=chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
   return '<div style="font-size:.68rem;font-weight:400;white-space:nowrap">'
     +'<span style="color:'+color+'">'+name+'</span> '
-    +'<span style="color:#000000">O</span><span style="color:'+col+'">'+fmtCmpOhlc(o)+'</span> '
-    +'<span style="color:#000000">H</span><span style="color:'+col+'">'+fmtCmpOhlc(h)+'</span> '
-    +'<span style="color:#000000">L</span><span style="color:'+col+'">'+fmtCmpOhlc(l)+'</span> '
-    +'<span style="color:#000000">C</span><span style="color:'+col+'">'+fmtCmpOhlc(c)+'</span> '
+    +'<span style="color:'+col+'">'+fmtCmpOhlc(price)+'</span> '
     +'<span style="color:'+col+'">'+sign+fmtCmpOhlc(Math.abs(chg))+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)</span>'
     +'</div>';
 }
@@ -2640,12 +2638,17 @@ function cmpHoverAt(i){
   if(!raw || !dates || !dates[i] || !box) return;
   var html='<div style="font-size:.66rem;color:#94A3B8;margin-bottom:2px">'+cmpDateLabel(dates[i])+'</div>';
   raw.forEach(function(s){
-    var slice=s.raw.slice(0,i+1).filter(function(v){return v!=null;});
-    if(!slice.length) return;
-    var o=slice[0], c=slice[slice.length-1];
-    var h=Math.max.apply(null,slice), l=Math.min.apply(null,slice);
-    var chg=c-o, chgPct=o?(chg/o*100):0;
-    html+=cmpOhlcLineHtml(s.name,s.color,o,h,l,c,chg,chgPct);
+    // Walk backward from i to find the current point and the prior known
+    // point, so "Change" is always period-over-period, never vs window start.
+    var curIdx=-1;
+    for(var a=i;a>=0;a--){ if(s.raw[a]!=null){ curIdx=a; break; } }
+    if(curIdx<0) return;
+    var price=s.raw[curIdx];
+    var prevIdx=-1;
+    for(var b=curIdx-1;b>=0;b--){ if(s.raw[b]!=null){ prevIdx=b; break; } }
+    var prev=prevIdx>=0?s.raw[prevIdx]:price;
+    var chg=price-prev, chgPct=prev?(chg/prev*100):0;
+    html+=cmpPriceLineHtml(s.name,s.color,price,chg,chgPct);
   });
   box.innerHTML=html;
 }
@@ -2698,16 +2701,18 @@ function pgComparison(){
       return {name:s.name,color:s.color,v:pct,raw:vals};
     }).filter(function(s){ return s.v.some(function(v){return v!=null;}); });
 
-    var ohlcInfo=aligned.map(function(s){
-      var validRaw=s.raw.filter(function(v){return v!=null;});
-      if(!validRaw.length) return null;
-      var o=validRaw[0], c=validRaw[validRaw.length-1];
-      var h=Math.max.apply(null,validRaw), l=Math.min.apply(null,validRaw);
-      var chg=c-o, chgPct=o?(chg/o*100):0;
-      return {name:s.name,color:s.color,o:o,h:h,l:l,c:c,chg:chg,chgPct:chgPct};
+    var priceInfo=aligned.map(function(s){
+      var idxs=[]; s.raw.forEach(function(v,i){ if(v!=null) idxs.push(i); });
+      if(!idxs.length) return null;
+      var curIdx=idxs[idxs.length-1];
+      var price=s.raw[curIdx];
+      var prevIdx=idxs.length>1?idxs[idxs.length-2]:curIdx;
+      var prev=s.raw[prevIdx];
+      var chg=price-prev, chgPct=prev?(chg/prev*100):0;
+      return {name:s.name,color:s.color,price:price,chg:chg,chgPct:chgPct};
     }).filter(Boolean);
 
-    chart = buildCmpChart(aligned, windowDates, ohlcInfo);
+    chart = buildCmpChart(aligned, windowDates, priceInfo);
     legend = '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;justify-content:center;width:100%;">'
       +aligned.map(function(s){
         var lastV=null; for(var i=s.v.length-1;i>=0;i--){ if(s.v[i]!=null){lastV=s.v[i];break;} }
