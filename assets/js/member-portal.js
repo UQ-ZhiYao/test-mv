@@ -1022,6 +1022,36 @@ function getTip(el){return el.getAttribute('data-tip');}
 
 // ── Fund Overview chart number formatting ──────────────────────────────
 // Base: #,##0.00 · 6-digit+ (100,000+): #,##0.0"k" · 9-digit+ (100,000,000+): #,##0.0"Mil" · %: 0.0%
+// "Nice numbers for graph labels" (Heckbert) — picks round tick values
+// (2000, 10000, ...) instead of raw data-derived fractions (17222.35, ...).
+function niceNum(range, round){
+  if(range<=0) return 1;
+  var exponent=Math.floor(Math.log10(range));
+  var fraction=range/Math.pow(10,exponent);
+  var niceFraction;
+  if(round){
+    if(fraction<1.5) niceFraction=1;
+    else if(fraction<3) niceFraction=2;
+    else if(fraction<7) niceFraction=5;
+    else niceFraction=10;
+  } else {
+    if(fraction<=1) niceFraction=1;
+    else if(fraction<=2) niceFraction=2;
+    else if(fraction<=5) niceFraction=5;
+    else niceFraction=10;
+  }
+  return niceFraction*Math.pow(10,exponent);
+}
+function niceAxisScale(min,max,tickCount){
+  tickCount=tickCount||5;
+  if(min===max){ min-=1; max+=1; }
+  var range=niceNum(max-min,false);
+  var step=niceNum(range/(tickCount-1),true);
+  var niceMin=Math.floor(min/step)*step;
+  var niceMax=Math.ceil(max/step)*step;
+  return {min:niceMin,max:niceMax,step:step};
+}
+
 function fmtChartNum(v){
   var av=Math.abs(v||0), sign=(v||0)<0?'−':'';
   if(av>=100000000) return sign+(av/1000000).toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'Mil';
@@ -1653,7 +1683,9 @@ function pgFundOverview(){
     var W=420,H=220,padX=16,padR=42,padY=18;
     var tipId=nextTipId();
     var all=series.reduce(function(a,s){return a.concat(s.v);},[]);
-    var mn=Math.min.apply(null,all),mx=Math.max.apply(null,all),rng=mx-mn||0.001;
+    var rawMn=Math.min.apply(null,all),rawMx=Math.max.apply(null,all);
+    var scale=niceAxisScale(rawMn,rawMx,4);
+    var mn=scale.min,mx=scale.max,rng=(mx-mn)||0.001;
     var n=labels.length;
     function px(i){return padX+(i/(n-1))*(W-padX-padR);}
     function py(v){return H-padY-((v-mn)/rng)*(H-padY*2);}
@@ -1667,8 +1699,10 @@ function pgFundOverview(){
         +'<path d="'+area+'" fill="url(#lg'+s.id+')"/>'
         +'<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+dots;
     }).join('');
-    var grid=[0.25,0.5,0.75].map(function(f){
-      var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=mn+f*rng;
+    var ticks=[];
+    for(var tv=mn; tv<=mx+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
+    var grid=ticks.map(function(v){
+      var yy=(H-padY-((v-mn)/rng)*(H-padY*2)).toFixed(1);
       return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
         +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
     }).join('');
@@ -1685,7 +1719,7 @@ function pgFundOverview(){
       var cx=(px(i)/W).toFixed(4);
       return '<rect x="'+ox+'" y="0" width="'+segW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
     }).join('');
-    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+paths+xL+overlays+'</svg>'
+    var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+paths+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     // Legend at bottom if multiple series
     var leg=series.length>1?'<div style="display:flex;gap:14px;justify-content:center;margin-top:6px">'
@@ -1699,7 +1733,8 @@ function pgFundOverview(){
     var W=420,H=220,padX=42,padR=42,padYT=16,padYB=24;
     var tipId=nextTipId();
     var allBar=barSeries.v, allLine=lineSeries.v;
-    var barMax=Math.max.apply(null,allBar)||1;
+    var barScale=niceAxisScale(0,Math.max.apply(null,allBar)||1,3);
+    var barMax=barScale.max||1;
     var lineMax=Math.max.apply(null,allLine)||1;
     var n=groups.length;
     var groupW=(W-padX-padR)/n;
@@ -1717,7 +1752,7 @@ function pgFundOverview(){
     var ld=allLine.map(function(v,i){return (i?'L':'M')+lx(i)+','+ly(v);}).join('');
     var ldots=allLine.map(function(v,i){return '<circle cx="'+lx(i)+'" cy="'+ly(v)+'" r="3" fill="#fff" stroke="'+lineSeries.color+'" stroke-width="2"/>';}).join('');
     // Grid — bar values on the inner right edge, line % just outside it
-    var grid=[0.5,1].map(function(f){
+    var grid=[0.33,0.66,1].map(function(f){
       var yy=(H-padYB-f*(H-padYT-padYB)).toFixed(1);
       var vLeft=fmtChartNum(barMax*f);
       var vRight=fmtChartPct(lineMax*f);
@@ -1734,7 +1769,7 @@ function pgFundOverview(){
       var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
       return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
     }).join('');
-    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+'<path d="'+ld+'" fill="none" stroke="'+lineSeries.color+'" stroke-width="2" stroke-linejoin="round"/>'+ldots+xL+overlays+'</svg>'
+    var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+'<path d="'+ld+'" fill="none" stroke="'+lineSeries.color+'" stroke-width="2" stroke-linejoin="round"/>'+ldots+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px">'
       +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+barSeries.color+';display:inline-block"></span>'+barSeries.label+'</span>'
@@ -1750,7 +1785,9 @@ function pgFundOverview(){
     var fmtV=isPct?fmtChartPct:fmtChartNum;
     var W=420,H=220,padX=16,padR=42,padY=20,n=data.length;
     var tipId=nextTipId();
-    var mx=Math.max.apply(null,data)||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
+    var rawMx=Math.max.apply(null,data)||1;
+    var scale=niceAxisScale(0,rawMx,4);
+    var mx=scale.max||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
     function bx(i){return padX+i*gap+gap/2-barW/2;}
     function bh(v){return Math.max(2,(v/mx)*(H-padY*2));}
     var bPaths=data.map(function(v,i){
@@ -1758,8 +1795,10 @@ function pgFundOverview(){
       return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+(colors[i]||'#1565C0')+'" rx="2"/>'
         +(showLabels?'<text x="'+(parseFloat(x)+barW/2).toFixed(1)+'" y="'+(parseFloat(y)-4).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#374151" font-weight="600">'+fmtV(v)+'</text>':'');
     }).join('');
-    var grid=[0.2,0.4,0.6,0.8,1.0].map(function(f){
-      var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=(mx*f);
+    var ticks=[];
+    for(var tv=0; tv<=mx+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
+    var grid=ticks.map(function(v){
+      var yy=(H-padY-(v/mx)*(H-padY*2)).toFixed(1);
       return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
         +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtV(v)+'</text>';
     }).join('');
@@ -1771,7 +1810,7 @@ function pgFundOverview(){
       var cx=((padX+i*gap+gap/2)/W).toFixed(4);
       return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
     }).join('');
-    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+xL+overlays+'</svg>'
+    var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg=legendItems?'<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +legendItems.map(function(it){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+it.c+';display:inline-block"></span>'+it.l+'</span>';}).join('')+'</div>':'';
@@ -1779,24 +1818,36 @@ function pgFundOverview(){
   }
   // Grouped bar chart — full width + bottom legend + hover
   function groupedBars(groups,series){
-    var W=420,H=220,padX=16,padR=42,padY=20,n=groups.length,ns=series.length;
+    var W=420,H=220,padX=16,padR=42,padYT=14,padYB=24,n=groups.length,ns=series.length;
     var tipId=nextTipId();
     var allV=series.reduce(function(a,s){return a.concat(s.v);},[]);
-    var mx=Math.max.apply(null,allV)||1;
+    var rawMx=Math.max.apply(null,allV.concat([0]));
+    var rawMn=Math.min.apply(null,allV.concat([0]));
+    var scale=niceAxisScale(rawMn,rawMx,5);
+    var mx=scale.max, mn=scale.min;
+    if(mx===mn){ mx+=1; mn-=1; }
+    var rng=mx-mn;
+    var plotH=H-padYT-padYB;
+    function yFor(v){ return padYT+(mx-v)/rng*plotH; }
+    var zeroY=yFor(0);
     var groupW=(W-padX-padR)/n,barW=Math.min(16,groupW/ns*0.4);
     function bx(gi,si){return padX+gi*groupW+groupW/2-(ns*barW+(ns-1)*3)/2+si*(barW+3);}
-    function bh(v){return Math.max(2,(v/mx)*(H-padY*2));}
     var bPaths=series.map(function(s,si){
       return s.v.map(function(v,gi){
-        var h=bh(v),x=bx(gi,si).toFixed(1),y=(H-padY-h).toFixed(1);
-        return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+s.color+'" rx="2"/>';
+        var yTop=yFor(Math.max(0,v)), yBot=yFor(Math.min(0,v));
+        var h=Math.max(0.5,yBot-yTop);
+        var x=bx(gi,si).toFixed(1);
+        return '<rect x="'+x+'" y="'+yTop.toFixed(1)+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+s.color+'" rx="2"/>';
       }).join('');
     }).join('');
-    var grid=[0.2,0.4,0.6,0.8,1.0].map(function(f){
-      var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=(mx*f);
+    var ticks=[];
+    for(var tv=mn; tv<=mx+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
+    var grid=ticks.map(function(v){
+      var yy=yFor(v).toFixed(1);
       return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
         +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
     }).join('');
+    var zeroLine=(mn<0&&mx>0)?('<line x1="'+padX+'" y1="'+zeroY.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+zeroY.toFixed(1)+'" stroke="#CBD5E1" stroke-width="1.2"/>'):'';
     var xL=groups.map(function(l,i){
       var cx=padX+i*groupW+groupW/2;
       return '<text x="'+cx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#6B7280">'+l+'</text>';
@@ -1809,7 +1860,7 @@ function pgFundOverview(){
       var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
       return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
     }).join('');
-    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+xL+overlays+'</svg>'
+    var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+zeroLine+bPaths+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +series.map(function(s){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+s.color+';display:inline-block"></span>'+s.label+'</span>';}).join('')+'</div>';
@@ -1820,7 +1871,9 @@ function pgFundOverview(){
     var W=420,H=220,padX=16,padR=42,padY=20,n=labels.length;
     var tipId=nextTipId();
     var totals=labels.map(function(_,i){return series.reduce(function(a,s){return a+s.v[i];},0);});
-    var mx=Math.max.apply(null,totals)||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
+    var rawMx=Math.max.apply(null,totals)||1;
+    var scalePre=niceAxisScale(0,rawMx,4);
+    var mx=scalePre.max||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
     function bx(i){return (padX+i*gap+gap/2-barW/2).toFixed(1);}
     function bh(v){return Math.max(2,((v/mx)*(H-padY*2)));}
     var rects='';
@@ -1832,8 +1885,11 @@ function pgFundOverview(){
         rects+='<rect x="'+bx(i)+'" y="'+y.toFixed(1)+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+s.color+'" rx="1"/>';
       });
     });
-    var grid=[0.5,1].map(function(f){
-      var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=(mx*f);
+    var scale=scalePre;
+    var ticks=[];
+    for(var tv=0; tv<=scale.max+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
+    var grid=ticks.map(function(v){
+      var yy=(H-padY-(v/scale.max)*(H-padY*2)).toFixed(1);
       return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
         +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
     }).join('');
@@ -1848,7 +1904,7 @@ function pgFundOverview(){
       var cx=((padX+i*gap+gap/2)/W).toFixed(4);
       return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
     }).join('');
-    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+xL+overlays+'</svg>'
+    var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +series.map(function(s){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+s.color+';display:inline-block"></span>'+s.label+'</span>';}).join('')

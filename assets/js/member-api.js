@@ -337,7 +337,7 @@ async function mpSubmitRedemption(investorId, { amount, units, note }) {
    profiles.units_held isn't kept up to date) ────────────────────── */
 async function mpLoadShareholders() {
   const [profRes, ciRes] = await Promise.all([
-    sb.from('profiles').select('id, investor_id, full_name, account_type, joined_date, status'),
+    sb.from('profiles').select('id, full_name, account_type, joined_date, status'),
     sb.from('capital_injection').select('uid, units, status').eq('status', 'Approved')
   ]);
   if (profRes.error) throw profRes.error;
@@ -351,7 +351,7 @@ async function mpLoadShareholders() {
   return (profRes.data || [])
     .map(function(p) {
       return {
-        investor_id: p.investor_id,
+        investor_id: p.id,
         full_name: p.full_name,
         account_type: p.account_type,
         joined_date: p.joined_date,
