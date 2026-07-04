@@ -1576,7 +1576,7 @@ function pgFundOverview(){
       +'<svg viewBox="0 0 '+s+' '+s+'" style="width:'+s+'px;height:'+s+'px;max-width:90%;max-height:100%;flex-shrink:0">'
       +paths
       +'<circle cx="'+cx+'" cy="'+cy+'" r="'+(ir-3)+'" fill="#fff" style="pointer-events:none"/>'
-      +'<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="19" font-weight="700" fill="#0F172A" style="pointer-events:none">'+label+'</text>'
+      +'<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="19" font-weight="400" fill="#0F172A" style="pointer-events:none">'+label+'</text>'
       +'<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" fill="#6B7280" style="pointer-events:none">'+(caption||'total')+'</text>'
       +'</svg>'
       +'<div style="display:flex;flex-direction:column;gap:7px;min-width:0">'+legend+'</div>'
@@ -1909,7 +1909,7 @@ function pgFundOverview(){
     var bPaths=data.map(function(v,i){
       var h=bh(v),x=bx(i).toFixed(1),y=(H-padY-h).toFixed(1);
       return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+(colors[i]||'#1565C0')+'" rx="2"/>'
-        +(showLabels?'<text x="'+(parseFloat(x)+barW/2).toFixed(1)+'" y="'+(parseFloat(y)-4).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#374151" font-weight="600">'+fmtV(v)+'</text>':'');
+        +(showLabels?'<text x="'+(parseFloat(x)+barW/2).toFixed(1)+'" y="'+(parseFloat(y)-4).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#374151" font-weight="400">'+fmtV(v)+'</text>':'');
     }).join('');
     var grid=scale.ticks.map(function(v){
       var yy=(H-padY-(v/mx)*(H-padY*2)).toFixed(1);
@@ -1925,7 +1925,7 @@ function pgFundOverview(){
       return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+xL+overlays+'</svg>'
-      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:400;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg=legendItems?'<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +legendItems.map(function(it){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+it.c+';display:inline-block"></span>'+it.l+'</span>';}).join('')+'</div>':'';
     return chartSvg+leg;
@@ -1974,7 +1974,7 @@ function pgFundOverview(){
       return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+zeroLine+bPaths+xL+overlays+'</svg>'
-      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:400;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +series.map(function(s){var sw=s.colorByValue?'linear-gradient(90deg,#2E7D32 50%,#DC2626 50%)':s.color;return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+sw+';display:inline-block"></span>'+s.label+'</span>';}).join('')+'</div>';
     return chartSvg+leg;
@@ -2015,7 +2015,7 @@ function pgFundOverview(){
       return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+xL+overlays+'</svg>'
-      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:400;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +series.map(function(s){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+s.color+';display:inline-block"></span>'+s.label+'</span>';}).join('')
       +'</div>';
@@ -2066,7 +2066,7 @@ function pgFundOverview(){
       return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+'<path d="'+ld+'" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round"/>'+ldots+xL+overlays+'</svg>'
-      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:400;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:#0D47A1;display:inline-block"></span>Interim DPS</span>'
       +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:#64B5F6;display:inline-block"></span>Final DPS</span>'
@@ -2091,20 +2091,19 @@ function pgFundOverview(){
       var x4=(cx+ir*Math.cos(ang)).toFixed(2),y4=(cy+ir*Math.sin(ang)).toFixed(2);
       var la=sweep>Math.PI?1:0;
       var d='M'+x1+' '+y1+' A'+R+' '+R+' 0 '+la+' 1 '+x2+' '+y2+' L'+x3+' '+y3+' A'+ir+' '+ir+' 0 '+la+' 0 '+x4+' '+y4+'Z';
-      paths+='<path d="'+d+'" fill="'+sg.color+'" stroke="none" data-tip="'+groupTip+'" onmouseenter="showPieTip(event,getTip(this))" onmousemove="showPieTip(event,getTip(this))" onmouseout="hidePieTip()" style="cursor:pointer"/>';
+      paths+='<path d="'+d+'" fill="'+sg.color+'" stroke="none" data-tip="'+groupTip+'" onmouseenter="showGroupPieTip(event,getTip(this))" onmousemove="showGroupPieTip(event,getTip(this))" onmouseout="hideGroupPieTip()" style="cursor:pointer"/>';
       ang=ea;
     });
     var legend=segs.map(function(sg){
-      var pct=(sg.v/total*100).toFixed(1);
       return '<div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#374151">'
         +'<span style="width:8px;height:8px;border-radius:50%;background:'+sg.color+';flex-shrink:0;display:inline-block"></span>'
-        +sg.label+' <span style="color:#9CA3AF">'+pct+'%</span></div>';
+        +sg.label+' <span style="color:#9CA3AF">'+fmtSen(sg.v)+' sen</span></div>';
     }).join('');
     return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:20px;flex:1;padding:8px 0;min-height:0">'
       +'<svg viewBox="0 0 '+s+' '+s+'" style="width:'+s+'px;height:'+s+'px;max-width:90%;max-height:100%;flex-shrink:0">'
       +paths
       +'<circle cx="'+cx+'" cy="'+cy+'" r="'+(ir-3)+'" fill="#fff" style="pointer-events:none"/>'
-      +'<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="19" font-weight="700" fill="#0F172A" style="pointer-events:none">'+label+'</text>'
+      +'<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="19" font-weight="400" fill="#0F172A" style="pointer-events:none">'+label+'</text>'
       +'<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" fill="#6B7280" style="pointer-events:none">'+(caption||'total')+'</text>'
       +'</svg>'
       +'<div style="display:flex;flex-direction:column;gap:7px;min-width:0">'+legend+'</div>'
@@ -2117,7 +2116,7 @@ function pgFundOverview(){
 
   // ── KEY FACTS (full width, no outline) ────────────────────────────────
   var latestBS = BALANCE_SHEET.length ? BALANCE_SHEET[BALANCE_SHEET.length-1] : null;
-  var fundSizeLbl = latestBS ? ('RM '+(latestBS.totalEquity/1000000).toFixed(2)+' M') : '—';
+  var fundSizeLbl = latestBS ? ('RM '+fmtChartNum(latestBS.totalEquity)) : '—';
   var navLbl = NTA_PRICE>0 ? ('RM '+NTA_PRICE.toFixed(4)) : '—';
   var inceptionLbl = INCEPTION_DATE
     ? formatDate(INCEPTION_DATE)
@@ -2185,10 +2184,12 @@ function pgFundOverview(){
   var DIST_BY_FY_MAP = {}; DIST_BY_FY.forEach(function(r){ DIST_BY_FY_MAP[r.fy]=r; });
   var INCOME_BY_FY = {}; INCOME_STATEMENT.forEach(function(r){ INCOME_BY_FY[r.fy]=r; });
 
-  // ── DISTRIBUTION PAYOUT RATIO — last FY's Total DPS ÷ previous FY's EPS.
-  // Donut shows last FY Interim DPS, last FY Final DPS, and the slice of
-  // previous FY's EPS not distributed (EPS excl. DPS). The whole chart
-  // shares ONE hover tooltip: Total DPS / EPS / Payout Ratio. ────────────
+  // ── DISTRIBUTION PAYOUT RATIO — center number stays Last FY's Total DPS
+  // ÷ previous FY's EPS. The donut itself now breaks down into just 2
+  // segments: last FY's Interim DPS, and previous FY's GPS (Gross Income
+  // per share) less that Interim DPS. One shared multi-line hover tooltip
+  // covers the whole chart: FYxxxx header, then Interim DPS and GPS each
+  // on their own line. ─────────────────────────────────────────────────
   function fmtSen(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   var payoutLastFy = ALL_FY.length ? ALL_FY[ALL_FY.length-1] : null;
   var payoutPrevFy = ALL_FY.length>1 ? ALL_FY[ALL_FY.length-2] : null;
@@ -2197,18 +2198,19 @@ function pgFundOverview(){
     var lastDist = DIST_BY_FY_MAP[payoutLastFy] || {interimDps:0,finalDps:0,totalDps:0};
     var prevIS   = INCOME_BY_FY[payoutPrevFy];
     var prevEps  = (prevIS && prevIS.epsCents!=null) ? prevIS.epsCents : null;
-    if(prevEps!=null){
+    var prevGps  = (prevIS && prevIS.outstandingShares>0) ? (prevIS.grossIncome/prevIS.outstandingShares*100) : null;
+    if(prevEps!=null && prevGps!=null){
       var payoutRatio = prevEps ? (lastDist.totalDps/prevEps*100) : null;
-      var retained = Math.max(0, prevEps-(lastDist.totalDps||0));
+      var interimVal  = lastDist.interimDps||0;
+      var gpsExclInterim = Math.max(0, prevGps-interimVal);
       var distSegs=[
-        {v:lastDist.interimDps||0, color:'#0D47A1', label:'Interim DPS'},
-        {v:lastDist.finalDps||0,   color:'#64B5F6', label:'Final DPS'},
-        {v:retained,               color:'#CBD5E1', label:'EPS excl. DPS'}
+        {v:interimVal,     color:'#0D47A1', label:'Interim DPS'},
+        {v:gpsExclInterim, color:'#64B5F6', label:'GPS excl. Interim DPS'}
       ];
-      var groupTip='DPS (Total): '+fmtSen(lastDist.totalDps)+' sen  ·  EPS: '+fmtSen(prevEps)+' sen  ·  Payout Ratio: '+(payoutRatio!=null?payoutRatio.toFixed(1):'—')+'%';
+      var groupTip=payoutLastFy+'|Interim DPS: '+fmtSen(interimVal)+' sen|GPS: '+fmtSen(prevGps)+' sen';
       distSummaryChart = payoutDonut(distSegs, (payoutRatio!=null?payoutRatio.toFixed(1):'—')+'%', 'Payout Ratio', groupTip);
     } else {
-      distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">No EPS data on record</div>';
+      distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">No EPS/Gross Income data on record</div>';
     }
   } else {
     distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(DIST_BY_FY_ERROR?('Could not load — '+DIST_BY_FY_ERROR):'No distribution history on record')+'</div>';
@@ -3009,7 +3011,7 @@ function frTip(e,txt,cxStr,tipId){
   var parts=txt.split('|');
   var fy=parts[0].replace('FY:','');
   var lines=parts.slice(1);
-  el.innerHTML='<div style="font-size:.76rem;font-weight:600;color:#64748B;margin-bottom:7px;letter-spacing:.04em">'+fy+'</div>'
+  el.innerHTML='<div style="font-size:.76rem;font-weight:400;color:#64748B;margin-bottom:7px;letter-spacing:.04em">'+fy+'</div>'
     +lines.map(function(l){
       var cc=l.split('::');
       var color=cc[0]; var rest=cc[1]||l;
@@ -3017,7 +3019,7 @@ function frTip(e,txt,cxStr,tipId){
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
         +'<span style="width:8px;height:8px;border-radius:50%;background:'+color+';flex-shrink:0"></span>'
         +'<span style="font-size:.8rem;color:#374151;flex:1">'+kv[0]+'</span>'
-        +'<span style="font-size:.8rem;font-weight:700;color:#0F172A;margin-left:14px">'+kv[1]+'</span>'
+        +'<span style="font-size:.8rem;font-weight:400;color:#0F172A;margin-left:14px">'+kv[1]+'</span>'
         +'</div>';
     }).join('');
   var tipW=240;
@@ -3333,7 +3335,7 @@ function ensurePieTip(){
   if(!t){
     t=document.createElement('div');
     t.id='pieTip';
-    t.style.cssText='position:fixed;opacity:0;transition:opacity .12s;pointer-events:none;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:7px 11px;font-size:.78rem;font-weight:600;color:#0F172A;box-shadow:0 6px 20px rgba(0,0,0,.13);z-index:999;white-space:nowrap';
+    t.style.cssText='position:fixed;opacity:0;transition:opacity .12s;pointer-events:none;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:7px 11px;font-size:.78rem;font-weight:400;color:#0F172A;box-shadow:0 6px 20px rgba(0,0,0,.13);z-index:999;white-space:nowrap';
     document.body.appendChild(t);
   }
   return t;
@@ -3341,6 +3343,34 @@ function ensurePieTip(){
 function showPieTip(e,txt){var t=ensurePieTip();t.textContent=txt;t.style.opacity='1';t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-36)+'px';}
 function hidePieTip(){var t=document.getElementById('pieTip');if(t)t.style.opacity='0';}
 document.addEventListener('mousemove',function(e){var t=document.getElementById('pieTip');if(t&&t.style.opacity!=='0'){t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-36)+'px';}});
+// Group pie tooltip — one shared tooltip for an entire donut (e.g.
+// Distribution Payout Ratio), rendered as a header line ("FYxxxx") plus
+// one line per metric, rather than a single-line per-slice tooltip.
+// data-tip carries a plain 'HEADER|line1|line2|...' string (never raw
+// HTML) so it stays safe to embed as an HTML attribute.
+function ensureGroupPieTip(){
+  var t=document.getElementById('groupPieTip');
+  if(!t){
+    t=document.createElement('div');
+    t.id='groupPieTip';
+    t.style.cssText='position:fixed;opacity:0;transition:opacity .12s;pointer-events:none;background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:8px 12px;font-size:.78rem;font-weight:400;color:#0F172A;box-shadow:0 6px 20px rgba(0,0,0,.13);z-index:999;line-height:1.5;white-space:nowrap';
+    document.body.appendChild(t);
+  }
+  return t;
+}
+function showGroupPieTip(e,raw){
+  var t=ensureGroupPieTip();
+  var parts=(raw||'').split('|');
+  var header=parts[0]||'';
+  var lines=parts.slice(1);
+  t.innerHTML='<div style="color:#64748B;margin-bottom:5px">'+header+'</div>'
+    +lines.map(function(l){return '<div style="margin-bottom:2px">'+l+'</div>';}).join('');
+  t.style.opacity='1';
+  t.style.left=(e.clientX+14)+'px';
+  t.style.top=(e.clientY-46)+'px';
+}
+function hideGroupPieTip(){var t=document.getElementById('groupPieTip');if(t)t.style.opacity='0';}
+document.addEventListener('mousemove',function(e){var t=document.getElementById('groupPieTip');if(t&&t.style.opacity!=='0'){t.style.left=(e.clientX+14)+'px';t.style.top=(e.clientY-46)+'px';}});
 // [init removed for standalone page]
 document.addEventListener('click',function(e){
   if(!e.target.closest('#npanel')&&!e.target.closest('#notifBtn'))document.getElementById('npanel').classList.remove('open');
