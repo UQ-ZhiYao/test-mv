@@ -2523,6 +2523,16 @@ function switchCmpPeriod(p){
   if(el) el.innerHTML=pgComparison();
 }
 
+// Clicking a legend entry toggles that series' line on/off. State persists
+// across period switches (survives re-render since it lives on window,
+// not inside pgComparison's local scope).
+function toggleCmpSeries(name){
+  window._cmpHidden = window._cmpHidden || {};
+  window._cmpHidden[name] = !window._cmpHidden[name];
+  var el=document.getElementById('mainContent');
+  if(el) el.innerHTML=pgComparison();
+}
+
 // Resolves a period key to a start-date cutoff (inclusive), anchored to the
 // latest date in the loaded series. 'all' anchors to the fund's inception
 // date instead, and never goes earlier than inception for any period.
@@ -2554,11 +2564,13 @@ function cmpCutoffDate(period, latestStr, inceptionStr){
 // Hovering anywhere on the chart updates that readout to the hovered date;
 // moving away reverts to the latest date (same convention as the NTA
 // Performance candlestick's info line).
-function buildCmpChart(seriesArr, dates, priceInfo){
+function buildCmpChart(seriesArr, dates, priceInfo, hidden){
+  hidden = hidden || {};
   var n=dates.length;
   if(n<2 || !seriesArr.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
+  var visible=seriesArr.filter(function(s){ return !hidden[s.name]; });
   var W=1000,H=520,padL=8,padR=40,padYT=14,padYB=22;
-  var allV=[]; seriesArr.forEach(function(s){ s.v.forEach(function(v){ if(v!=null) allV.push(v); }); });
+  var allV=[]; (visible.length?visible:seriesArr).forEach(function(s){ s.v.forEach(function(v){ if(v!=null) allV.push(v); }); });
   if(!allV.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">No data</div>';
   var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
   var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
@@ -2589,7 +2601,7 @@ function buildCmpChart(seriesArr, dates, priceInfo){
     var anchor=(t===0)?'start':(t===xTickCount-1)?'end':'middle';
     xLabels.push('<text x="'+px(idx).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+anchor+'" font-size="7.5" fill="#000000">'+lbl+'</text>');
   }
-  var paths=seriesArr.map(function(s){
+  var paths=visible.map(function(s){
     var d='',started=false;
     s.v.forEach(function(v,i){
       if(v==null) return;
@@ -2609,14 +2621,17 @@ function buildCmpChart(seriesArr, dates, priceInfo){
   var hoverLine='<line id="cmpHoverLine" x1="0" y1="'+padYT+'" x2="0" y2="'+(H-padYB)+'" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3,3" style="display:none;pointer-events:none"/>';
   // Expose raw (native-price) series + date axis + pixel positions for the
   // hover handler — a plain global assignment (not embedded HTML/script),
-  // since script tags injected via innerHTML never execute.
+  // since script tags injected via innerHTML never execute. Full data
+  // (not just visible) is exposed; cmpHoverAt filters by window._cmpHidden
+  // live, so toggling a series doesn't require rebuilding these arrays.
   window._cmpRaw = seriesArr.map(function(s){ return {name:s.name, color:s.color, raw:s.raw}; });
-  window._cmpPct = seriesArr.map(function(s){ return s.v; });
+  window._cmpPct = seriesArr.map(function(s){ return {name:s.name, v:s.v}; });
   window._cmpDates = dates.slice();
   window._cmpPx = dates.map(function(_,i){ return px(i); });
-  var priceBoxInner = priceInfo && priceInfo.length
+  var visiblePriceInfo = (priceInfo||[]).filter(function(o){ return !hidden[o.name]; });
+  var priceBoxInner = visiblePriceInfo.length
     ? '<div style="font-size:.78rem;color:#000000;margin-bottom:4px">'+cmpDateLabel(dates[dates.length-1])+'</div>'
-      + priceInfo.map(function(o){ return cmpPriceLineHtml(o.name,o.color,o.price,o.chg,o.chgPct); }).join('')
+      + visiblePriceInfo.map(function(o){ return cmpPriceLineHtml(o.name,o.color,o.price,o.chg,o.chgPct); }).join('')
     : '';
   var priceBox = priceBoxInner
     ? '<div id="cmpOhlcBox" style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:3px;pointer-events:none">'+priceBoxInner+'</div>'
@@ -2650,8 +2665,10 @@ function cmpHoverAt(i){
   var raw=window._cmpRaw, dates=window._cmpDates;
   var box=document.getElementById('cmpOhlcBox');
   if(!raw || !dates || !dates[i] || !box) return;
+  var hidden=window._cmpHidden||{};
   var html='<div style="font-size:.78rem;color:#000000;margin-bottom:4px">'+cmpDateLabel(dates[i])+'</div>';
   raw.forEach(function(s){
+    if(hidden[s.name]) return;
     // Walk backward from i to find the current point and the prior known
     // point, so "Change" is always period-over-period, never vs window start.
     var curIdx=-1;
@@ -2677,9 +2694,10 @@ function cmpHoverAt(i){
   // return from the start of the filtered range up to this date).
   var pct=window._cmpPct;
   if(pct){
-    pct.forEach(function(vArr,si){
+    pct.forEach(function(s,si){
       var el=document.getElementById('cmpLegVal-'+si);
       if(!el) return;
+      var vArr=s.v;
       var v=null;
       for(var k=i;k>=0;k--){ if(vArr[k]!=null){ v=vArr[k]; break; } }
       var up=v!=null&&v>=0;
@@ -2750,7 +2768,7 @@ function buildCorrTable(retSeries){
 }
 
 function pgComparison(){
-  var period = window._cmpPeriod || 'all';
+  var period = window._cmpPeriod || '3y';
   function segBtnCmp(lbl,p){
     return '<button class="'+(period===p?'on':'')+'" onclick="switchCmpPeriod(\''+p+'\')">'+lbl+'</button>';
   }
@@ -2812,12 +2830,14 @@ function pgComparison(){
       return {name:s.name,color:s.color,price:price,chg:chg,chgPct:chgPct};
     }).filter(Boolean);
 
-    chart = buildCmpChart(aligned, windowDates, priceInfo);
+    var hidden = window._cmpHidden || {};
+    chart = buildCmpChart(aligned, windowDates, priceInfo, hidden);
     legend = '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;justify-content:center;width:100%;">'
       +aligned.map(function(s,si){
         var lastV=null; for(var i=s.v.length-1;i>=0;i--){ if(s.v[i]!=null){lastV=s.v[i];break;} }
         var ret=lastV!=null?lastV.toFixed(1):'—'; var up=lastV!=null&&lastV>=0;
-        return '<div style="display:flex;align-items:center;gap:8px">'
+        var isHidden=!!hidden[s.name];
+        return '<div onclick="toggleCmpSeries(\''+s.name+'\')" style="display:flex;align-items:center;gap:8px;cursor:pointer;opacity:'+(isHidden?'0.35':'1')+'" title="Click to '+(isHidden?'show':'hide')+'">'
           +'<span style="width:20px;height:3px;background:'+s.color+';display:inline-block;border-radius:2px"></span>'
           +'<span style="font-size:.78rem;color:var(--fg-2)">'+s.name+'</span>'
           +'<span id="cmpLegVal-'+si+'" style="font-size:.78rem;font-weight:400;color:'+(lastV==null?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+'">'+(lastV==null?'—':((up?'+':'')+ret+'%'))+'</span>'
@@ -2963,10 +2983,10 @@ function buildComparisonTable(yearList, yearReturns, periodMetrics){
     +yearHeads
     +'<th style="'+headCell+'">Beta</th>'
     +'<th style="'+headCell+'">Sharpe Ratio</th>'
-    +'<th style="'+headCell+'">Annualised Return</th>'
-    +'<th style="'+headCell+'">Annualised Volatility</th>'
-    +'<th style="'+headCell+'">Maximum Drawdown</th>'
-    +'<th style="'+headCell+'">Maximum Rising</th>'
+    +'<th style="'+headCell+'">Annualised<br>Return</th>'
+    +'<th style="'+headCell+'">Annualised<br>Volatility</th>'
+    +'<th style="'+headCell+'">Maximum<br>Drawdown</th>'
+    +'<th style="'+headCell+'">Maximum<br>Rising</th>'
     +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
