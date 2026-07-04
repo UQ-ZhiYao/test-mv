@@ -1445,7 +1445,7 @@ function pgFundOverview(){
       +'</div>';
     return chartSvg+leg;
   }
-  function donut(segs,label){
+  function donut(segs,label,caption){
     var s=200,cx=s/2,cy=s/2,R=s*0.42,ir=s*0.30;
     var total=segs.reduce(function(a,x){return a+x.v;},0);
     var ang=-Math.PI/2,paths='';
@@ -1471,7 +1471,7 @@ function pgFundOverview(){
       +paths
       +'<circle cx="'+cx+'" cy="'+cy+'" r="'+(ir-3)+'" fill="#fff"/>'
       +'<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" font-weight="700" fill="#0F172A">'+label+'</text>'
-      +'<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6B7280">total</text>'
+      +'<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="9" fill="#6B7280">'+(caption||'total')+'</text>'
       +'</svg>'
       +'<div style="display:flex;flex-direction:column;gap:7px">'+legend+'</div>'
       +'</div>';
@@ -1794,17 +1794,49 @@ function pgFundOverview(){
   }
 
   // ── KEY FACTS (full width, no outline) ────────────────────────────────
+  var latestBS = BALANCE_SHEET.length ? BALANCE_SHEET[BALANCE_SHEET.length-1] : null;
+  var fundSizeLbl = latestBS ? ('RM '+(latestBS.totalEquity/1000000).toFixed(2)+' M') : '—';
+  var navLbl = NTA_PRICE>0 ? ('RM '+NTA_PRICE.toFixed(4)) : '—';
+  var inceptionLbl = (FUND_OVERVIEW && FUND_OVERVIEW.inception_date)
+    ? formatDate(FUND_OVERVIEW.inception_date)
+    : (BALANCE_SHEET.length ? formatDate(BALANCE_SHEET[0].startDate) : '—');
   var keyFacts='<div style="margin-bottom:28px"><div class="fov-section-label">Key Facts</div>'
     +'<div class="fov-kfgrid-full">'
-    +kf('Fund Size (AUM)','RM 24.6 M')
-    +kf('Net Asset Value','RM 1.0245','per unit')
-    +kf('Inception Date','15 Mar 2022')
-    +kf('Fund Structure','Unit Trust')
-    +kf('Fund Manager','ZY Capital Sdn Bhd')
-    +kf('Custodian','Maybank Trustees')
-    +kf('Benchmark','FBM KLCI + 3%')
+    +kf('Fund Size (AUM)',fundSizeLbl)
+    +kf('Net Asset Value',navLbl,'per unit')
+    +kf('Inception Date',inceptionLbl)
+    +kf('Fund Structure','Investment Holdings')
+    +kf('Fund Manager','Mr. Ng Zhi Yao')
+    +kf('Custodian','-')
+    +kf('Benchmark','Effective Annual Rate 7%')
     +kf('Min. Investment','RM 10,000')
     +'</div></div>';
+
+  // ── OWNERSHIP — top 3 shareholders + "The rest of shareholder" ────────
+  var shSorted = SHAREHOLDERS.slice().sort(function(a,b){return (b.units||0)-(a.units||0);});
+  var shTop3 = shSorted.slice(0,3);
+  var shRest = shSorted.slice(3);
+  var shRestUnits = shRest.reduce(function(s,r){return s+(r.units||0);},0);
+  var shTotalUnits = shSorted.reduce(function(s,r){return s+(r.units||0);},0);
+  var OWN_COL = ['#1565C0','#2E7D32','#E65100'];
+  var ownershipSegs = shTop3.map(function(s,i){ return {v:s.units||0, color:OWN_COL[i], label:s.name}; });
+  if(shRest.length) ownershipSegs.push({v:shRestUnits, color:'#9CA3AF', label:'The rest of shareholder'});
+  var ownershipChart = ownershipSegs.length
+    ? donut(ownershipSegs, Math.round(shTotalUnits).toLocaleString('en-MY'), 'units')
+    : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">No shareholder data on record</div>';
+
+  // ── CAPITAL STRUCTURE — Total Assets by the 4 Balance Sheet categories ─
+  var capStructChart = BALANCE_SHEET.length
+    ? stackedBars(
+        [
+          {v:BALANCE_SHEET.map(function(r){return r.securities;}),          color:'#1565C0', label:'Securities'},
+          {v:BALANCE_SHEET.map(function(r){return r.otherInvestments;}),    color:'#7C3AED', label:'Other Investments'},
+          {v:BALANCE_SHEET.map(function(r){return r.dividendReceivables;}), color:'#E65100', label:'Dividend Receivables'},
+          {v:BALANCE_SHEET.map(function(r){return r.cash;}),                color:'#2E7D32', label:'Cash &amp; Equivalents'}
+        ],
+        BALANCE_SHEET.map(function(r){return r.fy;})
+      )
+    : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(BALANCE_SHEET_ERROR?('Could not load — '+BALANCE_SHEET_ERROR):'No financial years defined yet')+'</div>';
 
   // ── ABOUT — goes into first 2-col row (left only) ─────────────────────
   var aboutCard='<div class="fov-cc"><div class="fov-ct">About</div><div style="padding-top:4px"><p class="fov-about">ZY-Invest is a private investment fund targeting long-term capital appreciation through a concentrated portfolio of Malaysian equity securities. The fund focuses on large-cap blue-chip stocks, selective growth equities and defensive consumer names on Bursa Malaysia, with flexibility on position sizing not typical of conventional unit trusts.</p></div></div>';
@@ -1813,15 +1845,8 @@ function pgFundOverview(){
   // ── 2-COL CHART GRID ──────────────────────────────────────────────────
   var grid='<div class="fov-2col">'
     +aboutCard+aboutBlank
-    +card('Ownership',donut([
-      {v:37820,color:'#F59E0B',label:'Retail'},
-      {v:13208,color:'#1565C0',label:'Institutional'},
-      {v:8735, color:'#2E7D32',label:'Founding'}
-    ],'59,763'))
-    +card('Capital Structure',stackedBars(
-      [{v:[14.2,20.8,21.4,22.1,24.6],color:'#1565C0',label:'Equity'},{v:[1.4,2.1,1.8,1.9,2.1],color:'#F59E0B',label:'Cash'},{v:[1.2,1.7,1.6,1.5,1.7],color:'#2E7D32',label:'Fixed Inc.'}],
-      ['FY21','FY22','FY23','FY24','FY25']
-    ))
+    +card('Ownership',ownershipChart)
+    +card('Capital Structure',capStructChart)
     +card('Financial Results',groupedBars(
       ['FY21','FY22','FY23','FY24','FY25'],
       [

@@ -295,6 +295,15 @@ var S = { page:'fundoverview', period:'ytd', txf:'all' };
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
+  return (typeof mpLoadBalanceSheet==='function') ? mpLoadBalanceSheet() : [];
+}).then(function(rows){
+  BALANCE_SHEET = rows || [];
+  BALANCE_SHEET_ERROR = null;
+}).catch(function(e){
+  BALANCE_SHEET = [];
+  BALANCE_SHEET_ERROR = (e && e.message) || 'Unknown error';
+  console.warn('Balance sheet load failed:', BALANCE_SHEET_ERROR);
+}).finally(function(){
   document.getElementById('mainContent').innerHTML=pgFundOverview();renderNotifs();
 });
 </script>
