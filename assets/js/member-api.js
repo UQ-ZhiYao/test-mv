@@ -335,28 +335,31 @@ async function mpSubmitRedemption(investorId, { amount, units, note }) {
 /* ── Shareholders (fund-wide, public/member-read) ────────── */
 /* ── Shareholders (units_held computed from capital_injection, since
    profiles.units_held isn't kept up to date) ────────────────────── */
+/* ── Shareholders (fully derived from capital_injection — it already
+   carries full_name per row, so no join to profiles is needed at all) ── */
 async function mpLoadShareholders() {
-  const [profRes, ciRes] = await Promise.all([
-    sb.from('profiles').select('id, full_name, account_type, joined_date, status'),
-    sb.from('capital_injection').select('uid, units, status').eq('status', 'Approved')
-  ]);
-  if (profRes.error) throw profRes.error;
-  if (ciRes.error) throw ciRes.error;
+  const { data, error } = await sb.from('capital_injection')
+    .select('uid, full_name, units, date, status')
+    .eq('status', 'Approved');
+  if (error) throw error;
 
-  const unitsByUid = {};
-  (ciRes.data || []).forEach(function(r) {
-    unitsByUid[r.uid] = (unitsByUid[r.uid] || 0) + (parseFloat(r.units) || 0);
+  const byUid = {};
+  (data || []).forEach(function(r) {
+    if (!byUid[r.uid]) byUid[r.uid] = { uid: r.uid, full_name: r.full_name, units_held: 0, firstDate: r.date };
+    byUid[r.uid].units_held += parseFloat(r.units) || 0;
+    if (r.date && (!byUid[r.uid].firstDate || r.date < byUid[r.uid].firstDate)) byUid[r.uid].firstDate = r.date;
   });
 
-  return (profRes.data || [])
-    .map(function(p) {
+  return Object.keys(byUid)
+    .map(function(uid) {
+      const s = byUid[uid];
       return {
-        investor_id: p.id,
-        full_name: p.full_name,
-        account_type: p.account_type,
-        joined_date: p.joined_date,
-        status: p.status,
-        units_held: unitsByUid[p.id] || 0
+        investor_id: s.uid,
+        full_name: s.full_name || 'Unknown',
+        account_type: 'shareholder',
+        joined_date: s.firstDate,
+        status: 'Active',
+        units_held: s.units_held
       };
     })
     .sort(function(a, b) { return b.units_held - a.units_held; });

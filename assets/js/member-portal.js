@@ -1053,13 +1053,15 @@ function niceAxisScale(min,max,tickCount){
 }
 
 function fmtChartNum(v){
-  var av=Math.abs(v||0), sign=(v||0)<0?'−':'';
+  if(!v) return '—';
+  var av=Math.abs(v), sign=v<0?'−':'';
   if(av>=100000000) return sign+(av/1000000).toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'Mil';
   if(av>=100000) return sign+(av/1000).toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'k';
   return sign+av.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 function fmtChartPct(v){
-  var av=Math.abs(v||0), sign=(v||0)<0?'−':'';
+  if(!v) return '—';
+  var av=Math.abs(v), sign=v<0?'−':'';
   return sign+av.toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
 }
 function pgFundOverview(){
@@ -1684,7 +1686,7 @@ function pgFundOverview(){
     var tipId=nextTipId();
     var all=series.reduce(function(a,s){return a.concat(s.v);},[]);
     var rawMn=Math.min.apply(null,all),rawMx=Math.max.apply(null,all);
-    var scale=niceAxisScale(rawMn,rawMx,4);
+    var scale=niceAxisScale(rawMn,rawMx,5);
     var mn=scale.min,mx=scale.max,rng=(mx-mn)||0.001;
     var n=labels.length;
     function px(i){return padX+(i/(n-1))*(W-padX-padR);}
@@ -1733,7 +1735,7 @@ function pgFundOverview(){
     var W=420,H=220,padX=42,padR=42,padYT=16,padYB=24;
     var tipId=nextTipId();
     var allBar=barSeries.v, allLine=lineSeries.v;
-    var barScale=niceAxisScale(0,Math.max.apply(null,allBar)||1,3);
+    var barScale=niceAxisScale(0,Math.max.apply(null,allBar)||1,5);
     var barMax=barScale.max||1;
     var lineMax=Math.max.apply(null,allLine)||1;
     var n=groups.length;
@@ -1752,7 +1754,7 @@ function pgFundOverview(){
     var ld=allLine.map(function(v,i){return (i?'L':'M')+lx(i)+','+ly(v);}).join('');
     var ldots=allLine.map(function(v,i){return '<circle cx="'+lx(i)+'" cy="'+ly(v)+'" r="3" fill="#fff" stroke="'+lineSeries.color+'" stroke-width="2"/>';}).join('');
     // Grid — bar values on the inner right edge, line % just outside it
-    var grid=[0.33,0.66,1].map(function(f){
+    var grid=[0.2,0.4,0.6,0.8,1].map(function(f){
       var yy=(H-padYB-f*(H-padYT-padYB)).toFixed(1);
       var vLeft=fmtChartNum(barMax*f);
       var vRight=fmtChartPct(lineMax*f);
@@ -1786,7 +1788,7 @@ function pgFundOverview(){
     var W=420,H=220,padX=16,padR=42,padY=20,n=data.length;
     var tipId=nextTipId();
     var rawMx=Math.max.apply(null,data)||1;
-    var scale=niceAxisScale(0,rawMx,4);
+    var scale=niceAxisScale(0,rawMx,5);
     var mx=scale.max||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
     function bx(i){return padX+i*gap+gap/2-barW/2;}
     function bh(v){return Math.max(2,(v/mx)*(H-padY*2));}
@@ -1837,7 +1839,8 @@ function pgFundOverview(){
         var yTop=yFor(Math.max(0,v)), yBot=yFor(Math.min(0,v));
         var h=Math.max(0.5,yBot-yTop);
         var x=bx(gi,si).toFixed(1);
-        return '<rect x="'+x+'" y="'+yTop.toFixed(1)+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+s.color+'" rx="2"/>';
+        var col=s.colorByValue?(v<0?'#DC2626':'#2E7D32'):s.color;
+        return '<rect x="'+x+'" y="'+yTop.toFixed(1)+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+col+'" rx="2"/>';
       }).join('');
     }).join('');
     var ticks=[];
@@ -1854,7 +1857,7 @@ function pgFundOverview(){
     }).join('');
     // Group hover overlay per FY — shows all series values together
     var overlays=groups.map(function(g,gi){
-      var tipLines=series.map(function(s){ return s.color+'::'+s.label+': '+fmtChartNum(s.v[gi]); });
+      var tipLines=series.map(function(s){ var dotCol=s.colorByValue?(s.v[gi]<0?'#DC2626':'#2E7D32'):s.color; return dotCol+'::'+s.label+': '+fmtChartNum(s.v[gi]); });
       var tip='FY:'+g+'|'+tipLines.join('|');
       var ox=(padX+gi*groupW).toFixed(1);
       var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
@@ -1863,7 +1866,7 @@ function pgFundOverview(){
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+zeroLine+bPaths+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
-      +series.map(function(s){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+s.color+';display:inline-block"></span>'+s.label+'</span>';}).join('')+'</div>';
+      +series.map(function(s){var sw=s.colorByValue?'linear-gradient(90deg,#2E7D32 50%,#DC2626 50%)':s.color;return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+sw+';display:inline-block"></span>'+s.label+(s.colorByValue?' (green=profit, red=loss)':'')+'</span>';}).join('')+'</div>';
     return chartSvg+leg;
   }
   // Stacked bar — full width + legend
@@ -1872,7 +1875,7 @@ function pgFundOverview(){
     var tipId=nextTipId();
     var totals=labels.map(function(_,i){return series.reduce(function(a,s){return a+s.v[i];},0);});
     var rawMx=Math.max.apply(null,totals)||1;
-    var scalePre=niceAxisScale(0,rawMx,4);
+    var scalePre=niceAxisScale(0,rawMx,5);
     var mx=scalePre.max||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
     function bx(i){return (padX+i*gap+gap/2-barW/2).toFixed(1);}
     function bh(v){return Math.max(2,((v/mx)*(H-padY*2)));}
@@ -1975,7 +1978,7 @@ function pgFundOverview(){
           INCOME_STATEMENT.map(function(r){return r.fy;}),
           [
             {v:INCOME_STATEMENT.map(function(r){return r.revenue;}),   color:'#1565C0', label:'Revenue'},
-            {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#2E7D32', label:'NPAT'}
+            {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#2E7D32', label:'NPAT', colorByValue:true}
           ]
         )
       : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(INCOME_STATEMENT_ERROR?('Could not load — '+INCOME_STATEMENT_ERROR):'No financial years defined yet')+'</div>'
@@ -2755,7 +2758,7 @@ function frTip(e,txt,cxStr,tipId){
         +'<span style="font-size:.8rem;font-weight:700;color:#0F172A;margin-left:14px">'+kv[1]+'</span>'
         +'</div>';
     }).join('');
-  var tipW=200;
+  var tipW=240;
   el.style.width=tipW+'px';
   el.style.display='block';
   // Use cxStr (fraction of viewBox W) to find column center in CSS px
