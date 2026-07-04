@@ -2548,11 +2548,13 @@ function cmpCutoffDate(period, latestStr, inceptionStr){
 
 // Comparison line chart — rebased-% series, right-side axis, no letterboxing
 // (preserveAspectRatio="none" so the plot area always fills the card's
-// actual width instead of aspect-ratio-locked empty margins).
-function buildCmpChart(seriesArr, dates){
+// actual width instead of aspect-ratio-locked empty margins). ohlcInfo
+// draws a small per-index O/H/L/C + change readout over the top-left of
+// the plot, using each index's own native price scale (not the rebased %).
+function buildCmpChart(seriesArr, dates, ohlcInfo){
   var n=dates.length;
   if(n<2 || !seriesArr.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
-  var W=1000,H=220,padL=8,padR=40,padYT=14,padYB=22;
+  var W=1000,H=440,padL=8,padR=40,padYT=14,padYB=22;
   var allV=[]; seriesArr.forEach(function(s){ s.v.forEach(function(v){ if(v!=null) allV.push(v); }); });
   if(!allV.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">No data</div>';
   var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
@@ -2583,7 +2585,24 @@ function buildCmpChart(seriesArr, dates){
     var dot=lastIdx>=0?'<circle cx="'+px(lastIdx).toFixed(1)+'" cy="'+py(s.v[lastIdx]).toFixed(1)+'" r="3" fill="#fff" stroke="'+s.color+'" stroke-width="2"/>':'';
     return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>'+dot;
   }).join('');
-  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:220px;display:block">'+grid+baseline+paths+xLabels.join('')+'</svg>';
+  function fmtOhlc(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  var ohlcBox='';
+  if(ohlcInfo && ohlcInfo.length){
+    ohlcBox='<div style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:3px;pointer-events:none">'
+      +ohlcInfo.map(function(o){
+        var up=o.chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
+        return '<div style="font-size:.68rem;font-weight:400;color:#0F172A;white-space:nowrap">'
+          +'<span style="color:'+o.color+'">'+o.name+'</span> '
+          +'O'+fmtOhlc(o.o)+' H'+fmtOhlc(o.h)+' L'+fmtOhlc(o.l)+' C'+fmtOhlc(o.c)+' '
+          +'<span style="color:'+col+'">'+sign+fmtOhlc(Math.abs(o.chg))+' ('+sign+Math.abs(o.chgPct).toFixed(2)+'%)</span>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+  }
+  return '<div style="position:relative;width:95%;margin:0 auto">'
+    +ohlcBox
+    +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:440px;display:block">'+grid+baseline+paths+xLabels.join('')+'</svg>'
+    +'</div>';
 }
 
 function pgComparison(){
@@ -2627,10 +2646,19 @@ function pgComparison(){
       var base=null;
       for(var i=0;i<vals.length;i++){ if(vals[i]!=null){ base=vals[i]; break; } }
       var pct=vals.map(function(v){ return (v==null||!base)?null:((v/base-1)*100); });
-      return {name:s.name,color:s.color,v:pct};
+      return {name:s.name,color:s.color,v:pct,raw:vals};
     }).filter(function(s){ return s.v.some(function(v){return v!=null;}); });
 
-    chart = buildCmpChart(aligned, windowDates);
+    var ohlcInfo=aligned.map(function(s){
+      var validRaw=s.raw.filter(function(v){return v!=null;});
+      if(!validRaw.length) return null;
+      var o=validRaw[0], c=validRaw[validRaw.length-1];
+      var h=Math.max.apply(null,validRaw), l=Math.min.apply(null,validRaw);
+      var chg=c-o, chgPct=o?(chg/o*100):0;
+      return {name:s.name,color:s.color,o:o,h:h,l:l,c:c,chg:chg,chgPct:chgPct};
+    }).filter(Boolean);
+
+    chart = buildCmpChart(aligned, windowDates, ohlcInfo);
     legend = '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;justify-content:center;width:100%;">'
       +aligned.map(function(s){
         var lastV=null; for(var i=s.v.length-1;i>=0;i--){ if(s.v[i]!=null){lastV=s.v[i];break;} }
@@ -2675,12 +2703,6 @@ function pgComparison(){
       +'</tr>';
   }).join('');
   return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1><p>ZY-Invest vs FBM KLCI, S&amp;P 500 and MSCI — rebased to 0% return at the start of the selected period · Weekly data via Yahoo Finance.</p></div>'
-    +'<div class="mrow" style="margin-bottom:28px">'
-    +'<div class="mc"><div class="lbl">ZY-Invest Return</div><div class="val b" style="color:var(--blue)">+2.45%</div><div class="sub">Since inception</div></div>'
-    +'<div class="mc"><div class="lbl">vs FBM KLCI</div><div class="val" style="color:var(--red)">-2.65%</div><div class="sub">Underperformed</div></div>'
-    +'<div class="mc"><div class="lbl">vs S&P 500</div><div class="val" style="color:var(--red)">-16.45%</div><div class="sub">Underperformed</div></div>'
-    +'<div class="mc"><div class="lbl">Volatility</div><div class="val" style="color:var(--green)">2.1%</div><div class="sub">vs 8.4% KLCI</div></div>'
-    +'</div>'
     +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">Performance Comparison (Rebased to 0%)</h3>'+periodBar+'</div>'
     +chart+legend+'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
