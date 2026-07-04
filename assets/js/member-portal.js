@@ -2586,7 +2586,7 @@ function pgComparison(){
       +'</tr>';
   }).join('');
   return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1><p>ZY-Invest vs major indices — indexed to 100 at inception (Mar 2022) · Weekly data.</p></div>'
-    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-bottom:28px;border-top:1px solid var(--border)">'
+    +'<div class="mrow" style="margin-bottom:28px">'
     +'<div class="mc"><div class="lbl">ZY-Invest Return</div><div class="val b" style="color:var(--blue)">+2.45%</div><div class="sub">Since inception</div></div>'
     +'<div class="mc"><div class="lbl">vs FBM KLCI</div><div class="val" style="color:var(--red)">-2.65%</div><div class="sub">Underperformed</div></div>'
     +'<div class="mc"><div class="lbl">vs S&P 500</div><div class="val" style="color:var(--red)">-16.45%</div><div class="sub">Underperformed</div></div>'
