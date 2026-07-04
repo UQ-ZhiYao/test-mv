@@ -2557,7 +2557,7 @@ function cmpCutoffDate(period, latestStr, inceptionStr){
 function buildCmpChart(seriesArr, dates, ohlcInfo){
   var n=dates.length;
   if(n<2 || !seriesArr.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
-  var W=1000,H=440,padL=8,padR=40,padYT=14,padYB=22;
+  var W=1000,H=520,padL=8,padR=40,padYT=14,padYB=22;
   var allV=[]; seriesArr.forEach(function(s){ s.v.forEach(function(v){ if(v!=null) allV.push(v); }); });
   if(!allV.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">No data</div>';
   var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
@@ -2601,18 +2601,18 @@ function buildCmpChart(seriesArr, dates, ohlcInfo){
   // Expose raw (native-price) series + date axis for the hover handler —
   // a plain global assignment (not embedded HTML/script), since script
   // tags injected via innerHTML never execute.
-  window._cmpRaw = seriesArr.map(function(s){ return {name:s.name, raw:s.raw}; });
+  window._cmpRaw = seriesArr.map(function(s){ return {name:s.name, color:s.color, raw:s.raw}; });
   window._cmpDates = dates.slice();
   var ohlcBoxInner = ohlcInfo && ohlcInfo.length
     ? '<div style="font-size:.66rem;color:#94A3B8;margin-bottom:2px">'+cmpDateLabel(dates[dates.length-1])+'</div>'
-      + ohlcInfo.map(function(o){ return cmpOhlcLineHtml(o.name,o.o,o.h,o.l,o.c,o.chg,o.chgPct); }).join('')
+      + ohlcInfo.map(function(o){ return cmpOhlcLineHtml(o.name,o.color,o.o,o.h,o.l,o.c,o.chg,o.chgPct); }).join('')
     : '';
   var ohlcBox = ohlcBoxInner
     ? '<div id="cmpOhlcBox" style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:3px;pointer-events:none">'+ohlcBoxInner+'</div>'
     : '';
   return '<div style="position:relative;width:100%">'
     +ohlcBox
-    +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:440px;display:block;overflow:visible">'+grid+baseline+paths+xLabels.join('')+overlays+'</svg>'
+    +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:520px;display:block;overflow:visible">'+grid+baseline+paths+xLabels.join('')+overlays+'</svg>'
     +'</div>';
 }
 
@@ -2621,14 +2621,17 @@ function cmpDateLabel(dateStr){
   return dt.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});
 }
 function fmtCmpOhlc(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-// Whole line (name + O/H/L/C + change) is colored green or red by
-// direction — no per-series color here, since that's already shown by
-// the plotted line/legend below the chart.
-function cmpOhlcLineHtml(name,o,h,l,c,chg,chgPct){
+// Name keeps its series line color; the O/H/L/C letters are pure black;
+// only the numeric values and the change figure are colored green/red.
+function cmpOhlcLineHtml(name,color,o,h,l,c,chg,chgPct){
   var up=chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
-  return '<div style="font-size:.68rem;font-weight:400;color:'+col+';white-space:nowrap">'
-    +name+' O'+fmtCmpOhlc(o)+' H'+fmtCmpOhlc(h)+' L'+fmtCmpOhlc(l)+' C'+fmtCmpOhlc(c)+' '
-    +sign+fmtCmpOhlc(Math.abs(chg))+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)'
+  return '<div style="font-size:.68rem;font-weight:400;white-space:nowrap">'
+    +'<span style="color:'+color+'">'+name+'</span> '
+    +'<span style="color:#000000">O</span><span style="color:'+col+'">'+fmtCmpOhlc(o)+'</span> '
+    +'<span style="color:#000000">H</span><span style="color:'+col+'">'+fmtCmpOhlc(h)+'</span> '
+    +'<span style="color:#000000">L</span><span style="color:'+col+'">'+fmtCmpOhlc(l)+'</span> '
+    +'<span style="color:#000000">C</span><span style="color:'+col+'">'+fmtCmpOhlc(c)+'</span> '
+    +'<span style="color:'+col+'">'+sign+fmtCmpOhlc(Math.abs(chg))+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)</span>'
     +'</div>';
 }
 function cmpHoverAt(i){
@@ -2642,7 +2645,7 @@ function cmpHoverAt(i){
     var o=slice[0], c=slice[slice.length-1];
     var h=Math.max.apply(null,slice), l=Math.min.apply(null,slice);
     var chg=c-o, chgPct=o?(chg/o*100):0;
-    html+=cmpOhlcLineHtml(s.name,o,h,l,c,chg,chgPct);
+    html+=cmpOhlcLineHtml(s.name,s.color,o,h,l,c,chg,chgPct);
   });
   box.innerHTML=html;
 }
