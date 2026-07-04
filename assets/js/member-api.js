@@ -459,7 +459,7 @@ async function mpLoadNtaMonthly() {
     const m = byMonth[key];
     const d = new Date(key + '-01T00:00:00');
     const label = d.toLocaleDateString('en-MY', { month: 'short', year: '2-digit' });
-    return { key: key, label: label, open: m.open, high: m.high, low: m.low, close: m.close };
+    return { key: key, date: key + '-01', label: label, open: m.open, high: m.high, low: m.low, close: m.close };
   });
 }
 
@@ -470,6 +470,68 @@ async function mpLoadInceptionDate() {
     .limit(1);
   if (error) throw error;
   return (data && data.length) ? data[0].date : null;
+}
+
+/* ── Raw daily NTA series (for the NTA History page's "Daily" view) ──── */
+async function mpLoadNtaDaily() {
+  const pageSize = 1000;
+  let all = [], page = 0;
+  while (true) {
+    const { data, error } = await sb.from('nta_daily')
+      .select('date, nta')
+      .order('date', { ascending: true })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    if (error) throw error;
+    if (!data || !data.length) break;
+    all = all.concat(data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+  return all
+    .filter(function(r) { return r.date && r.nta != null; })
+    .map(function(r) { return { date: r.date, nta: parseFloat(r.nta) }; });
+}
+
+/* ── NTA Weekly OHLC (for the NTA History page's "Weekly" candlestick) ──
+   Same aggregation as mpLoadNtaMonthly, bucketed by ISO week instead of
+   calendar month. "date" on each bucket is that week's last trading day.  */
+async function mpLoadNtaWeeklyOHLC() {
+  const pageSize = 1000;
+  let all = [], page = 0;
+  while (true) {
+    const { data, error } = await sb.from('nta_daily')
+      .select('date, nta')
+      .order('date', { ascending: true })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    if (error) throw error;
+    if (!data || !data.length) break;
+    all = all.concat(data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+  const byWeek = {};
+  const order = [];
+  all.forEach(function(r) {
+    if (!r.date || r.nta == null) return;
+    const key = isoWeekKey(new Date(r.date + 'T00:00:00'));
+    const v = parseFloat(r.nta);
+    if (!byWeek[key]) {
+      byWeek[key] = { key: key, date: r.date, open: v, high: v, low: v, close: v };
+      order.push(key);
+    } else {
+      const w = byWeek[key];
+      w.high = Math.max(w.high, v);
+      w.low = Math.min(w.low, v);
+      w.close = v; // ascending order → last write wins
+      w.date = r.date;
+    }
+  });
+  return order.map(function(key) {
+    const w = byWeek[key];
+    const d = new Date(w.date + 'T00:00:00');
+    const label = d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: '2-digit' });
+    return { key: key, date: w.date, label: label, open: w.open, high: w.high, low: w.low, close: w.close };
+  });
 }
 
 function isoWeekKey(d) {

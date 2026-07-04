@@ -43,6 +43,10 @@ let RATIO_ANALYSIS_ERROR = null;
 let INCEPTION_DATE = null;
 let NTA_MONTHLY = [];
 let NTA_MONTHLY_ERROR = null;
+let NTA_DAILY = [];
+let NTA_DAILY_ERROR = null;
+let NTA_WEEKLY_OHLC = [];
+let NTA_WEEKLY_OHLC_ERROR = null;
 let DIST_BY_FY = [];
 let DIST_BY_FY_ERROR = null;
 let COMPARISON_DATA = null;
@@ -2487,85 +2491,264 @@ function switchPeriod(p){S.period=p;renderMain(true);setTimeout(function(){initC
 function filterTx(t){S.txf=t;renderMain(true);}
 
 // ── NTA HISTORY ──────────────────────────────────────────────────────────────
+// ── NTA History: shared hover state + info-line renderers ──────────────
+function nthDateLabel(dateStr){
+  var dt=new Date(dateStr+'T00:00:00');
+  return dt.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});
+}
+function fmtNtaOhlc(v){ return (v||0).toFixed(4); }
+function nthPriceInfoHtml(dateStr,price,chg,chgPct){
+  var up=chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
+  return '<div style="font-size:.78rem;color:#000;margin-bottom:4px">'+nthDateLabel(dateStr)+'</div>'
+    +'<div style="font-size:.8rem;font-weight:400;white-space:nowrap">'
+    +'<span style="color:#000">RM '+price.toFixed(4)+'</span> '
+    +'<span style="color:'+col+'">'+sign+Math.abs(chg).toFixed(4)+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)</span>'
+    +'</div>';
+}
+function nthCandleInfoHtml(dateLbl,o,h,l,c,chg,chgPct){
+  var up=chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
+  return '<div style="font-size:.78rem;color:#000;margin-bottom:4px">'+dateLbl+'</div>'
+    +'<div style="font-size:.8rem;font-weight:400;white-space:nowrap">'
+    +'<span style="color:#000">O'+fmtNtaOhlc(o)+' H'+fmtNtaOhlc(h)+' L'+fmtNtaOhlc(l)+' C'+fmtNtaOhlc(c)+'</span> '
+    +'<span style="color:'+col+'">'+sign+fmtNtaOhlc(Math.abs(chg))+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)</span>'
+    +'</div>';
+}
+function nthHoverAt(i){
+  var rows=window._nthRows, px=window._nthPx;
+  if(!rows||!rows[i]) return;
+  var line=document.getElementById('nthHoverLine');
+  if(line && px && px[i]!=null){
+    var xp=px[i].toFixed(1);
+    line.setAttribute('x1',xp); line.setAttribute('x2',xp);
+    line.style.display='block';
+  }
+  var box=document.getElementById('nthInfoBox');
+  if(!box) return;
+  var cur=rows[i], prev=rows[i-1]||cur;
+  if(window._nthGranMode==='daily'){
+    var chg=cur.nta-prev.nta, chgPct=prev.nta?(chg/prev.nta*100):0;
+    box.innerHTML=nthPriceInfoHtml(cur.date,cur.nta,chg,chgPct);
+  } else {
+    var chg2=cur.close-prev.close, chgPct2=prev.close?(chg2/prev.close*100):0;
+    box.innerHTML=nthCandleInfoHtml(nthDateLabel(cur.date),cur.open,cur.high,cur.low,cur.close,chg2,chgPct2);
+  }
+}
+function nthHoverReset(){
+  var rows=window._nthRows;
+  if(rows && rows.length) nthHoverAt(rows.length-1);
+  var line=document.getElementById('nthHoverLine');
+  if(line) line.style.display='none';
+}
+
+// ── NTA History: Daily line chart (single value per day, no OHLC range) ─
+function buildNtaLineChart(rows){
+  var n=rows.length;
+  if(n<2) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
+  var W=1000,H=420,padL=8,padR=52,padYT=14,padYB=22;
+  var vals=rows.map(function(r){return r.nta;});
+  var scale=fiveTicks(Math.min.apply(null,vals),Math.max.apply(null,vals));
+  var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
+  function px(i){ return padL+(i/(n-1))*(W-padL-padR); }
+  function py(v){ return H-padYB-((v-mn)/rng)*(H-padYT-padYB); }
+  var grid=scale.ticks.map(function(v){
+    var yy=py(v).toFixed(1);
+    return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'
+      +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#000000">'+v.toFixed(4)+'</text>';
+  }).join('');
+  var spanDays=(new Date(rows[n-1].date+'T00:00:00')-new Date(rows[0].date+'T00:00:00'))/86400000;
+  var shortSpan=spanDays<=100;
+  var xTickCount=Math.min(6,n);
+  var xLabels=[];
+  for(var t=0;t<xTickCount;t++){
+    var idx=Math.round(t*(n-1)/(xTickCount-1||1));
+    var dt=new Date(rows[idx].date+'T00:00:00');
+    var lbl=shortSpan?dt.toLocaleDateString('en-MY',{day:'numeric',month:'short'}):dt.toLocaleDateString('en-MY',{month:'short',year:'2-digit'});
+    var anchor=(t===0)?'start':(t===xTickCount-1)?'end':'middle';
+    xLabels.push('<text x="'+px(idx).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+anchor+'" font-size="8" fill="#000000">'+lbl+'</text>');
+  }
+  var d='',started=false;
+  rows.forEach(function(r,i){ d+=(started?'L':'M')+px(i).toFixed(1)+','+py(r.nta).toFixed(1); started=true; });
+  var path='<path d="'+d+'" fill="none" stroke="#1565C0" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>';
+  var colW=(W-padL-padR)/Math.max(1,n-1);
+  var overlays=rows.map(function(r,i){
+    var ox=Math.max(padL,px(i)-colW/2);
+    return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="nthHoverAt('+i+')" onmousemove="nthHoverAt('+i+')" onmouseleave="nthHoverReset()" style="cursor:crosshair"/>';
+  }).join('');
+  var hoverLine='<line id="nthHoverLine" x1="0" y1="'+padYT+'" x2="0" y2="'+(H-padYB)+'" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3,3" style="display:none;pointer-events:none"/>';
+  window._nthRows=rows;
+  window._nthGranMode='daily';
+  window._nthPx=rows.map(function(_,i){ return px(i); });
+  var last=rows[n-1], prev=rows[n-2]||last;
+  var chg=last.nta-prev.nta, chgPct=prev.nta?(chg/prev.nta*100):0;
+  var defaultInfo=nthPriceInfoHtml(last.date,last.nta,chg,chgPct);
+  return '<div style="position:relative;width:100%">'
+    +'<div id="nthInfoBox" style="position:absolute;top:8px;left:8px;pointer-events:none">'+defaultInfo+'</div>'
+    +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:420px;display:block;overflow:visible">'+grid+path+hoverLine+xLabels.join('')+overlays+'</svg>'
+    +'</div>';
+}
+
+// ── NTA History: Weekly/Monthly candlestick chart ───────────────────────
+function buildNtaCandleChart(rows){
+  var n=rows.length;
+  if(n<2) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
+  var W=1000,H=420,padL=8,padR=52,padYT=14,padYB=22;
+  var allV=[]; rows.forEach(function(r){ allV.push(r.high,r.low); });
+  var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
+  var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
+  var colW=(W-padL-padR)/n;
+  function cx(i){ return padL+i*colW+colW/2; }
+  function py(v){ return H-padYB-((v-mn)/rng)*(H-padYT-padYB); }
+  var bw=Math.min(14,colW*0.55);
+  var grid=scale.ticks.map(function(v){
+    var yy=py(v).toFixed(1);
+    return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'
+      +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#000000">'+v.toFixed(4)+'</text>';
+  }).join('');
+  var candles=rows.map(function(r,i){
+    var up=r.close>=r.open;
+    var col=up?'#2E7D32':'#DC2626';
+    var x=cx(i);
+    var wick='<line x1="'+x.toFixed(1)+'" y1="'+py(r.high).toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+py(r.low).toFixed(1)+'" stroke="'+col+'" stroke-width="1"/>';
+    var top=Math.min(py(r.open),py(r.close)), bh=Math.max(1,Math.abs(py(r.open)-py(r.close)));
+    var body='<rect x="'+(x-bw/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" fill="'+col+'"/>';
+    return wick+body;
+  }).join('');
+  var xTickCount=Math.min(6,n);
+  var xLabels=[];
+  for(var t=0;t<xTickCount;t++){
+    var idx=Math.round(t*(n-1)/(xTickCount-1||1));
+    var anchor=(t===0)?'start':(t===xTickCount-1)?'end':'middle';
+    xLabels.push('<text x="'+cx(idx).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+anchor+'" font-size="8" fill="#000000">'+rows[idx].label+'</text>');
+  }
+  var overlays=rows.map(function(r,i){
+    var ox=padL+i*colW;
+    return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="nthHoverAt('+i+')" onmousemove="nthHoverAt('+i+')" onmouseleave="nthHoverReset()" style="cursor:crosshair"/>';
+  }).join('');
+  var hoverLine='<line id="nthHoverLine" x1="0" y1="'+padYT+'" x2="0" y2="'+(H-padYB)+'" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3,3" style="display:none;pointer-events:none"/>';
+  window._nthRows=rows;
+  window._nthGranMode='candle';
+  window._nthPx=rows.map(function(_,i){ return cx(i); });
+  var last=rows[n-1], prev=rows[n-2]||last;
+  var chg=last.close-prev.close, chgPct=prev.close?(chg/prev.close*100):0;
+  var defaultInfo=nthCandleInfoHtml(nthDateLabel(last.date),last.open,last.high,last.low,last.close,chg,chgPct);
+  return '<div style="position:relative;width:100%">'
+    +'<div id="nthInfoBox" style="position:absolute;top:8px;left:8px;pointer-events:none">'+defaultInfo+'</div>'
+    +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:420px;display:block;overflow:visible">'+grid+candles+hoverLine+xLabels.join('')+overlays+'</svg>'
+    +'</div>';
+}
+
+function switchNtaGran(g){
+  window._nthGran=g;
+  window._nthPage=0;
+  var el=document.getElementById('mainContent');
+  if(el) el.innerHTML=pgNtaHistory();
+}
+function switchNtaPeriod(p){
+  window._nthPeriod=p;
+  window._nthPage=0;
+  var el=document.getElementById('mainContent');
+  if(el) el.innerHTML=pgNtaHistory();
+}
+function switchNtaPage(p){
+  window._nthPage=Math.max(0,p);
+  var el=document.getElementById('mainContent');
+  if(el) el.innerHTML=pgNtaHistory();
+}
+
 function pgNtaHistory(){
-  var NTA_ROWS=[{"date":"19 Mar 2026","nta":1.0245,"chg":0.0032,"chgp":0.31,"nav":"24,628,921","units":"24,039,140","event":""},{"date":"28 Feb 2026","nta":1.0213,"chg":-0.0041,"chgp":-0.4,"nav":"24,381,200","units":"23,872,100","event":""},{"date":"31 Jan 2026","nta":1.0254,"chg":0.0049,"chgp":0.48,"nav":"24,214,300","units":"23,612,400","event":""},{"date":"31 Dec 2025","nta":1.0205,"chg":0.0021,"chgp":0.21,"nav":"23,814,100","units":"23,335,200","event":"Interim Dist. 2.28 sen"},{"date":"30 Nov 2025","nta":1.0184,"chg":-0.0024,"chgp":-0.24,"nav":"23,612,900","units":"23,186,800","event":""},{"date":"31 Oct 2025","nta":1.0208,"chg":0.0031,"chgp":0.3,"nav":"23,401,200","units":"22,924,700","event":""},{"date":"30 Sep 2025","nta":1.0177,"chg":-0.0018,"chgp":-0.18,"nav":"22,913,400","units":"22,514,300","event":""},{"date":"31 Aug 2025","nta":1.0195,"chg":0.0041,"chgp":0.4,"nav":"22,614,100","units":"22,181,400","event":"FYE"},{"date":"31 Jul 2025","nta":1.0154,"chg":0.0028,"chgp":0.28,"nav":"22,214,800","units":"21,878,200","event":""},{"date":"30 Jun 2025","nta":1.0126,"chg":-0.0012,"chgp":-0.12,"nav":"21,814,600","units":"21,542,100","event":""},{"date":"31 May 2025","nta":1.0138,"chg":0.0022,"chgp":0.22,"nav":"21,614,300","units":"21,320,800","event":""},{"date":"30 Apr 2025","nta":1.0116,"chg":-0.0009,"chgp":-0.09,"nav":"21,214,100","units":"20,967,400","event":""},{"date":"31 Mar 2025","nta":1.0125,"chg":0.0018,"chgp":0.18,"nav":"20,914,200","units":"20,657,300","event":""},{"date":"28 Feb 2025","nta":1.0107,"chg":0.0031,"chgp":0.31,"nav":"20,614,500","units":"20,397,800","event":""},{"date":"31 Jan 2025","nta":1.0076,"chg":-0.0014,"chgp":-0.14,"nav":"20,214,100","units":"20,062,200","event":""},{"date":"31 Dec 2024","nta":1.009,"chg":0.0012,"chgp":0.12,"nav":"19,814,300","units":"19,637,600","event":"Final Dist. 1.56 sen"},{"date":"30 Nov 2024","nta":1.0078,"chg":0.0024,"chgp":0.24,"nav":"19,412,800","units":"19,262,100","event":""},{"date":"31 Oct 2024","nta":1.0054,"chg":-0.0019,"chgp":-0.19,"nav":"19,214,600","units":"19,114,200","event":""},{"date":"30 Sep 2024","nta":1.0073,"chg":0.0018,"chgp":0.18,"nav":"18,814,300","units":"18,677,100","event":""},{"date":"31 Aug 2024","nta":1.0055,"chg":0.0027,"chgp":0.27,"nav":"18,412,900","units":"18,311,400","event":"FYE · Special Dist. 0.27 sen"},{"date":"31 Jul 2024","nta":1.0028,"chg":-0.0011,"chgp":-0.11,"nav":"18,014,200","units":"17,964,300","event":""},{"date":"30 Jun 2024","nta":1.0039,"chg":0.0021,"chgp":0.21,"nav":"17,614,100","units":"17,547,600","event":""},{"date":"31 May 2024","nta":1.0018,"chg":0.0014,"chgp":0.14,"nav":"17,214,800","units":"17,182,300","event":""},{"date":"30 Apr 2024","nta":1.0004,"chg":-0.0008,"chgp":-0.08,"nav":"16,914,200","units":"16,907,400","event":""},{"date":"31 Mar 2024","nta":1.0012,"chg":0.0019,"chgp":0.19,"nav":"16,614,100","units":"16,593,900","event":""},{"date":"29 Feb 2024","nta":0.9993,"chg":0.0021,"chgp":0.21,"nav":"16,214,300","units":"16,226,200","event":""},{"date":"31 Jan 2024","nta":0.9972,"chg":-0.0014,"chgp":-0.14,"nav":"15,914,800","units":"15,961,900","event":"Interim Dist. 0.92 sen"},{"date":"31 Dec 2023","nta":0.9986,"chg":0.0018,"chgp":0.18,"nav":"15,614,200","units":"15,636,000","event":""},{"date":"30 Nov 2023","nta":0.9968,"chg":-0.0012,"chgp":-0.12,"nav":"15,214,100","units":"15,261,400","event":""},{"date":"31 Oct 2023","nta":0.998,"chg":0.0022,"chgp":0.22,"nav":"14,914,800","units":"14,944,700","event":""},{"date":"30 Sep 2023","nta":0.9958,"chg":0.0014,"chgp":0.14,"nav":"14,614,300","units":"14,674,000","event":""},{"date":"31 Aug 2023","nta":0.9944,"chg":-0.0018,"chgp":-0.18,"nav":"14,214,100","units":"14,294,300","event":"FYE · Final Dist. 0.85 sen"},{"date":"31 Jul 2023","nta":0.9962,"chg":0.0021,"chgp":0.21,"nav":"13,914,800","units":"13,969,700","event":""},{"date":"30 Jun 2023","nta":0.9941,"chg":0.0028,"chgp":0.28,"nav":"13,614,200","units":"13,695,000","event":""},{"date":"31 May 2023","nta":0.9913,"chg":-0.0014,"chgp":-0.14,"nav":"13,214,100","units":"13,329,000","event":""},{"date":"30 Apr 2023","nta":0.9927,"chg":0.0019,"chgp":0.19,"nav":"12,814,800","units":"12,910,700","event":""},{"date":"31 Mar 2023","nta":0.9908,"chg":0.0024,"chgp":0.24,"nav":"12,414,300","units":"12,529,900","event":""},{"date":"28 Feb 2023","nta":0.9884,"chg":-0.0011,"chgp":-0.11,"nav":"12,014,100","units":"12,154,300","event":""},{"date":"31 Jan 2023","nta":0.9895,"chg":0.0018,"chgp":0.18,"nav":"11,614,800","units":"11,738,800","event":"Final Dist. 0.23 sen"},{"date":"31 Dec 2022","nta":0.9877,"chg":0.0014,"chgp":0.14,"nav":"11,214,200","units":"11,353,300","event":""},{"date":"30 Nov 2022","nta":0.9863,"chg":-0.0021,"chgp":-0.21,"nav":"10,814,100","units":"10,963,700","event":""},{"date":"31 Oct 2022","nta":0.9884,"chg":0.0017,"chgp":0.17,"nav":"10,414,800","units":"10,536,500","event":""},{"date":"30 Sep 2022","nta":0.9867,"chg":-0.0012,"chgp":-0.12,"nav":"10,014,300","units":"10,148,800","event":""},{"date":"31 Aug 2022","nta":0.9879,"chg":0.0019,"chgp":0.19,"nav":"9,714,100","units":"9,832,200","event":"FYE"},{"date":"31 Jul 2022","nta":0.986,"chg":0.0024,"chgp":0.24,"nav":"9,314,800","units":"9,447,600","event":""},{"date":"30 Jun 2022","nta":0.9836,"chg":-0.0014,"chgp":-0.14,"nav":"8,914,200","units":"9,063,500","event":""},{"date":"31 May 2022","nta":0.985,"chg":0.0018,"chgp":0.18,"nav":"8,614,100","units":"8,745,700","event":""},{"date":"30 Apr 2022","nta":0.9832,"chg":0.0021,"chgp":0.21,"nav":"8,214,800","units":"8,355,300","event":""},{"date":"31 Mar 2022","nta":0.9811,"chg":-0.0009,"chgp":-0.09,"nav":"7,914,300","units":"8,067,800","event":""},{"date":"15 Mar 2022","nta":1,"chg":0,"chgp":0,"nav":"5,000,000","units":"5,000,000","event":"Fund inception"}];
+  var gran = window._nthGran || 'daily';
+  var period = window._nthPeriod || '3y';
 
-  // Build sparkline chart (all-time)
-  var vals=NTA_ROWS.slice().reverse().map(function(r){return r.nta;});
-  var n=vals.length,W=900,H=160,padX=48,padY=16;
-  var mn=Math.min.apply(null,vals)-0.002,mx=Math.max.apply(null,vals)+0.002,rng=mx-mn;
-  function px(i){return padX+(i/(n-1))*(W-padX-8);}
-  function py(v){return H-padY-((v-mn)/rng)*(H-padY*2);}
-  var pathD=vals.map(function(v,i){return (i?'L':'M')+px(i).toFixed(1)+','+py(v).toFixed(1);}).join('');
-  var areaD=pathD+' L'+px(n-1).toFixed(1)+','+(H-padY)+' L'+px(0).toFixed(1)+','+(H-padY)+'Z';
-  var grid=[0.25,0.5,0.75].map(function(f){
-    var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=(mn+f*rng).toFixed(4);
-    return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-8)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'+
-           '<text x="'+(padX-4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="end" font-size="9" fill="#94A3B8">'+v+'</text>';
-  }).join('');
-  // Label first, mid, last
-  var lblIdx=[0,Math.floor(n/2),n-1];
-  var xLabels=lblIdx.map(function(i){
-    return '<text x="'+px(i).toFixed(1)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="#94A3B8">'+vals[i].toFixed(4)+'</text>';
-  }).join('');
-  var chart='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:100%;height:160px;display:block">'
-    +'<defs><linearGradient id="ntahGrad" x1="0" y1="0" x2="0" y2="1">'
-    +'<stop offset="0" stop-color="#1565C0" stop-opacity=".15"/>'
-    +'<stop offset="1" stop-color="#1565C0" stop-opacity="0"/>'
-    +'</linearGradient></defs>'
-    +grid
-    +'<path d="'+areaD+'" fill="url(#ntahGrad)"/>'
-    +'<path d="'+pathD+'" fill="none" stroke="#1565C0" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
-    +'<circle cx="'+px(n-1).toFixed(1)+'" cy="'+py(vals[n-1]).toFixed(1)+'" r="3.5" fill="#fff" stroke="#1565C0" stroke-width="2"/>'
-    +xLabels
-    +'</svg>';
+  var granOptions=['daily','weekly','monthly'];
+  var granDropdown='<select onchange="switchNtaGran(this.value)" style="font-size:.8rem;font-weight:600;color:var(--fg-1);border:1px solid var(--border);border-radius:8px;padding:7px 10px;background:#fff;cursor:pointer">'
+    +granOptions.map(function(g){ return '<option value="'+g+'"'+(gran===g?' selected':'')+'>'+g.charAt(0).toUpperCase()+g.slice(1)+'</option>'; }).join('')
+    +'</select>';
 
-  // Table rows
-  var rows=NTA_ROWS.map(function(r,i){
-    var up=r.chg>=0;
-    var sign=up?'+':'';
-    var evBadge=r.event?'<span style="margin-left:8px;font-size:.68rem;font-weight:600;padding:2px 7px;border-radius:99px;background:var(--blue-bg);color:var(--blue);">'+r.event+'</span>':'';
-    return '<tr style="border-bottom:1px solid var(--border);">'
-      +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">'+r.date+evBadge+'</td>'
-      +'<td style="padding:11px 16px;font-size:.88rem;font-weight:600;color:var(--fg-1);">RM '+r.nta.toFixed(4)+'</td>'
-      +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(up&&r.chg!==0?'var(--green)':'var(--red)')+';'+(r.chg===0?'color:var(--fg-3);':'')+'">'+sign+r.chg.toFixed(4)+'</td>'
-      +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(up&&r.chgp!==0?'var(--green)':'var(--red)')+';'+(r.chgp===0?'color:var(--fg-3);':'')+'">'+sign+r.chgp.toFixed(2)+'%</td>'
-      +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">RM '+r.nav+'</td>'
-      +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">'+r.units+'</td>'
-      +'</tr>';
-  }).join('');
+  function segBtn(lbl,p){ return '<button class="'+(period===p?'on':'')+'" onclick="switchNtaPeriod(\''+p+'\')">'+lbl+'</button>'; }
+  var periodBar='<div class="seg">'+segBtn('YTD','ytd')+segBtn('1M','1m')+segBtn('3M','3m')+segBtn('6M','6m')+segBtn('1Y','1y')+segBtn('3Y','3y')+segBtn('ALL','all')+'</div>';
 
-  // Summary stats
-  var allNta=NTA_ROWS.map(function(r){return r.nta;});
-  var highNta=Math.max.apply(null,allNta),lowNta=Math.min.apply(null,allNta);
-  var inception=1.0000,latest=NTA_ROWS[0].nta;
-  var totalReturn=((latest-inception)/inception*100).toFixed(2);
+  var srcRows = gran==='daily' ? NTA_DAILY : gran==='weekly' ? NTA_WEEKLY_OHLC : NTA_MONTHLY;
+  var srcError = gran==='daily' ? NTA_DAILY_ERROR : gran==='weekly' ? NTA_WEEKLY_OHLC_ERROR : NTA_MONTHLY_ERROR;
 
-  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>NTA <span class="acc">History</span></h1><p>Monthly net tangible asset value per unit — ZY-Invest since inception.</p></div>'
-    // Summary cards
-    +'<div class="mrow" style="margin-bottom:20px">'
-    +'<div class="mc"><div class="lbl">Current NTA</div><div class="val b">RM '+latest.toFixed(4)+'</div><div class="sub">'+NTA_ROWS[0].date+'</div></div>'
-    +'<div class="mc"><div class="lbl">Inception NTA</div><div class="val">RM 1.0000</div><div class="sub">15 Mar 2022</div></div>'
-    +'<div class="mc"><div class="lbl">All-time High</div><div class="val" style="color:var(--green)">RM '+highNta.toFixed(4)+'</div><div class="sub">Peak value</div></div>'
-    +'<div class="mc"><div class="lbl">Total Return</div><div class="val" style="color:var(--green)">+'+totalReturn+'%</div><div class="sub">Since inception</div></div>'
-    +'</div>'
-    // Chart
-    +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">NTA per Unit — All Time</h3><span style="font-size:.8rem;color:var(--fg-3)">Mar 2022 — Mar 2026 · Monthly</span></div>'
+  var chart, tableSection;
+  if(srcRows.length){
+    var latestDate=srcRows[srcRows.length-1].date;
+    var cutoff=cmpCutoffDate(period, latestDate, null);
+    var filtered=srcRows.filter(function(r){ return r.date>=cutoff; });
+    if(filtered.length<2) filtered=srcRows;
+
+    chart = gran==='daily' ? buildNtaLineChart(filtered) : buildNtaCandleChart(filtered);
+
+    // Table — latest first, paginated 20 at a time
+    var tableRows=filtered.slice().reverse();
+    var pageSize=20;
+    var totalPages=Math.max(1,Math.ceil(tableRows.length/pageSize));
+    var pageIdx=Math.min(window._nthPage||0, totalPages-1);
+    var pageRows=tableRows.slice(pageIdx*pageSize, pageIdx*pageSize+pageSize);
+
+    var bodyRows;
+    if(gran==='daily'){
+      bodyRows=pageRows.map(function(r){
+        var idx=filtered.indexOf(r);
+        var prev=filtered[idx-1];
+        var chg=prev?(r.nta-prev.nta):0, chgPct=prev&&prev.nta?(chg/prev.nta*100):0;
+        var up=chg>=0;
+        return '<tr style="border-bottom:1px solid var(--border);">'
+          +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">'+nthDateLabel(r.date)+'</td>'
+          +'<td style="padding:11px 16px;font-size:.88rem;font-weight:600;color:var(--fg-1);">RM '+r.nta.toFixed(4)+'</td>'
+          +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(chg===0?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+';">'+(up&&chg!==0?'+':'')+chg.toFixed(4)+'</td>'
+          +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(chgPct===0?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+';">'+(up&&chgPct!==0?'+':'')+chgPct.toFixed(2)+'%</td>'
+          +'</tr>';
+      }).join('');
+    } else {
+      bodyRows=pageRows.map(function(r){
+        var idx=filtered.indexOf(r);
+        var prev=filtered[idx-1];
+        var chg=prev?(r.close-prev.close):0, chgPct=prev&&prev.close?(chg/prev.close*100):0;
+        var up=chg>=0;
+        return '<tr style="border-bottom:1px solid var(--border);">'
+          +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">'+nthDateLabel(r.date)+'</td>'
+          +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">RM '+r.open.toFixed(4)+'</td>'
+          +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">RM '+r.high.toFixed(4)+'</td>'
+          +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">RM '+r.low.toFixed(4)+'</td>'
+          +'<td style="padding:11px 16px;font-size:.88rem;font-weight:600;color:var(--fg-1);">RM '+r.close.toFixed(4)+'</td>'
+          +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(chg===0?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+';">'+(up&&chg!==0?'+':'')+chg.toFixed(4)+'</td>'
+          +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(chgPct===0?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+';">'+(up&&chgPct!==0?'+':'')+chgPct.toFixed(2)+'%</td>'
+          +'</tr>';
+      }).join('');
+    }
+
+    var headCells = gran==='daily'
+      ? ['Date','NTA / Unit','Change','Change %']
+      : ['Date','Open','High','Low','Close','Change','Change %'];
+    var thead='<thead><tr style="border-bottom:1px solid var(--border);">'
+      +headCells.map(function(h){ return '<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">'+h+'</th>'; }).join('')
+      +'</tr></thead>';
+
+    var rangeStart=pageIdx*pageSize+1, rangeEnd=Math.min(tableRows.length, rangeStart+pageSize-1);
+    var pager='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px">'
+      +'<span style="font-size:.8rem;color:var(--fg-3)">Showing '+rangeStart+'–'+rangeEnd+' of '+tableRows.length+'</span>'
+      +'<div style="display:flex;gap:8px">'
+      +'<button onclick="switchNtaPage('+(pageIdx-1)+')" '+(pageIdx<=0?'disabled':'')+' style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:.8rem;font-weight:600;color:'+(pageIdx<=0?'var(--fg-3)':'var(--fg-1)')+';cursor:'+(pageIdx<=0?'default':'pointer')+'">Previous</button>'
+      +'<button onclick="switchNtaPage('+(pageIdx+1)+')" '+(pageIdx>=totalPages-1?'disabled':'')+' style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:.8rem;font-weight:600;color:'+(pageIdx>=totalPages-1?'var(--fg-3)':'var(--fg-1)')+';cursor:'+(pageIdx>=totalPages-1?'default':'pointer')+'">Next</button>'
+      +'</div></div>';
+
+    tableSection = '<table style="width:100%;border-collapse:collapse;">'+thead+'<tbody>'+bodyRows+'</tbody></table>'+pager;
+  } else {
+    chart='<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">'+(srcError?('Could not load — '+srcError):'Loading NTA history…')+'</div>';
+    tableSection='';
+  }
+
+  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%">'
+    +'<div class="ph-xl"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h1 style="margin:0">NTA <span class="acc">History</span></h1>'
+    +'<div style="display:flex;align-items:center;gap:10px">'+granDropdown+periodBar+'</div>'
+    +'</div></div>'
     +chart
-    +'</div>'
-    // Table
-        +'<div style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">Monthly NTA Table</h3><span style="font-size:.8rem;color:var(--fg-3)">'+NTA_ROWS.length+' records</span></div>'
-    +'<table style="width:100%;border-collapse:collapse;">'
-    +'<thead><tr style="border-bottom:1px solid var(--border);">'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Date</th>'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">NTA / Unit</th>'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Change</th>'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Change %</th>'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Fund NAV</th>'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Units O/S</th>'
-    +'</tr></thead>'
-    +'<tbody>'+rows+'</tbody>'
-    +'</table></div></div>';
+    // 2 lines of breathing room before the table
+    +'<div aria-hidden="true" style="line-height:24px">&nbsp;<br>&nbsp;</div>'
+    +'<div style="margin-bottom:4px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:12px">Historical Data</h3>'
+    +tableSection
+    +'</div></div>';
 }
 
 

@@ -295,6 +295,26 @@ var S = { page:'ntahistory', period:'ytd', txf:'all' };
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
+  return Promise.allSettled([
+    (typeof mpLoadNtaDaily==='function') ? mpLoadNtaDaily() : Promise.resolve([]),
+    (typeof mpLoadNtaWeeklyOHLC==='function') ? mpLoadNtaWeeklyOHLC() : Promise.resolve([]),
+    (typeof mpLoadNtaMonthly==='function') ? mpLoadNtaMonthly() : Promise.resolve([])
+  ]);
+}).then(function(results){
+  NTA_DAILY = (results[0].status==='fulfilled') ? (results[0].value||[]) : [];
+  NTA_DAILY_ERROR = (results[0].status==='fulfilled') ? null : ((results[0].reason&&results[0].reason.message)||'Unknown error');
+  if(NTA_DAILY_ERROR) console.warn('NTA daily load failed:', NTA_DAILY_ERROR);
+
+  NTA_WEEKLY_OHLC = (results[1].status==='fulfilled') ? (results[1].value||[]) : [];
+  NTA_WEEKLY_OHLC_ERROR = (results[1].status==='fulfilled') ? null : ((results[1].reason&&results[1].reason.message)||'Unknown error');
+  if(NTA_WEEKLY_OHLC_ERROR) console.warn('NTA weekly load failed:', NTA_WEEKLY_OHLC_ERROR);
+
+  NTA_MONTHLY = (results[2].status==='fulfilled') ? (results[2].value||[]) : [];
+  NTA_MONTHLY_ERROR = (results[2].status==='fulfilled') ? null : ((results[2].reason&&results[2].reason.message)||'Unknown error');
+  if(NTA_MONTHLY_ERROR) console.warn('NTA monthly load failed:', NTA_MONTHLY_ERROR);
+}).catch(function(e){
+  console.warn('NTA History page data load failed:', e && e.message);
+}).finally(function(){
   document.getElementById('mainContent').innerHTML=pgNtaHistory();renderNotifs();
 });
 </script>
