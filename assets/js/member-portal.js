@@ -2741,7 +2741,9 @@ function pgComparison(){
       {name:'ZY-Invest', color:'#1565C0', pts:CMP.fund},
       {name:'FBM KLCI',  color:'#E65100', pts:CMP.klci||[]},
       {name:'S&P 500',   color:'#2E7D32', pts:CMP.sp||[]},
-      {name:'MSCI',      color:'#7C3AED', pts:CMP.msci||[]}
+      {name:'MSCI',      color:'#7C3AED', pts:CMP.msci||[]},
+      {name:'FTSE Singapore', color:'#DB2777', pts:CMP.ftsesg||[]},
+      {name:'NASDAQ',    color:'#0891B2', pts:CMP.nasdaq||[]}
     ].filter(function(s){return s.pts && s.pts.length;});
 
     var allDates=[];
@@ -2846,14 +2848,13 @@ function pgComparison(){
         annVol=Math.sqrt(variance)*Math.sqrt(52)*100;
       }
       var sharpe=(annReturn!=null&&annVol)?(annReturn/annVol):null;
-      var peak=-Infinity,trough=Infinity,maxDD=0,maxRise=0;
-      idxs.forEach(function(i){
-        var v=s.raw[i];
-        if(v>peak)peak=v;
-        var dd=peak?(v/peak-1)*100:0; if(dd<maxDD)maxDD=dd;
-        if(v<trough)trough=v;
-        var rise=trough?(v/trough-1)*100:0; if(rise>maxRise)maxRise=rise;
-      });
+      // Largest single-period move — the biggest one-step decline and the
+      // biggest one-step gain within the window (not a cumulative
+      // peak-to-trough drawdown across multiple periods).
+      var maxDD=rets.length?Math.min.apply(null,rets)*100:null;
+      var maxRise=rets.length?Math.max.apply(null,rets)*100:null;
+      if(maxDD!=null && maxDD>0) maxDD=0;
+      if(maxRise!=null && maxRise<0) maxRise=0;
       return {name:s.name,color:s.color,annReturn:annReturn,annVol:annVol,sharpe:sharpe,maxDD:maxDD,maxRise:maxRise,rets:rets};
     });
     var klciM=periodMetrics.filter(function(p){return p.name==='FBM KLCI';})[0];
@@ -2892,6 +2893,7 @@ function pgComparison(){
 function buildComparisonTable(yearList, yearReturns, periodMetrics){
   if(!yearReturns.length) return '';
   var cellBase='padding:10px 12px;text-align:center;vertical-align:middle;white-space:normal;word-break:break-word;';
+  var fundCellBase='padding:10px 12px;text-align:left;vertical-align:middle;white-space:normal;word-break:break-word;';
   function pctCell(v){
     if(v==null) return '<td style="'+cellBase+'font-size:.84rem;color:var(--fg-3)">—</td>';
     var up=v>=0;
@@ -2905,7 +2907,7 @@ function buildComparisonTable(yearList, yearReturns, periodMetrics){
   var rows=yearReturns.map(function(yr){
     var m=metricsByName[yr.name]||{};
     return '<tr style="border-bottom:1px solid var(--border);">'
-      +'<td style="'+cellBase+'"><div style="display:flex;align-items:center;justify-content:center;gap:8px">'
+      +'<td style="'+fundCellBase+'"><div style="display:flex;align-items:center;gap:8px">'
       +'<span style="width:10px;height:10px;border-radius:50%;background:'+yr.color+';flex-shrink:0;display:inline-block"></span>'
       +'<span style="font-size:.85rem;color:var(--fg-1)">'+yr.name+'</span></div></td>'
       +yr.vals.map(pctCell).join('')
@@ -2918,6 +2920,7 @@ function buildComparisonTable(yearList, yearReturns, periodMetrics){
       +'</tr>';
   }).join('');
   var headCell='padding:9px 12px;text-align:center;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3);white-space:normal;word-break:break-word;';
+  var fundHeadCell='padding:9px 12px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3);white-space:normal;word-break:break-word;';
   var yearHeads=yearList.map(function(y){return '<th style="'+headCell+'">Y'+String(y).slice(-2)+'</th>';}).join('');
   var colCount=1+yearList.length+6;
   var colWidth=(100/colCount).toFixed(2)+'%';
@@ -2925,7 +2928,7 @@ function buildComparisonTable(yearList, yearReturns, periodMetrics){
   return '<div style="margin-bottom:16px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:4px">Returns &amp; Risk Metrics</h3>'
     +'<p style="font-size:.78rem;color:var(--fg-3);margin:0 0 10px">Last 3 calendar years, plus annualised figures for the selected period above</p>'
     +'<table style="width:100%;table-layout:fixed;border-collapse:collapse">'+colgroup+'<thead><tr style="border-bottom:1px solid var(--border)">'
-    +'<th style="'+headCell+'">Fund</th>'
+    +'<th style="'+fundHeadCell+'">Fund</th>'
     +yearHeads
     +'<th style="'+headCell+'">Beta</th>'
     +'<th style="'+headCell+'">Sharpe Ratio</th>'
