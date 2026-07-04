@@ -2038,8 +2038,8 @@ function pgFundOverview(){
     labels.forEach(function(_,i){
       var y=H-padYB;
       var ih=bh(interimArr[i]||0), fh=bh(finalArr[i]||0);
-      y-=ih; rects+='<rect x="'+bx(i)+'" y="'+y.toFixed(1)+'" width="'+barW+'" height="'+ih.toFixed(1)+'" fill="#1565C0" rx="1"/>';
-      y-=fh; rects+='<rect x="'+bx(i)+'" y="'+y.toFixed(1)+'" width="'+barW+'" height="'+fh.toFixed(1)+'" fill="#2E7D32" rx="1"/>';
+      y-=ih; rects+='<rect x="'+bx(i)+'" y="'+y.toFixed(1)+'" width="'+barW+'" height="'+ih.toFixed(1)+'" fill="#0D47A1" rx="1"/>';
+      y-=fh; rects+='<rect x="'+bx(i)+'" y="'+y.toFixed(1)+'" width="'+barW+'" height="'+fh.toFixed(1)+'" fill="#64B5F6" rx="1"/>';
     });
     var grid=scale.ticks.map(function(v){
       var yy=(H-padYB-(v/mx)*(H-padYT-padYB)).toFixed(1);
@@ -2055,8 +2055,8 @@ function pgFundOverview(){
     // Group hover overlay per FY — shows Interim/Final/Total DPS + Yield together
     var overlays=labels.map(function(l,i){
       var tipLines=[
-        '#1565C0::Interim DPS: '+fmtTipNum(interimArr[i]),
-        '#2E7D32::Final DPS: '+fmtTipNum(finalArr[i]),
+        '#0D47A1::Interim DPS: '+fmtTipNum(interimArr[i]),
+        '#64B5F6::Final DPS: '+fmtTipNum(finalArr[i]),
         '#0F172A::Total DPS: '+fmtTipNum(totalArr[i]),
         '#F59E0B::Dividend Yield: '+fmtTipPct(yieldArr[i])
       ];
@@ -2068,11 +2068,47 @@ function pgFundOverview(){
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+'<path d="'+ld+'" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round"/>'+ldots+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
-      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:#1565C0;display:inline-block"></span>Interim DPS</span>'
-      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:#2E7D32;display:inline-block"></span>Final DPS</span>'
+      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:#0D47A1;display:inline-block"></span>Interim DPS</span>'
+      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:#64B5F6;display:inline-block"></span>Final DPS</span>'
       +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:16px;height:2px;background:#F59E0B;display:inline-block;border-radius:1px"></span>Dividend Yield</span>'
       +'</div>';
     return chartSvg+leg;
+  }
+
+  // Distribution Payout Ratio donut — visually the same as donut(), but
+  // every slice shares ONE hover tooltip (Total DPS / EPS / Payout Ratio)
+  // instead of a different tooltip per slice, since the 3 segments here
+  // are components of a single ratio rather than independent categories.
+  function payoutDonut(segs,label,caption,groupTip){
+    var s=270,cx=s/2,cy=s/2,R=s*0.42,ir=s*0.35;
+    var total=segs.reduce(function(a,x){return a+x.v;},0)||1;
+    var ang=-Math.PI/2,paths='';
+    segs.forEach(function(sg){
+      var sweep=(sg.v/total)*2*Math.PI,ea=ang+sweep;
+      var x1=(cx+R*Math.cos(ang)).toFixed(2),y1=(cy+R*Math.sin(ang)).toFixed(2);
+      var x2=(cx+R*Math.cos(ea)).toFixed(2),y2=(cy+R*Math.sin(ea)).toFixed(2);
+      var x3=(cx+ir*Math.cos(ea)).toFixed(2),y3=(cy+ir*Math.sin(ea)).toFixed(2);
+      var x4=(cx+ir*Math.cos(ang)).toFixed(2),y4=(cy+ir*Math.sin(ang)).toFixed(2);
+      var la=sweep>Math.PI?1:0;
+      var d='M'+x1+' '+y1+' A'+R+' '+R+' 0 '+la+' 1 '+x2+' '+y2+' L'+x3+' '+y3+' A'+ir+' '+ir+' 0 '+la+' 0 '+x4+' '+y4+'Z';
+      paths+='<path d="'+d+'" fill="'+sg.color+'" stroke="none" data-tip="'+groupTip+'" onmouseenter="showPieTip(event,getTip(this))" onmousemove="showPieTip(event,getTip(this))" onmouseout="hidePieTip()" style="cursor:pointer"/>';
+      ang=ea;
+    });
+    var legend=segs.map(function(sg){
+      var pct=(sg.v/total*100).toFixed(1);
+      return '<div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#374151">'
+        +'<span style="width:8px;height:8px;border-radius:50%;background:'+sg.color+';flex-shrink:0;display:inline-block"></span>'
+        +sg.label+' <span style="color:#9CA3AF">'+pct+'%</span></div>';
+    }).join('');
+    return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:20px;flex:1;padding:8px 0;min-height:0">'
+      +'<svg viewBox="0 0 '+s+' '+s+'" style="width:'+s+'px;height:'+s+'px;max-width:90%;max-height:100%;flex-shrink:0">'
+      +paths
+      +'<circle cx="'+cx+'" cy="'+cy+'" r="'+(ir-3)+'" fill="#fff" style="pointer-events:none"/>'
+      +'<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="19" font-weight="700" fill="#0F172A" style="pointer-events:none">'+label+'</text>'
+      +'<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" fill="#6B7280" style="pointer-events:none">'+(caption||'total')+'</text>'
+      +'</svg>'
+      +'<div style="display:flex;flex-direction:column;gap:7px;min-width:0">'+legend+'</div>'
+      +'</div>';
   }
 
   function card(title,chartHtml,subline){
@@ -2141,37 +2177,61 @@ function pgFundOverview(){
     ? candlestick(NTA_MONTHLY)
     : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(NTA_MONTHLY_ERROR?('Could not load — '+NTA_MONTHLY_ERROR):'No NTA history on record')+'</div>';
 
-  // ── DISTRIBUTION SUMMARY — last FY's Interim DPS vs. previous FY's
-  // Gross (interim+final) per share, with a 3-year interim payout legend ──
+  // ── Canonical FY list (every FY the fund has defined, regardless of
+  // whether a distribution was paid) — so Distribution History always
+  // shows 5 bars even for FYs with no distribution on record ─────────────
+  var ALL_FY = RATIO_ANALYSIS.length ? RATIO_ANALYSIS.map(function(r){return r.fy;})
+    : (INCOME_STATEMENT.length ? INCOME_STATEMENT.map(function(r){return r.fy;}) : DIST_BY_FY.map(function(r){return r.fy;}));
+  var DIST_BY_FY_MAP = {}; DIST_BY_FY.forEach(function(r){ DIST_BY_FY_MAP[r.fy]=r; });
+  var INCOME_BY_FY = {}; INCOME_STATEMENT.forEach(function(r){ INCOME_BY_FY[r.fy]=r; });
+
+  // ── DISTRIBUTION PAYOUT RATIO — last FY's Total DPS ÷ previous FY's EPS.
+  // Donut shows last FY Interim DPS, last FY Final DPS, and the slice of
+  // previous FY's EPS not distributed (EPS excl. DPS). The whole chart
+  // shares ONE hover tooltip: Total DPS / EPS / Payout Ratio. ────────────
   function fmtSen(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  var distLastFy = DIST_BY_FY.length ? DIST_BY_FY[DIST_BY_FY.length-1] : null;
-  var distPrevFy = DIST_BY_FY.length>1 ? DIST_BY_FY[DIST_BY_FY.length-2] : null;
+  var payoutLastFy = ALL_FY.length ? ALL_FY[ALL_FY.length-1] : null;
+  var payoutPrevFy = ALL_FY.length>1 ? ALL_FY[ALL_FY.length-2] : null;
   var distSummaryChart;
-  if(distLastFy){
-    var distSegs=[{v:distLastFy.interimDps||0, color:'#1565C0', label:'Interim DPS'}];
-    if(distPrevFy) distSegs.push({v:distPrevFy.totalDps||0, color:'#F59E0B', label:'Gross per Share'});
-    var DIST_LEG_COL=['#1565C0','#2E7D32','#E65100'];
-    var distLegend = DIST_BY_FY.slice(-3).reverse().map(function(r,i){
-      return {color:DIST_LEG_COL[i]||'#9CA3AF', label:r.fy, value:fmtSen(r.interimDps)+' sen'};
-    });
-    distSummaryChart = donut(distSegs, fmtSen(distLastFy.interimDps), 'sen · Interim DPS', function(v){return fmtSen(v)+' sen';}, distLegend);
+  if(payoutLastFy && payoutPrevFy){
+    var lastDist = DIST_BY_FY_MAP[payoutLastFy] || {interimDps:0,finalDps:0,totalDps:0};
+    var prevIS   = INCOME_BY_FY[payoutPrevFy];
+    var prevEps  = (prevIS && prevIS.epsCents!=null) ? prevIS.epsCents : null;
+    if(prevEps!=null){
+      var payoutRatio = prevEps ? (lastDist.totalDps/prevEps*100) : null;
+      var retained = Math.max(0, prevEps-(lastDist.totalDps||0));
+      var distSegs=[
+        {v:lastDist.interimDps||0, color:'#0D47A1', label:'Interim DPS'},
+        {v:lastDist.finalDps||0,   color:'#64B5F6', label:'Final DPS'},
+        {v:retained,               color:'#CBD5E1', label:'EPS excl. DPS'}
+      ];
+      var groupTip='DPS (Total): '+fmtSen(lastDist.totalDps)+' sen  ·  EPS: '+fmtSen(prevEps)+' sen  ·  Payout Ratio: '+(payoutRatio!=null?payoutRatio.toFixed(1):'—')+'%';
+      distSummaryChart = payoutDonut(distSegs, (payoutRatio!=null?payoutRatio.toFixed(1):'—')+'%', 'Payout Ratio', groupTip);
+    } else {
+      distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">No EPS data on record</div>';
+    }
   } else {
     distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(DIST_BY_FY_ERROR?('Could not load — '+DIST_BY_FY_ERROR):'No distribution history on record')+'</div>';
   }
 
-  // ── DISTRIBUTION HISTORY — past 5 FY Interim + Final DPS (stacked) with
-  // Dividend Yield trend line (axis-less; values shown on hover) ─────────
-  var distHist = DIST_BY_FY.slice(-5);
+  // ── DISTRIBUTION HISTORY — past 5 FY, always shown even where a given
+  // FY had no distribution (defaults to 0) — Interim + Final DPS (stacked,
+  // dark/light blue) with Dividend Yield trend line (axis-less; values
+  // shown on hover) ───────────────────────────────────────────────────────
+  var last5Fy = ALL_FY.slice(-5);
   var distHistChart;
-  if(distHist.length){
+  if(last5Fy.length){
     var ratioByFy={}; RATIO_ANALYSIS.forEach(function(r){ ratioByFy[r.fy]=r; });
-    distHistChart = stackedBarsWithLine(
-      distHist.map(function(r){return r.fy;}),
-      distHist.map(function(r){return r.interimDps||0;}),
-      distHist.map(function(r){return r.finalDps||0;}),
-      distHist.map(function(r){return r.totalDps||0;}),
-      distHist.map(function(r){ var ra=ratioByFy[r.fy]; return (ra&&ra.dividendYield!=null)?ra.dividendYield:0; })
-    );
+    var dhInterim=[], dhFinal=[], dhTotal=[], dhYield=[];
+    last5Fy.forEach(function(fy){
+      var d=DIST_BY_FY_MAP[fy]||{interimDps:0,finalDps:0,totalDps:0};
+      dhInterim.push(d.interimDps||0);
+      dhFinal.push(d.finalDps||0);
+      dhTotal.push(d.totalDps||0);
+      var ra=ratioByFy[fy];
+      dhYield.push((ra&&ra.dividendYield!=null)?ra.dividendYield:0);
+    });
+    distHistChart = stackedBarsWithLine(last5Fy, dhInterim, dhFinal, dhTotal, dhYield);
   } else {
     distHistChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(DIST_BY_FY_ERROR?('Could not load — '+DIST_BY_FY_ERROR):'No distribution history on record')+'</div>';
   }
@@ -2210,7 +2270,7 @@ function pgFundOverview(){
       'Revenue vs. Net Profit After Tax, per financial year'
     )
     +card('NTA Performance',ntaPerfChart,'Monthly NTA per unit (open/high/low/close)')
-    +card('Distribution Summary',distSummaryChart,'Latest interim DPS vs. previous FY gross per share')
+    +card('Distribution Payout Ratio',distSummaryChart,'Last FY total DPS ÷ previous FY EPS')
     +card('Distribution History',distHistChart,'Interim &amp; final DPS with dividend yield trend, per financial year')
     +card('Balance Sheet',balanceSheetChart,'Total assets vs. total liabilities, per financial year')
     +card('Cash Reserve Ratio',cashReserveChart,'Cash as a % of total assets, per financial year')
