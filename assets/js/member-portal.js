@@ -2079,7 +2079,7 @@ function pgFundOverview(){
   // every slice shares ONE hover tooltip (Total DPS / EPS / Payout Ratio)
   // instead of a different tooltip per slice, since the 3 segments here
   // are components of a single ratio rather than independent categories.
-  function payoutDonut(segs,label,caption,groupTip){
+  function payoutDonut(segs,label,caption,groupTip,legendData){
     var s=270,cx=s/2,cy=s/2,R=s*0.42,ir=s*0.35;
     var total=segs.reduce(function(a,x){return a+x.v;},0)||1;
     var ang=-Math.PI/2,paths='';
@@ -2094,13 +2094,17 @@ function pgFundOverview(){
       paths+='<path d="'+d+'" fill="'+sg.color+'" stroke="none" data-tip="'+groupTip+'" onmouseenter="showGroupPieTip(event,getTip(this))" onmousemove="showGroupPieTip(event,getTip(this))" onmouseout="hideGroupPieTip()" style="cursor:pointer"/>';
       ang=ea;
     });
-    var legendRows=segs.map(function(sg){
+    // legendData lets the textbox show different figures than the pie
+    // slices themselves (e.g. the full Gross per Share, not the slice's
+    // excl.-Interim remainder) — falls back to the slice values if omitted.
+    var rows=legendData||segs;
+    var legendRows=rows.map(function(sg){
       return '<div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#374151">'
         +'<span style="width:8px;height:8px;border-radius:50%;background:'+sg.color+';flex-shrink:0;display:inline-block"></span>'
         +'<span style="flex:1">'+sg.label+'</span>'
         +'<span style="color:#0F172A;font-weight:400">'+fmtSen(sg.v)+' sen</span></div>';
     }).join('');
-    var legend='<div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;min-width:170px">'+legendRows+'</div>';
+    var legend='<div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:8px;min-width:170px">'+legendRows+'</div>';
     return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:20px;flex:1;padding:8px 0;min-height:0">'
       +'<svg viewBox="0 0 '+s+' '+s+'" style="width:'+s+'px;height:'+s+'px;max-width:90%;max-height:100%;flex-shrink:0">'
       +paths
@@ -2188,10 +2192,11 @@ function pgFundOverview(){
 
   // ── DISTRIBUTION PAYOUT RATIO — center number is Interim DPS ÷ previous
   // FY's GPS (the full figure, not net of Interim DPS). The donut breaks
-  // down into 2 segments: last FY's Interim DPS (dark blue), and previous
-  // FY's GPS (Gross Income per share) less that Interim DPS (grey). One
-  // shared multi-line hover tooltip covers the whole chart: FYxxxx header,
-  // then Interim DPS and GPS each on their own line. ─────────────────────
+  // down into 2 segments: last FY's Interim DPS (light blue), and previous
+  // FY's GPS (Gross Income per share) less that Interim DPS (grey) — but
+  // the textbox shows the full GPS figure, not the excl.-Interim remainder.
+  // One shared multi-line hover tooltip covers the whole chart: FYxxxx
+  // header, then Interim DPS and GPS each on their own line. ─────────────
   function fmtSen(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   var payoutLastFy = ALL_FY.length ? ALL_FY[ALL_FY.length-1] : null;
   var payoutPrevFy = ALL_FY.length>1 ? ALL_FY[ALL_FY.length-2] : null;
@@ -2205,11 +2210,15 @@ function pgFundOverview(){
       var payoutRatio = prevGps ? (interimVal/prevGps*100) : null;
       var gpsExclInterim = Math.max(0, prevGps-interimVal);
       var distSegs=[
-        {v:interimVal,     color:'#0D47A1', label:'Interim DPS'},
+        {v:interimVal,     color:'#64B5F6', label:'Interim DPS'},
         {v:gpsExclInterim, color:'#9CA3AF', label:'GPS excl. Interim DPS'}
       ];
+      var distLegendData=[
+        {v:interimVal, color:'#64B5F6', label:'Interim DPS'},
+        {v:prevGps,    color:'#9CA3AF', label:'Gross per Share'}
+      ];
       var groupTip=payoutLastFy+'|Interim DPS: '+fmtSen(interimVal)+' sen|GPS: '+fmtSen(prevGps)+' sen';
-      distSummaryChart = payoutDonut(distSegs, (payoutRatio!=null?payoutRatio.toFixed(1):'—')+'%', 'Payout Ratio', groupTip);
+      distSummaryChart = payoutDonut(distSegs, (payoutRatio!=null?payoutRatio.toFixed(1):'—')+'%', 'Payout Ratio', groupTip, distLegendData);
     } else {
       distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">No Gross Income data on record</div>';
     }
@@ -2273,7 +2282,7 @@ function pgFundOverview(){
       'Revenue vs. Net Profit After Tax, per financial year'
     )
     +card('NTA Performance',ntaPerfChart,'Monthly NTA per unit (open/high/low/close)')
-    +card('Distribution Payout Ratio',distSummaryChart,'Last FY total DPS ÷ previous FY EPS')
+    +card('Distribution Payout Ratio',distSummaryChart,'Interim DPS ÷ previous FY gross per share')
     +card('Distribution History',distHistChart,'Interim &amp; final DPS with dividend yield trend, per financial year')
     +card('Balance Sheet',balanceSheetChart,'Total assets vs. total liabilities, per financial year')
     +card('Cash Reserve Ratio',cashReserveChart,'Cash as a % of total assets, per financial year')
