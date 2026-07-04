@@ -431,6 +431,67 @@ async function mpLoadInceptionDate() {
   return (data && data.length) ? data[0].date : null;
 }
 
+function isoWeekKey(d) {
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = (dt.getUTCDay() + 6) % 7;
+  dt.setUTCDate(dt.getUTCDate() - day + 3);
+  const firstThursday = new Date(Date.UTC(dt.getUTCFullYear(), 0, 4));
+  const week = 1 + Math.round(((dt - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return dt.getUTCFullYear() + '-W' + String(week).padStart(2, '0');
+}
+
+/* ── Fund NTA resampled to weekly (fund-wide) — for the Comparison page's
+   "vs index" chart, which needs the same cadence as the Yahoo Finance
+   weekly series below.                                                   */
+async function mpLoadNtaWeekly() {
+  const pageSize = 1000;
+  let all = [], page = 0;
+  while (true) {
+    const { data, error } = await sb.from('nta_daily')
+      .select('date, nta')
+      .order('date', { ascending: true })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    if (error) throw error;
+    if (!data || !data.length) break;
+    all = all.concat(data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+  const byWeek = {};
+  const order = [];
+  all.forEach(function(r) {
+    if (!r.date || r.nta == null) return;
+    const key = isoWeekKey(new Date(r.date + 'T00:00:00'));
+    const v = parseFloat(r.nta);
+    if (!byWeek[key]) { byWeek[key] = { date: r.date, close: v }; order.push(key); }
+    else { byWeek[key].date = r.date; byWeek[key].close = v; } // ascending order → last write wins
+  });
+  return order.map(function(key) { return byWeek[key]; });
+}
+
+/* ── External index weekly series via Yahoo Finance, proxied through
+   corsproxy.io — a direct browser call to Yahoo Finance returns 403
+   (same CORS workaround used by the admin NTA engine for price lookups).
+   Returns ascending [{date:'YYYY-MM-DD', close:Number}].                 */
+async function mpLoadYahooWeekly(symbol) {
+  const yahooUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol)
+    + '?interval=1wk&range=5y';
+  const proxied = 'https://corsproxy.io/?url=' + encodeURIComponent(yahooUrl);
+  const res = await fetch(proxied);
+  if (!res.ok) throw new Error('Yahoo Finance request failed for ' + symbol + ' (' + res.status + ')');
+  const json = await res.json();
+  const result = json && json.chart && json.chart.result && json.chart.result[0];
+  if (!result || !result.timestamp) throw new Error('No data returned for ' + symbol);
+  const ts = result.timestamp;
+  const closes = (result.indicators && result.indicators.quote && result.indicators.quote[0] && result.indicators.quote[0].close) || [];
+  const out = [];
+  for (let i = 0; i < ts.length; i++) {
+    if (closes[i] == null) continue;
+    out.push({ date: new Date(ts[i] * 1000).toISOString().slice(0, 10), close: closes[i] });
+  }
+  return out;
+}
+
 /* ── Distributions by FY (fund-wide, Paid only) — for the Fund Overview
    "Distribution Summary" & "Distribution History" cards. Buckets each
    Paid distribution into interimDps / finalDps by matching distributions.type

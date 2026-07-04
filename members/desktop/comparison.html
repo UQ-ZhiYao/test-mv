@@ -293,8 +293,31 @@ var S = { page:'comparison', period:'ytd', txf:'all' };
 // [init removed for standalone page]
 
 // Page init
-// Page init (waits for live Supabase data)
+// Page init (waits for live Supabase + Yahoo Finance data)
 loadLiveData().then(function(){
+  return Promise.allSettled([
+    (typeof mpLoadNtaWeekly==='function') ? mpLoadNtaWeekly() : Promise.resolve([]),
+    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^KLSE') : Promise.resolve([]),
+    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^GSPC') : Promise.resolve([]),
+    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('MSCI') : Promise.resolve([]),
+    (typeof mpLoadInceptionDate==='function') ? mpLoadInceptionDate() : Promise.resolve(null)
+  ]);
+}).then(function(results){
+  var fund = (results[0].status==='fulfilled') ? (results[0].value||[]) : [];
+  var klci = (results[1].status==='fulfilled') ? (results[1].value||[]) : [];
+  var sp   = (results[2].status==='fulfilled') ? (results[2].value||[]) : [];
+  var msci = (results[3].status==='fulfilled') ? (results[3].value||[]) : [];
+  var inception = (results[4].status==='fulfilled') ? results[4].value : null;
+  results.forEach(function(r,i){
+    if(r.status!=='fulfilled') console.warn('Comparison data source '+i+' failed:', r.reason && r.reason.message);
+  });
+  COMPARISON_DATA = { fund:fund, klci:klci, sp:sp, msci:msci, inception:inception };
+  COMPARISON_ERROR = fund.length ? null : 'Fund NTA history unavailable';
+}).catch(function(e){
+  COMPARISON_DATA = null;
+  COMPARISON_ERROR = (e && e.message) || 'Unknown error';
+  console.warn('Comparison page data load failed:', COMPARISON_ERROR);
+}).finally(function(){
   document.getElementById('mainContent').innerHTML=pgComparison();renderNotifs();
 });
 </script>

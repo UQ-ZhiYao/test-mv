@@ -43,6 +43,8 @@ let NTA_MONTHLY = [];
 let NTA_MONTHLY_ERROR = null;
 let DIST_BY_FY = [];
 let DIST_BY_FY_ERROR = null;
+let COMPARISON_DATA = null;
+let COMPARISON_ERROR = null;
 
 function mpInitials(name){
   if(!name) return '—';
@@ -2515,47 +2517,134 @@ function pgNtaHistory(){
 
 
 // ── COMPARISON ────────────────────────────────────────────────────────────────
-function pgComparison(){
-  var seriesData=[
-    {id:'zy',  name:'ZY-Invest', color:'#1565C0', v:[99.91,99.76,99.63,99.44,99.33,99.33,99.06,99.11,98.73,98.76,98.52,98.39,98.38,98.06,98.31,98.34,98.14,98.42,98.24,98.51,98.59,98.52,98.56,98.77,98.78,98.78,98.88,98.75,98.9,98.88,98.81,98.65,98.69,98.94,98.81,98.76,98.67,98.8,98.94,98.68,98.95,98.9,98.96,99.03,98.96,98.86,99.06,99.07,99.04,99.18,99.09,99.19,99.11,99.27,99.06,99.19,99.28,99.19,99.14,99.23,99.25,99.41,99.34,99.26,99.25,99.53,99.54,99.45,99.42,99.56,99.38,99.42,99.39,99.46,99.52,99.6,99.46,99.49,99.47,99.61,99.78,99.6,99.58,99.86,99.76,99.68,99.89,99.7,99.77,100,99.92,99.94,99.93,99.8,99.89,99.94,100.01,99.97,100.07,99.9,100.06,100.07,100.19,99.98,100.06,100.05,100.2,100.24,100.06,100.26,100.33,100.35,100.26,100.31,100.41,100.48,100.46,100.31,100.3,100.55,100.56,100.42,100.54,100.52,100.39,100.34,100.45,100.45,100.49,100.44,100.43,100.55,100.64,100.46,100.66,100.64,100.61,100.68,100.85,100.9,100.9,100.78,100.86,100.83,101.03,100.91,101,100.94,101.05,100.97,101.01,101.32,101.06,101.31,101.32,101.15,101.22,101.44,101.19,101.2,101.16,101.41,101.18,101.33,101.16,101.32,101.38,101.35,101.18,101.46,101.29,101.41,101.35,101.42,101.62,101.63,101.49,101.53,101.78,101.67,101.84,101.9,101.93,101.79,101.76,101.96,102,102,102.04,101.9,101.86,102.16,102.19,102.1,102.14,102.14,102.02,102.3,102.32,102.11,102.25,102.34,102.34,102.4,102.55,102.45,102.4,102.62]},
-    {id:'klci',name:'FBM KLCI',  color:'#E65100', v:[100.04,99.58,99.52,99.26,98.8,98.4,98.24,97.92,97.6,97.35,97.09,96.62,96.34,96.26,96.33,96.49,96.59,96.49,96.54,96.67,96.88,97.07,97.17,97.14,97.12,97.4,97.4,97.45,97.41,97.64,97.6,97.71,97.66,97.92,97.8,97.76,97.92,97.94,98.19,98.04,98.32,98.23,98.32,98.59,98.69,98.71,98.79,98.83,98.94,99.06,99.28,99.18,99.27,99.39,99.7,99.8,99.85,99.81,99.98,100.29,100.28,100.44,100.35,100.51,100.86,100.9,100.96,100.81,100.88,100.99,100.87,101.04,101.07,101.2,101.17,100.98,101.06,101.16,101.03,101.1,100.86,100.91,100.66,100.68,100.61,100.39,100.27,100.28,100.06,99.95,100,99.89,99.79,100.01,99.85,100.08,100.09,99.95,100.08,100.06,100.27,100.27,100.38,100.51,100.41,100.39,100.55,100.69,100.95,100.96,101.12,101.18,101.1,101.22,101.31,101.42,101.62,101.54,101.58,101.77,101.65,101.59,101.87,101.72,101.64,101.69,101.87,101.72,101.83,101.81,101.78,101.8,101.93,101.77,101.72,101.58,101.64,101.67,101.63,101.52,101.55,101.44,101.47,101.58,101.39,101.43,101.73,101.77,101.67,101.86,101.74,101.83,101.83,101.97,102.03,101.96,102.28,102.13,102.35,102.42,102.71,102.72,102.7,102.99,102.89,103.06,103.2,103.42,103.46,103.53,103.45,103.58,103.5,103.4,103.57,103.67,103.52,103.71,103.85,103.74,103.67,103.69,103.7,103.88,103.79,104.01,103.98,104.11,104.16,103.96,104.1,104.15,104.25,104.21,104.2,104.3,104.26,104.35,104.52,104.64,104.72,104.68,104.63,104.73,105.03,104.91,104.93,105.24]},
-    {id:'sp',  name:'S&P 500',   color:'#2E7D32', v:[99.96,99.1,98.14,97.05,96.19,95.14,94.25,93.27,92.33,91.14,90.24,89.27,88.2,87.32,87.06,86.9,86.74,86.39,86.09,85.86,85.77,85.38,85.27,84.92,84.8,84.29,84.33,84.46,84.51,84.55,84.79,84.92,85.18,85.23,85.47,85.51,85.7,85.85,85.98,86.19,86.51,86.62,86.93,87.17,87.31,87.48,87.84,87.91,88.37,88.56,88.63,88.88,89.2,89.61,89.96,89.96,90.26,90.77,90.81,91.29,91.39,91.71,92.12,92.23,92.73,92.93,93.15,93.27,93.3,93.67,93.7,93.95,93.99,94.43,94.52,94.76,94.85,94.95,95.14,95.29,95.42,95.58,95.82,95.99,96.22,96.49,96.66,96.65,97.08,97.19,97.39,97.5,97.95,98.12,98.52,98.59,99.1,99.3,99.49,99.99,100.18,100.53,100.87,101.18,101.44,101.88,102.19,102.71,103.16,103.46,103.93,104.54,104.94,105.29,105.61,106.26,106.71,106.85,107.12,107.59,107.88,107.94,108.41,108.48,108.98,109.26,109.35,109.69,109.96,110.16,110.47,110.67,110.99,111.04,111.31,111.3,111.69,111.67,111.86,112.04,112.43,112.54,112.85,112.85,113.17,113.56,113.68,113.99,114.3,114.64,114.86,115.23,115.62,115.82,116.02,116.27,116.5,116.5,116.69,116.94,116.98,117.17,117.31,117.47,117.65,117.54,117.94,118.05,118.11,118.23,118.2,118.47,118.41,118.65,118.68,118.59,118.79,118.78,118.79,118.93,119.1,119.14,119.21,119.06,118.75,118.8,118.64,118.27,118.15,118.09,118.02,117.85,117.8,117.65,117.44,117.48,117.55,117.74,117.76,118.12,118.04,118.17,118.4,118.36,118.43,118.57,118.66,119]},
-    {id:'msci',name:'MSCI World',color:'#7C3AED', v:[100.09,99.25,98.26,97.49,96.64,95.73,94.8,94.14,93.22,92.53,91.49,90.87,89.82,89.13,88.79,88.81,88.37,88.13,88.15,87.89,87.57,87.41,87.3,87.04,86.91,86.69,86.4,86.6,86.81,86.91,86.84,87.26,87.15,87.45,87.59,87.57,87.72,87.96,88.19,88.25,88.54,88.8,89.13,89.09,89.55,89.71,90.07,90.21,90.41,90.59,91.09,91.18,91.52,91.51,91.78,92,92.17,92.45,92.74,92.89,93.25,93.23,93.59,93.78,94.08,94.16,94.23,94.46,94.65,94.74,94.81,95.26,95.41,95.5,95.49,95.83,96.07,96.12,96.33,96.34,96.69,96.63,97.06,97.18,97.19,97.38,97.6,97.81,97.92,97.99,98.18,98.67,98.86,99,99.41,99.79,99.88,100.21,100.5,100.84,101.21,101.44,101.76,101.86,102.27,102.79,103.22,103.55,103.89,104.45,104.88,105.3,105.46,106.01,106.27,106.7,107.12,107.46,107.78,108.22,108.21,108.57,108.82,109.21,109.43,109.58,109.86,110.03,110.34,110.73,110.76,110.88,111.27,111.38,111.47,111.54,111.51,111.8,111.97,111.88,112.13,112.26,112.44,112.57,112.74,113.14,113.36,113.67,113.81,114.05,114.32,114.55,115.09,115.2,115.34,115.74,115.9,116.13,116.15,116.12,116.27,116.44,116.67,116.62,116.77,116.94,117,117.38,117.25,117.54,117.52,117.65,117.63,117.78,117.68,117.71,117.94,117.79,118.03,118.05,117.92,118.2,118.08,118.04,117.68,117.78,117.51,117.52,117.54,117.31,117.27,117.1,117.02,116.95,116.71,116.77,117,117.03,117.14,117.34,117.41,117.58,117.64,117.79,117.92,118.11,118.21,118.11]},
-  ];
-  var n=seriesData[0].v.length;
-  var W=800,H=200,padX=44,padYT=14,padYB=22;
-  var allV=seriesData.reduce(function(a,s){return a.concat(s.v);},[]);
-  var mn=Math.min.apply(null,allV)-1,mx=Math.max.apply(null,allV)+1,rng=mx-mn;
-  function px(i){return padX+(i/(n-1))*(W-padX-8);}
-  function py(v){return H-padYB-((v-mn)/rng)*(H-padYT-padYB);}
-  var grid=[0,25,50,75,100].map(function(f){
-    var yy=(H-padYB-f/100*(H-padYT-padYB)).toFixed(1);
-    var v=(mn+f/100*rng).toFixed(1);
-    return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-8)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'+
-           '<text x="'+(padX-3)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="end" font-size="9" fill="#94A3B8">'+v+'</text>';
+function switchCmpPeriod(p){
+  window._cmpPeriod=p;
+  var el=document.getElementById('mainContent');
+  if(el) el.innerHTML=pgComparison();
+}
+
+// Resolves a period key to a start-date cutoff (inclusive), anchored to the
+// latest date in the loaded series. 'all' anchors to the fund's inception
+// date instead, and never goes earlier than inception for any period.
+function cmpCutoffDate(period, latestStr, inceptionStr){
+  if(!latestStr) return inceptionStr || '0000-00-00';
+  var latest=new Date(latestStr+'T00:00:00');
+  var d=new Date(latest.getTime());
+  switch(period){
+    case 'ytd': d=new Date(latest.getFullYear(),0,1); break;
+    case '1m': d.setMonth(d.getMonth()-1); break;
+    case '3m': d.setMonth(d.getMonth()-3); break;
+    case '6m': d.setMonth(d.getMonth()-6); break;
+    case '1y': d.setFullYear(d.getFullYear()-1); break;
+    case '3y': d.setFullYear(d.getFullYear()-3); break;
+    case 'all':
+    default:
+      return inceptionStr || '0000-00-00';
+  }
+  var iso=d.toISOString().slice(0,10);
+  if(inceptionStr && iso<inceptionStr) return inceptionStr;
+  return iso;
+}
+
+// Comparison line chart — rebased-% series, right-side axis, no letterboxing
+// (preserveAspectRatio="none" so the plot area always fills the card's
+// actual width instead of aspect-ratio-locked empty margins).
+function buildCmpChart(seriesArr, dates){
+  var n=dates.length;
+  if(n<2 || !seriesArr.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
+  var W=1000,H=220,padL=8,padR=40,padYT=14,padYB=22;
+  var allV=[]; seriesArr.forEach(function(s){ s.v.forEach(function(v){ if(v!=null) allV.push(v); }); });
+  if(!allV.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">No data</div>';
+  var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
+  var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
+  function px(i){ return padL+(i/(n-1))*(W-padL-padR); }
+  function py(v){ return H-padYB-((v-mn)/rng)*(H-padYT-padYB); }
+  var grid=scale.ticks.map(function(v){
+    var yy=py(v).toFixed(1);
+    return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'
+      +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7.5" fill="#94A3B8">'+v.toFixed(0)+'%</text>';
   }).join('');
-  var baseline='<line x1="'+padX+'" y1="'+py(100).toFixed(1)+'" x2="'+(W-8)+'" y2="'+py(100).toFixed(1)+'" stroke="#CBD5E1" stroke-width="0.8" stroke-dasharray="4,3"/>';
-  // X axis labels: start, 1y, 2y, 3y, end
-  var xLabels=[0,52,104,156,207].map(function(i,idx){
-    var lbl=['Mar 22','Mar 23','Mar 24','Mar 25','Mar 26'][idx];
-    return '<text x="'+px(i).toFixed(1)+'" y="'+(H-5)+'" text-anchor="middle" font-size="9" fill="#94A3B8">'+lbl+'</text>';
-  }).join('');
-  var paths=seriesData.map(function(s){
-    var d=s.v.map(function(v,i){return (i?'L':'M')+px(i).toFixed(1)+','+py(v).toFixed(1);}).join('');
-    var dot='<circle cx="'+px(n-1).toFixed(1)+'" cy="'+py(s.v[n-1]).toFixed(1)+'" r="3" fill="#fff" stroke="'+s.color+'" stroke-width="2"/>';
+  var baseline='<line x1="'+padL+'" y1="'+py(0).toFixed(1)+'" x2="'+(W-padR)+'" y2="'+py(0).toFixed(1)+'" stroke="#CBD5E1" stroke-width="0.8" stroke-dasharray="4,3"/>';
+  var xTickCount=Math.min(6,n);
+  var xLabels=[];
+  for(var t=0;t<xTickCount;t++){
+    var idx=Math.round(t*(n-1)/(xTickCount-1||1));
+    var dt=new Date(dates[idx]+'T00:00:00');
+    var lbl=dt.toLocaleDateString('en-MY',{month:'short',year:'2-digit'});
+    xLabels.push('<text x="'+px(idx).toFixed(1)+'" y="'+(H-5)+'" text-anchor="middle" font-size="7.5" fill="#94A3B8">'+lbl+'</text>');
+  }
+  var paths=seriesArr.map(function(s){
+    var d='',started=false,lastIdx=-1;
+    s.v.forEach(function(v,i){
+      if(v==null) return;
+      d+=(started?'L':'M')+px(i).toFixed(1)+','+py(v).toFixed(1);
+      started=true; lastIdx=i;
+    });
+    var dot=lastIdx>=0?'<circle cx="'+px(lastIdx).toFixed(1)+'" cy="'+py(s.v[lastIdx]).toFixed(1)+'" r="3" fill="#fff" stroke="'+s.color+'" stroke-width="2"/>':'';
     return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>'+dot;
   }).join('');
-  // viewBox aspect: 800x200 → no stretch, full width
-  var chart='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">'+grid+baseline+paths+xLabels+'</svg>';
-  var legend='<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;justify-content:center;width:100%;">'
-    +seriesData.map(function(s){
-      var ret=(s.v[n-1]-100).toFixed(1);var up=parseFloat(ret)>=0;
-      return '<div style="display:flex;align-items:center;gap:8px">'
-        +'<span style="width:20px;height:3px;background:'+s.color+';display:inline-block;border-radius:2px"></span>'
-        +'<span style="font-size:.82rem;color:var(--fg-2)">'+s.name+'</span>'
-        +'<span style="font-size:.82rem;font-weight:700;color:'+(up?'var(--green)':'var(--red)')+';">'+(up?'+':'')+ret+'%</span>'
-        +'</div>';
-    }).join('')+'</div>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:220px;display:block">'+grid+baseline+paths+xLabels.join('')+'</svg>';
+}
+
+function pgComparison(){
+  var period = window._cmpPeriod || 'all';
+  function segBtnCmp(lbl,p){
+    return '<button class="'+(period===p?'on':'')+'" onclick="switchCmpPeriod(\''+p+'\')">'+lbl+'</button>';
+  }
+  var periodBar = '<div class="seg">'
+    +segBtnCmp('YTD','ytd')+segBtnCmp('1M','1m')+segBtnCmp('3M','3m')+segBtnCmp('6M','6m')
+    +segBtnCmp('1Y','1y')+segBtnCmp('3Y','3y')+segBtnCmp('ALL','all')
+    +'</div>';
+
+  var CMP = COMPARISON_DATA;
+  var chart, legend;
+  if(CMP && CMP.fund && CMP.fund.length){
+    var rawSeries=[
+      {name:'ZY-Invest', color:'#1565C0', pts:CMP.fund},
+      {name:'FBM KLCI',  color:'#E65100', pts:CMP.klci||[]},
+      {name:'S&P 500',   color:'#2E7D32', pts:CMP.sp||[]},
+      {name:'MSCI',      color:'#7C3AED', pts:CMP.msci||[]}
+    ].filter(function(s){return s.pts && s.pts.length;});
+
+    var allDates=[];
+    rawSeries.forEach(function(s){ s.pts.forEach(function(p){ allDates.push(p.date); }); });
+    allDates=Array.from(new Set(allDates)).sort();
+    var latestDate=allDates[allDates.length-1];
+    var cutoff=cmpCutoffDate(period, latestDate, CMP.inception);
+    var windowDates=allDates.filter(function(d){ return d>=cutoff; });
+    if(windowDates.length<2) windowDates=allDates;
+
+    // Forward-fill each series onto the unified weekly date axis (their
+    // native trading calendars don't line up exactly), then rebase every
+    // series to 0% at its first available point within the window — so
+    // "ALL" is 0% at inception and e.g. "YTD" is 0% at the start of the year.
+    var aligned=rawSeries.map(function(s){
+      var idx=0,last=null,vals=[];
+      windowDates.forEach(function(d){
+        while(idx<s.pts.length && s.pts[idx].date<=d){ last=s.pts[idx]; idx++; }
+        vals.push(last?last.close:null);
+      });
+      var base=null;
+      for(var i=0;i<vals.length;i++){ if(vals[i]!=null){ base=vals[i]; break; } }
+      var pct=vals.map(function(v){ return (v==null||!base)?null:((v/base-1)*100); });
+      return {name:s.name,color:s.color,v:pct};
+    }).filter(function(s){ return s.v.some(function(v){return v!=null;}); });
+
+    chart = buildCmpChart(aligned, windowDates);
+    legend = '<div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:10px;justify-content:center;width:100%;">'
+      +aligned.map(function(s){
+        var lastV=null; for(var i=s.v.length-1;i>=0;i--){ if(s.v[i]!=null){lastV=s.v[i];break;} }
+        var ret=lastV!=null?lastV.toFixed(1):'—'; var up=lastV!=null&&lastV>=0;
+        return '<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="width:20px;height:3px;background:'+s.color+';display:inline-block;border-radius:2px"></span>'
+          +'<span style="font-size:.78rem;color:var(--fg-2)">'+s.name+'</span>'
+          +'<span style="font-size:.78rem;font-weight:400;color:'+(lastV==null?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+'">'+(lastV==null?'—':((up?'+':'')+ret+'%'))+'</span>'
+          +'</div>';
+      }).join('')+'</div>';
+  } else {
+    chart='<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">'+(COMPARISON_ERROR?('Could not load — '+COMPARISON_ERROR):'Loading comparison data…')+'</div>';
+    legend='';
+  }
   var years=['FY22','FY23','FY24','FY25'];
   var annualRet=[
     {name:'ZY-Invest', color:'#1565C0',v:[-1.89,0.32,1.03,1.58]},
@@ -2585,14 +2674,14 @@ function pgComparison(){
       +m.slice(1).map(function(v,j){return '<td style="padding:10px 16px;font-size:.84rem;font-weight:'+(j===0?'700':'500')+';color:'+(j===0?'var(--blue)':'var(--fg-1)')+';">'+v+'</td>';}).join('')
       +'</tr>';
   }).join('');
-  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1><p>ZY-Invest vs major indices — indexed to 100 at inception (Mar 2022) · Weekly data.</p></div>'
+  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1><p>ZY-Invest vs FBM KLCI, S&amp;P 500 and MSCI — rebased to 0% return at the start of the selected period · Weekly data via Yahoo Finance.</p></div>'
     +'<div class="mrow" style="margin-bottom:28px">'
     +'<div class="mc"><div class="lbl">ZY-Invest Return</div><div class="val b" style="color:var(--blue)">+2.45%</div><div class="sub">Since inception</div></div>'
     +'<div class="mc"><div class="lbl">vs FBM KLCI</div><div class="val" style="color:var(--red)">-2.65%</div><div class="sub">Underperformed</div></div>'
     +'<div class="mc"><div class="lbl">vs S&P 500</div><div class="val" style="color:var(--red)">-16.45%</div><div class="sub">Underperformed</div></div>'
     +'<div class="mc"><div class="lbl">Volatility</div><div class="val" style="color:var(--green)">2.1%</div><div class="sub">vs 8.4% KLCI</div></div>'
     +'</div>'
-    +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">Indexed Performance (Base 100)</h3><span style="font-size:.8rem;color:var(--fg-3)">Mar 2022 — Mar 2026 · Weekly</span></div>'
+    +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">Performance Comparison (Rebased to 0%)</h3>'+periodBar+'</div>'
     +chart+legend+'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
     +'<div><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:10px">Annual Returns</h3>'
