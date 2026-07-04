@@ -2551,6 +2551,9 @@ function cmpCutoffDate(period, latestStr, inceptionStr){
 // actual width instead of aspect-ratio-locked empty margins). ohlcInfo
 // draws a small per-index O/H/L/C + change readout over the top-left of
 // the plot, using each index's own native price scale (not the rebased %).
+// Hovering anywhere on the chart updates that readout to the hovered date;
+// moving away reverts to the latest date (same convention as the NTA
+// Performance candlestick's info line).
 function buildCmpChart(seriesArr, dates, ohlcInfo){
   var n=dates.length;
   if(n<2 || !seriesArr.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
@@ -2573,36 +2576,79 @@ function buildCmpChart(seriesArr, dates, ohlcInfo){
     var idx=Math.round(t*(n-1)/(xTickCount-1||1));
     var dt=new Date(dates[idx]+'T00:00:00');
     var lbl=dt.toLocaleDateString('en-MY',{month:'short',year:'2-digit'});
-    xLabels.push('<text x="'+px(idx).toFixed(1)+'" y="'+(H-5)+'" text-anchor="middle" font-size="7.5" fill="#94A3B8">'+lbl+'</text>');
+    // First/last labels anchor to start/end instead of middle, so the text
+    // grows inward from the edge rather than being centered on it (which
+    // was clipping the first letter of the leftmost label, e.g. "Jan").
+    var anchor=(t===0)?'start':(t===xTickCount-1)?'end':'middle';
+    xLabels.push('<text x="'+px(idx).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+anchor+'" font-size="7.5" fill="#94A3B8">'+lbl+'</text>');
   }
   var paths=seriesArr.map(function(s){
-    var d='',started=false,lastIdx=-1;
+    var d='',started=false;
     s.v.forEach(function(v,i){
       if(v==null) return;
       d+=(started?'L':'M')+px(i).toFixed(1)+','+py(v).toFixed(1);
-      started=true; lastIdx=i;
+      started=true;
     });
-    var dot=lastIdx>=0?'<circle cx="'+px(lastIdx).toFixed(1)+'" cy="'+py(s.v[lastIdx]).toFixed(1)+'" r="3" fill="#fff" stroke="'+s.color+'" stroke-width="2"/>':'';
-    return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>'+dot;
+    return '<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>';
   }).join('');
-  function fmtOhlc(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  var ohlcBox='';
-  if(ohlcInfo && ohlcInfo.length){
-    ohlcBox='<div style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:3px;pointer-events:none">'
-      +ohlcInfo.map(function(o){
-        var up=o.chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
-        return '<div style="font-size:.68rem;font-weight:400;color:#0F172A;white-space:nowrap">'
-          +'<span style="color:'+o.color+'">'+o.name+'</span> '
-          +'O'+fmtOhlc(o.o)+' H'+fmtOhlc(o.h)+' L'+fmtOhlc(o.l)+' C'+fmtOhlc(o.c)+' '
-          +'<span style="color:'+col+'">'+sign+fmtOhlc(Math.abs(o.chg))+' ('+sign+Math.abs(o.chgPct).toFixed(2)+'%)</span>'
-          +'</div>';
-      }).join('')
-      +'</div>';
-  }
-  return '<div style="position:relative;width:95%;margin:0 auto">'
+  // Hover overlay — one thin column per data point; hovering recomputes
+  // O/H/L/C "as of" that date for every series via cmpHoverAt(i).
+  var colW=(W-padL-padR)/Math.max(1,n-1);
+  var overlays=dates.map(function(d,i){
+    var ox=Math.max(padL,px(i)-colW/2);
+    return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="cmpHoverAt('+i+')" onmousemove="cmpHoverAt('+i+')" onmouseleave="cmpHoverReset()" style="cursor:crosshair"/>';
+  }).join('');
+  // Expose raw (native-price) series + date axis for the hover handler —
+  // a plain global assignment (not embedded HTML/script), since script
+  // tags injected via innerHTML never execute.
+  window._cmpRaw = seriesArr.map(function(s){ return {name:s.name, raw:s.raw}; });
+  window._cmpDates = dates.slice();
+  var ohlcBoxInner = ohlcInfo && ohlcInfo.length
+    ? '<div style="font-size:.66rem;color:#94A3B8;margin-bottom:2px">'+cmpDateLabel(dates[dates.length-1])+'</div>'
+      + ohlcInfo.map(function(o){ return cmpOhlcLineHtml(o.name,o.o,o.h,o.l,o.c,o.chg,o.chgPct); }).join('')
+    : '';
+  var ohlcBox = ohlcBoxInner
+    ? '<div id="cmpOhlcBox" style="position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:3px;pointer-events:none">'+ohlcBoxInner+'</div>'
+    : '';
+  return '<div style="position:relative;width:100%">'
     +ohlcBox
-    +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:440px;display:block">'+grid+baseline+paths+xLabels.join('')+'</svg>'
+    +'<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:440px;display:block;overflow:visible">'+grid+baseline+paths+xLabels.join('')+overlays+'</svg>'
     +'</div>';
+}
+
+function cmpDateLabel(dateStr){
+  var dt=new Date(dateStr+'T00:00:00');
+  return dt.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});
+}
+function fmtCmpOhlc(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+// Whole line (name + O/H/L/C + change) is colored green or red by
+// direction — no per-series color here, since that's already shown by
+// the plotted line/legend below the chart.
+function cmpOhlcLineHtml(name,o,h,l,c,chg,chgPct){
+  var up=chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
+  return '<div style="font-size:.68rem;font-weight:400;color:'+col+';white-space:nowrap">'
+    +name+' O'+fmtCmpOhlc(o)+' H'+fmtCmpOhlc(h)+' L'+fmtCmpOhlc(l)+' C'+fmtCmpOhlc(c)+' '
+    +sign+fmtCmpOhlc(Math.abs(chg))+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)'
+    +'</div>';
+}
+function cmpHoverAt(i){
+  var raw=window._cmpRaw, dates=window._cmpDates;
+  var box=document.getElementById('cmpOhlcBox');
+  if(!raw || !dates || !dates[i] || !box) return;
+  var html='<div style="font-size:.66rem;color:#94A3B8;margin-bottom:2px">'+cmpDateLabel(dates[i])+'</div>';
+  raw.forEach(function(s){
+    var slice=s.raw.slice(0,i+1).filter(function(v){return v!=null;});
+    if(!slice.length) return;
+    var o=slice[0], c=slice[slice.length-1];
+    var h=Math.max.apply(null,slice), l=Math.min.apply(null,slice);
+    var chg=c-o, chgPct=o?(chg/o*100):0;
+    html+=cmpOhlcLineHtml(s.name,o,h,l,c,chg,chgPct);
+  });
+  box.innerHTML=html;
+}
+function cmpHoverReset(){
+  var dates=window._cmpDates;
+  if(dates && dates.length) cmpHoverAt(dates.length-1);
 }
 
 function pgComparison(){
@@ -2703,7 +2749,7 @@ function pgComparison(){
       +'</tr>';
   }).join('');
   return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1><p>ZY-Invest vs FBM KLCI, S&amp;P 500 and MSCI — rebased to 0% return at the start of the selected period · Weekly data via Yahoo Finance.</p></div>'
-    +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">Performance Comparison (Rebased to 0%)</h3>'+periodBar+'</div>'
+    +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">Performance Comparison</h3>'+periodBar+'</div>'
     +chart+legend+'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
     +'<div><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:10px">Annual Returns</h3>'
