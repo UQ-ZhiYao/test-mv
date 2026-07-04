@@ -41,6 +41,8 @@ let RATIO_ANALYSIS_ERROR = null;
 let INCEPTION_DATE = null;
 let NTA_MONTHLY = [];
 let NTA_MONTHLY_ERROR = null;
+let DIST_BY_FY = [];
+let DIST_BY_FY_ERROR = null;
 
 function mpInitials(name){
   if(!name) return '—';
@@ -1523,7 +1525,7 @@ function pgFundOverview(){
       +'</div>';
     return chartSvg+leg;
   }
-  function donut(segs,label,caption,valFmt){
+  function donut(segs,label,caption,valFmt,legendOverride){
     // Sort by value descending so the rank-based color gradient (dark blue
     // = largest slice, grey = smallest) is always applied consistently,
     // regardless of the order segments were passed in. Segments flagged
@@ -1550,13 +1552,26 @@ function pgFundOverview(){
       paths+='<path d="'+d+'" fill="'+col+'" stroke="none" data-tip="'+tipStr+'" onmouseenter="showPieTip(event,getTip(this))" onmousemove="showPieTip(event,getTip(this))" onmouseout="hidePieTip()" style="cursor:pointer"/>';
       ang=ea;
     });
-    var legend=sorted.map(function(sg,idx){
-      var col=pieGradientColor(idx,sorted.length);
-      var pct=(sg.v/total*100).toFixed(1);
-      return '<div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#374151">'
-        +'<span style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0;display:inline-block"></span>'
-        +sg.label+' <span style="color:#9CA3AF">'+pct+'%</span></div>';
-    }).join('');
+    // Legend defaults to the pie's own segments (rank color + % share), but
+    // callers can pass an explicit legendOverride — e.g. Distribution
+    // Summary shows the last 3 years' interim payout, independent of
+    // whichever two figures make up the donut slices.
+    var legend;
+    if(legendOverride && legendOverride.length){
+      legend=legendOverride.map(function(it){
+        return '<div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#374151">'
+          +'<span style="width:8px;height:8px;border-radius:50%;background:'+it.color+';flex-shrink:0;display:inline-block"></span>'
+          +it.label+' <span style="color:#9CA3AF">'+it.value+'</span></div>';
+      }).join('');
+    } else {
+      legend=sorted.map(function(sg,idx){
+        var col=pieGradientColor(idx,sorted.length);
+        var pct=(sg.v/total*100).toFixed(1);
+        return '<div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#374151">'
+          +'<span style="width:8px;height:8px;border-radius:50%;background:'+col+';flex-shrink:0;display:inline-block"></span>'
+          +sg.label+' <span style="color:#9CA3AF">'+pct+'%</span></div>';
+      }).join('');
+    }
     return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:20px;flex:1;padding:8px 0;min-height:0">'
       +'<svg viewBox="0 0 '+s+' '+s+'" style="width:'+s+'px;height:'+s+'px;max-width:90%;max-height:100%;flex-shrink:0">'
       +paths
@@ -2006,6 +2021,59 @@ function pgFundOverview(){
       +'</div>';
     return chartSvg+leg;
   }
+  // Distribution History — Interim + Final DPS stacked bars (left axis,
+  // gridlines) with a Dividend Yield trend line drawn on its own internal
+  // scale and NO visible axis/gridlines/labels — exact yield values are
+  // only shown via hover, keeping the two very different scales from
+  // fighting for the same axis.
+  function stackedBarsWithLine(labels,interimArr,finalArr,totalArr,yieldArr){
+    var W=420,H=220,padX=16,padR=42,padYT=14,padYB=24,n=labels.length;
+    var tipId=nextTipId();
+    var rawMx=Math.max.apply(null,totalArr)||1;
+    var scale=fiveTicks(0,rawMx);
+    var mx=scale.max||1,barW=Math.min(22,(W-padX-padR)/n*0.20),gap=(W-padX-padR)/n;
+    function bx(i){return (padX+i*gap+gap/2-barW/2).toFixed(1);}
+    function bh(v){return Math.max(0,((v/mx)*(H-padYT-padYB)));}
+    var rects='';
+    labels.forEach(function(_,i){
+      var y=H-padYB;
+      var ih=bh(interimArr[i]||0), fh=bh(finalArr[i]||0);
+      y-=ih; rects+='<rect x="'+bx(i)+'" y="'+y.toFixed(1)+'" width="'+barW+'" height="'+ih.toFixed(1)+'" fill="#1565C0" rx="1"/>';
+      y-=fh; rects+='<rect x="'+bx(i)+'" y="'+y.toFixed(1)+'" width="'+barW+'" height="'+fh.toFixed(1)+'" fill="#2E7D32" rx="1"/>';
+    });
+    var grid=scale.ticks.map(function(v){
+      var yy=(H-padYB-(v/mx)*(H-padYT-padYB)).toFixed(1);
+      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
+        +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
+    }).join('');
+    function lx(i){ return padX+i*gap+gap/2; }
+    var yMax=Math.max.apply(null,yieldArr.concat([0.0001]))*1.2;
+    function ly(v){ return H-padYB-((v/yMax)*(H-padYT-padYB)); }
+    var ld=yieldArr.map(function(v,i){return (i?'L':'M')+lx(i).toFixed(1)+','+ly(v).toFixed(1);}).join('');
+    var ldots=yieldArr.map(function(v,i){return '<circle cx="'+lx(i).toFixed(1)+'" cy="'+ly(v).toFixed(1)+'" r="3" fill="#fff" stroke="#F59E0B" stroke-width="2"/>';}).join('');
+    var xL=labels.map(function(l,i){return '<text x="'+(parseFloat(bx(i))+barW/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#6B7280">'+l+'</text>';}).join('');
+    // Group hover overlay per FY — shows Interim/Final/Total DPS + Yield together
+    var overlays=labels.map(function(l,i){
+      var tipLines=[
+        '#1565C0::Interim DPS: '+fmtTipNum(interimArr[i]),
+        '#2E7D32::Final DPS: '+fmtTipNum(finalArr[i]),
+        '#0F172A::Total DPS: '+fmtTipNum(totalArr[i]),
+        '#F59E0B::Dividend Yield: '+fmtTipPct(yieldArr[i])
+      ];
+      var tip='FY:'+l+'|'+tipLines.join('|');
+      var ox=(padX+i*gap).toFixed(1);
+      var cx=((padX+i*gap+gap/2)/W).toFixed(4);
+      return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+    }).join('');
+    var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+'<path d="'+ld+'" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round"/>'+ldots+xL+overlays+'</svg>'
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
+    var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
+      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:#1565C0;display:inline-block"></span>Interim DPS</span>'
+      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:#2E7D32;display:inline-block"></span>Final DPS</span>'
+      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:16px;height:2px;background:#F59E0B;display:inline-block;border-radius:1px"></span>Dividend Yield</span>'
+      +'</div>';
+    return chartSvg+leg;
+  }
 
   function card(title,chartHtml,subline){
     return '<div class="fov-cc"><div class="fov-ct">'+title+'</div>'+(subline?'<div class="fov-csub">'+subline+'</div>':'')+'<div class="fov-ch">'+chartHtml+'</div></div>';
@@ -2073,6 +2141,54 @@ function pgFundOverview(){
     ? candlestick(NTA_MONTHLY)
     : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(NTA_MONTHLY_ERROR?('Could not load — '+NTA_MONTHLY_ERROR):'No NTA history on record')+'</div>';
 
+  // ── DISTRIBUTION SUMMARY — last FY's Interim DPS vs. previous FY's
+  // Gross (interim+final) per share, with a 3-year interim payout legend ──
+  function fmtSen(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  var distLastFy = DIST_BY_FY.length ? DIST_BY_FY[DIST_BY_FY.length-1] : null;
+  var distPrevFy = DIST_BY_FY.length>1 ? DIST_BY_FY[DIST_BY_FY.length-2] : null;
+  var distSummaryChart;
+  if(distLastFy){
+    var distSegs=[{v:distLastFy.interimDps||0, color:'#1565C0', label:'Interim DPS'}];
+    if(distPrevFy) distSegs.push({v:distPrevFy.totalDps||0, color:'#F59E0B', label:'Gross per Share'});
+    var DIST_LEG_COL=['#1565C0','#2E7D32','#E65100'];
+    var distLegend = DIST_BY_FY.slice(-3).reverse().map(function(r,i){
+      return {color:DIST_LEG_COL[i]||'#9CA3AF', label:r.fy, value:fmtSen(r.interimDps)+' sen'};
+    });
+    distSummaryChart = donut(distSegs, fmtSen(distLastFy.interimDps), 'sen · Interim DPS', function(v){return fmtSen(v)+' sen';}, distLegend);
+  } else {
+    distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(DIST_BY_FY_ERROR?('Could not load — '+DIST_BY_FY_ERROR):'No distribution history on record')+'</div>';
+  }
+
+  // ── DISTRIBUTION HISTORY — past 5 FY Interim + Final DPS (stacked) with
+  // Dividend Yield trend line (axis-less; values shown on hover) ─────────
+  var distHist = DIST_BY_FY.slice(-5);
+  var distHistChart;
+  if(distHist.length){
+    var ratioByFy={}; RATIO_ANALYSIS.forEach(function(r){ ratioByFy[r.fy]=r; });
+    distHistChart = stackedBarsWithLine(
+      distHist.map(function(r){return r.fy;}),
+      distHist.map(function(r){return r.interimDps||0;}),
+      distHist.map(function(r){return r.finalDps||0;}),
+      distHist.map(function(r){return r.totalDps||0;}),
+      distHist.map(function(r){ var ra=ratioByFy[r.fy]; return (ra&&ra.dividendYield!=null)?ra.dividendYield:0; })
+    );
+  } else {
+    distHistChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(DIST_BY_FY_ERROR?('Could not load — '+DIST_BY_FY_ERROR):'No distribution history on record')+'</div>';
+  }
+
+  // ── CASH RESERVE RATIO — from Financial Result's Ratio Analysis (live),
+  // single solid color per the simplified bar style ──────────────────────
+  var cashReserveChart = RATIO_ANALYSIS.length
+    ? bars(
+        RATIO_ANALYSIS.map(function(r){return r.cashReserveRatio||0;}),
+        RATIO_ANALYSIS.map(function(r){return r.fy;}),
+        RATIO_ANALYSIS.map(function(){return '#1565C0';}),
+        [{c:'#1565C0',l:'Cash Reserve (%)'}],
+        false,
+        true
+      )
+    : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(RATIO_ANALYSIS_ERROR?('Could not load — '+RATIO_ANALYSIS_ERROR):'No financial years defined yet')+'</div>';
+
   // ── ABOUT — goes into first 2-col row (left only) ─────────────────────
   var aboutCard='<div class="fov-cc"><div class="fov-ct">About</div><div class="fov-csub">Fund mandate &amp; investment strategy</div><div style="padding-top:4px"><p class="fov-about">ZY-Invest is a private investment fund targeting long-term capital appreciation through a concentrated portfolio of Malaysian equity securities. The fund focuses on large-cap blue-chip stocks, selective growth equities and defensive consumer names on Bursa Malaysia, with flexibility on position sizing not typical of conventional unit trusts.</p></div></div>';
   var aboutBlank='<div></div>';
@@ -2094,25 +2210,10 @@ function pgFundOverview(){
       'Revenue vs. Net Profit After Tax, per financial year'
     )
     +card('NTA Performance',ntaPerfChart,'Monthly NTA per unit (open/high/low/close)')
-    +card('Dividend Summary',donut([
-      {v:752.20,color:'#1565C0',label:'FY25'},
-      {v:98.20, color:'#2E7D32',label:'FY24'},
-      {v:16.80, color:'#F59E0B',label:'FY23'}
-    ],'RM 867'),'Total dividends paid, by financial year')
-    +card('Dividend History',comboChart(
-      ['FY21','FY22','FY23','FY24','FY25'],
-      {v:[0,0,0.56,1.77,6.11],color:'#1565C0',label:'DPS (sen)'},
-      {v:[0,0,0.5,1.7,6.0],color:'#F59E0B',label:'Dividend Yield'}
-    ),'DPS and dividend yield trend, per financial year')
+    +card('Distribution Summary',distSummaryChart,'Latest interim DPS vs. previous FY gross per share')
+    +card('Distribution History',distHistChart,'Interim &amp; final DPS with dividend yield trend, per financial year')
     +card('Balance Sheet',balanceSheetChart,'Total assets vs. total liabilities, per financial year')
-    +card('Cash Reserve Ratio',bars(
-      [6.8,8.5,7.2,9.1,8.5],
-      ['FY21','FY22','FY23','FY24','FY25'],
-      ['#CBD5E1','#93C5FD','#60A5FA','#60A5FA','#0891B2'],
-      [{c:'#0891B2',l:'Cash Reserve (%)'}],
-      false,
-      true
-    ),'Cash as a % of total assets, per financial year')
+    +card('Cash Reserve Ratio',cashReserveChart,'Cash as a % of total assets, per financial year')
     +'</div>';
 
 

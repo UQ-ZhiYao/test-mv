@@ -431,6 +431,37 @@ async function mpLoadInceptionDate() {
   return (data && data.length) ? data[0].date : null;
 }
 
+/* ── Distributions by FY (fund-wide, Paid only) — for the Fund Overview
+   "Distribution Summary" & "Distribution History" cards. Buckets each
+   Paid distribution into interimDps / finalDps by matching distributions.type
+   (stored as full strings e.g. "Interim Dividend") rather than a short code;
+   anything not matching "interim" is folded into finalDps so totalDps
+   always equals the FY's full (gross) distribution per share.            */
+async function mpLoadDistributionsByFy() {
+  const { data, error } = await sb.from('distributions')
+    .select('fy, type, dps, status')
+    .eq('status', 'Paid');
+  if (error) throw error;
+  const rows = data || [];
+  const byFy = {};
+  const order = [];
+  rows.forEach(function(r) {
+    const fy = r.fy;
+    if (!fy) return;
+    if (!byFy[fy]) { byFy[fy] = { fy: fy, interimDps: 0, finalDps: 0 }; order.push(fy); }
+    const dps = parseFloat(r.dps) || 0;
+    const isInterim = (r.type || '').toLowerCase().indexOf('interim') !== -1;
+    if (isInterim) byFy[fy].interimDps += dps;
+    else byFy[fy].finalDps += dps;
+  });
+  order.sort();
+  return order.map(function(fy) {
+    const r = byFy[fy];
+    r.totalDps = r.interimDps + r.finalDps;
+    return r;
+  });
+}
+
 async function mpLoadFundOverview() {
   const { data, error } = await sb.from('fund_overview')
     .select('*').single();
