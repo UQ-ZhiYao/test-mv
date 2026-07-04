@@ -1083,6 +1083,14 @@ function fmtChartPct(v){
 // Axis labels and other displays keep showing 0.00/0.0% via fmtChartNum/fmtChartPct.
 function fmtTipNum(v){ return v ? fmtChartNum(v) : '—'; }
 function fmtTipPct(v){ return v ? fmtChartPct(v) : '—'; }
+// Plain #,##0.00 formatter — never abbreviates to k/Mil. Used for tooltips
+// that must always show the exact figure (Capital Structure, Financial
+// Results, Balance Sheet cards on Fund Overview).
+function fmtTipPlain(v){
+  if(!v) return '—';
+  var av=Math.abs(v), sign=v<0?'−':'';
+  return sign+av.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 function pgFundOverview(){
   // Each chart instance gets its own tooltip element id, since several
   // charts render on this page simultaneously and frTip()/frHide() target
@@ -1515,7 +1523,7 @@ function pgFundOverview(){
       +'</div>';
     return chartSvg+leg;
   }
-  function donut(segs,label,caption){
+  function donut(segs,label,caption,valFmt){
     // Sort by value descending so the rank-based color gradient (dark blue
     // = largest slice, grey = smallest) is always applied consistently,
     // regardless of the order segments were passed in. Segments flagged
@@ -1524,6 +1532,7 @@ function pgFundOverview(){
     var pinned=segs.filter(function(s){return s.pinLast;});
     var ranked=segs.filter(function(s){return !s.pinLast;});
     var sorted=ranked.slice().sort(function(a,b){return b.v-a.v;}).concat(pinned);
+    var fmtV=valFmt||fmtChartNum;
     var s=270,cx=s/2,cy=s/2,R=s*0.42,ir=s*0.35;
     var total=sorted.reduce(function(a,x){return a+x.v;},0);
     var ang=-Math.PI/2,paths='';
@@ -1537,7 +1546,7 @@ function pgFundOverview(){
       var la=sweep>Math.PI?1:0;
       var d='M'+x1+' '+y1+' A'+R+' '+R+' 0 '+la+' 1 '+x2+' '+y2+' L'+x3+' '+y3+' A'+ir+' '+ir+' 0 '+la+' 0 '+x4+' '+y4+'Z';
       var pct=(sg.v/total*100).toFixed(1);
-      var tipStr=sg.label+': '+fmtChartNum(sg.v)+' ('+pct+'%)';
+      var tipStr=sg.label+': '+fmtV(sg.v)+' ('+pct+'%)';
       paths+='<path d="'+d+'" fill="'+col+'" stroke="none" data-tip="'+tipStr+'" onmouseenter="showPieTip(event,getTip(this))" onmousemove="showPieTip(event,getTip(this))" onmouseout="hidePieTip()" style="cursor:pointer"/>';
       ang=ea;
     });
@@ -1943,7 +1952,7 @@ function pgFundOverview(){
     }).join('');
     // Group hover overlay per FY — shows all series values together
     var overlays=groups.map(function(g,gi){
-      var tipLines=series.map(function(s){ var dotCol=s.colorByValue?(s.v[gi]<0?'#DC2626':'#2E7D32'):s.color; return dotCol+'::'+s.label+': '+fmtTipNum(s.v[gi]); });
+      var tipLines=series.map(function(s){ var dotCol=s.colorByValue?(s.v[gi]<0?'#DC2626':'#2E7D32'):s.color; return dotCol+'::'+s.label+': '+fmtTipPlain(s.v[gi]); });
       var tip='FY:'+g+'|'+tipLines.join('|');
       var ox=(padX+gi*groupW).toFixed(1);
       var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
@@ -1984,7 +1993,7 @@ function pgFundOverview(){
     }).join('');
     // Group hover overlay per label — shows all series values together
     var overlays=labels.map(function(l,i){
-      var tipLines=series.map(function(s){ return s.color+'::'+s.label+': '+fmtTipNum(s.v[i]); });
+      var tipLines=series.map(function(s){ return s.color+'::'+s.label+': '+fmtTipPlain(s.v[i]); });
       var tip='FY:'+l+'|'+tipLines.join('|');
       var ox=(padX+i*gap).toFixed(1);
       var cx=((padX+i*gap+gap/2)/W).toFixed(4);
@@ -2030,8 +2039,9 @@ function pgFundOverview(){
   var OWN_COL = ['#1565C0','#2E7D32','#E65100'];
   var ownershipSegs = shTop3.map(function(s,i){ return {v:s.units||0, color:OWN_COL[i], label:s.name}; });
   if(shRest.length) ownershipSegs.push({v:shRestUnits, color:'#9CA3AF', label:'The rest of shareholder', pinLast:true});
+  function fmtUnits4dp(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4}); }
   var ownershipChart = ownershipSegs.length
-    ? donut(ownershipSegs, Math.round(shTotalUnits).toLocaleString('en-MY'), 'units')
+    ? donut(ownershipSegs, fmtUnits4dp(shTotalUnits), 'units', fmtUnits4dp)
     : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">No shareholder data on record</div>';
 
   // ── CAPITAL STRUCTURE — Total Assets by the 4 Balance Sheet categories ─
@@ -2863,19 +2873,20 @@ function frTip(e,txt,cxStr,tipId){
 }
 function frHide(tipId){var el=document.getElementById(tipId||'frTipEl');if(el)el.style.display='none';}
 
-// NTA Performance candlestick — builds the "mmm yy  O: .. H: .. L: .. C: .. (Change)"
-// markup shown in the static info line above the plot area (no floating tooltip).
+// NTA Performance candlestick — builds the "mmm yy  O0.785  H0.800  L0.780
+// C0.790  +0.010 (+1.28%)" markup shown in the static info line above the
+// plot area (no floating tooltip). Plain weight throughout, per spec.
 function candleInfoHtml(tip){
   if(!tip) return '';
   var p=tip.split('|');
   var label=p[0],o=p[1],h=p[2],l=p[3],c=p[4],chg=p[5],chgPct=p[6],up=p[7]==='1';
   var col=up?'#2E7D32':'#DC2626';
-  return '<span style="font-weight:700;color:#0F172A;margin-right:12px">'+label+'</span>'
-    +'<span style="color:#6B7280">O:</span> <span style="font-weight:600;color:#0F172A;margin-right:10px">'+o+'</span>'
-    +'<span style="color:#6B7280">H:</span> <span style="font-weight:600;color:#0F172A;margin-right:10px">'+h+'</span>'
-    +'<span style="color:#6B7280">L:</span> <span style="font-weight:600;color:#0F172A;margin-right:10px">'+l+'</span>'
-    +'<span style="color:#6B7280">C:</span> <span style="font-weight:600;color:#0F172A;margin-right:10px">'+c+'</span>'
-    +'<span style="color:'+col+';font-weight:700">('+chg+', '+chgPct+')</span>';
+  return '<span style="color:#0F172A;font-weight:400;margin-right:12px">'+label+'</span>'
+    +'<span style="color:#0F172A;font-weight:400;margin-right:10px">O'+o+'</span>'
+    +'<span style="color:#0F172A;font-weight:400;margin-right:10px">H'+h+'</span>'
+    +'<span style="color:#0F172A;font-weight:400;margin-right:10px">L'+l+'</span>'
+    +'<span style="color:#0F172A;font-weight:400;margin-right:10px">C'+c+'</span>'
+    +'<span style="color:'+col+';font-weight:400">'+chg+' ('+chgPct+')</span>';
 }
 function candleInfo(tip,infoId){
   var el=document.getElementById(infoId);
