@@ -2570,12 +2570,19 @@ function buildCmpChart(seriesArr, dates, priceInfo){
       +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7.5" fill="#000000">'+v.toFixed(0)+'%</text>';
   }).join('');
   var baseline='<line x1="'+padL+'" y1="'+py(0).toFixed(1)+'" x2="'+(W-padR)+'" y2="'+py(0).toFixed(1)+'" stroke="#CBD5E1" stroke-width="0.8" stroke-dasharray="4,3"/>';
+  // Short windows (roughly ≤3 months of weekly data) show "d MMM" instead
+  // of "MMM yy" — a bare month/year is too coarse to read when the whole
+  // chart only spans a few weeks, and the year is implicit at that zoom.
+  var spanDays=(new Date(dates[n-1]+'T00:00:00')-new Date(dates[0]+'T00:00:00'))/86400000;
+  var shortSpan=spanDays<=100;
   var xTickCount=Math.min(6,n);
   var xLabels=[];
   for(var t=0;t<xTickCount;t++){
     var idx=Math.round(t*(n-1)/(xTickCount-1||1));
     var dt=new Date(dates[idx]+'T00:00:00');
-    var lbl=dt.toLocaleDateString('en-MY',{month:'short',year:'2-digit'});
+    var lbl=shortSpan
+      ? dt.toLocaleDateString('en-MY',{day:'numeric',month:'short'})
+      : dt.toLocaleDateString('en-MY',{month:'short',year:'2-digit'});
     // First/last labels anchor to start/end instead of middle, so the text
     // grows inward from the edge rather than being centered on it (which
     // was clipping the first letter of the leftmost label, e.g. "Jan").
@@ -2728,7 +2735,7 @@ function pgComparison(){
     +'</div>';
 
   var CMP = COMPARISON_DATA;
-  var chart, legend, corrTable;
+  var chart, legend, corrTable, mergedTable;
   if(CMP && CMP.fund && CMP.fund.length){
     var rawSeries=[
       {name:'ZY-Invest', color:'#1565C0', pts:CMP.fund},
@@ -2795,54 +2802,122 @@ function pgComparison(){
       return {name:s.name,color:s.color,ret:rets};
     });
     corrTable = buildCorrTable(retSeries);
+
+    // ── Last 3 calendar years' return — always fixed to the 3 most recent
+    // calendar years regardless of the period filter, computed from each
+    // series' FULL history (not the filtered window). ─────────────────────
+    var thisYear=new Date().getFullYear();
+    var yearList=[thisYear-2,thisYear-1,thisYear];
+    function calendarYearReturn(pts,year){
+      var yStart=year+'-01-01', yEnd=year+'-12-31';
+      var startPrice=null,endPrice=null;
+      for(var i=0;i<pts.length;i++){ if(pts[i].date<=yStart) startPrice=pts[i].close; }
+      if(startPrice==null){
+        for(var j=0;j<pts.length;j++){ if(pts[j].date>=yStart && pts[j].date<=yEnd){ startPrice=pts[j].close; break; } }
+      }
+      for(var k=pts.length-1;k>=0;k--){ if(pts[k].date<=yEnd){ endPrice=pts[k].close; break; } }
+      if(startPrice==null||endPrice==null||!startPrice) return null;
+      return (endPrice/startPrice-1)*100;
+    }
+    var yearReturns=rawSeries.map(function(s){
+      return {name:s.name,color:s.color,vals:yearList.map(function(y){ return calendarYearReturn(s.pts,y); })};
+    });
+
+    // ── Annualised Return / Volatility / Sharpe / Max Drawdown / Beta —
+    // all computed from the currently SELECTED period's data (aligned +
+    // windowDates), so switching YTD/1M/.../ALL changes these too. Beta is
+    // vs FBM KLCI's returns within the same window. ───────────────────────
+    var periodMetrics=aligned.map(function(s){
+      var idxs=[]; s.raw.forEach(function(v,i){ if(v!=null) idxs.push(i); });
+      var rets=[];
+      for(var i=1;i<s.raw.length;i++){
+        var a=s.raw[i-1],b=s.raw[i];
+        if(a!=null&&b!=null&&a) rets.push(b/a-1);
+      }
+      if(idxs.length<2) return {name:s.name,color:s.color,annReturn:null,annVol:null,sharpe:null,maxDD:null,rets:rets};
+      var firstV=s.raw[idxs[0]], lastV=s.raw[idxs[idxs.length-1]];
+      var weeks=idxs[idxs.length-1]-idxs[0];
+      var totalReturn=(firstV)?(lastV/firstV-1):null;
+      var annReturn=(totalReturn!=null&&weeks>0)?(Math.pow(1+totalReturn,52/weeks)-1)*100:null;
+      var annVol=null;
+      if(rets.length>1){
+        var mean=rets.reduce(function(a,b){return a+b;},0)/rets.length;
+        var variance=rets.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/(rets.length-1);
+        annVol=Math.sqrt(variance)*Math.sqrt(52)*100;
+      }
+      var sharpe=(annReturn!=null&&annVol)?(annReturn/annVol):null;
+      var peak=-Infinity,maxDD=0;
+      idxs.forEach(function(i){ var v=s.raw[i]; if(v>peak)peak=v; var dd=peak?(v/peak-1)*100:0; if(dd<maxDD)maxDD=dd; });
+      return {name:s.name,color:s.color,annReturn:annReturn,annVol:annVol,sharpe:sharpe,maxDD:maxDD,rets:rets};
+    });
+    var klciM=periodMetrics.filter(function(p){return p.name==='FBM KLCI';})[0];
+    periodMetrics.forEach(function(p){
+      if(!klciM || p.rets.length<2 || klciM.rets.length<2){ p.beta=null; return; }
+      var n=Math.min(p.rets.length,klciM.rets.length);
+      var x=klciM.rets.slice(0,n), y=p.rets.slice(0,n);
+      var mx=x.reduce(function(a,b){return a+b;},0)/n, my=y.reduce(function(a,b){return a+b;},0)/n;
+      var cov=0,varx=0;
+      for(var i=0;i<n;i++){ cov+=(x[i]-mx)*(y[i]-my); varx+=(x[i]-mx)*(x[i]-mx); }
+      p.beta=varx?cov/varx:null;
+    });
+
+    mergedTable = buildComparisonTable(yearList, yearReturns, periodMetrics);
   } else {
     chart='<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">'+(COMPARISON_ERROR?('Could not load — '+COMPARISON_ERROR):'Loading comparison data…')+'</div>';
     legend='';
     corrTable='';
+    mergedTable='';
   }
-  var years=['FY22','FY23','FY24','FY25'];
-  var annualRet=[
-    {name:'ZY-Invest', color:'#1565C0',v:[-1.89,0.32,1.03,1.58]},
-    {name:'FBM KLCI',  color:'#E65100',v:[1.40,1.23,1.60,2.88]},
-    {name:'S&P 500',   color:'#2E7D32',v:[-13.90,9.20,12.60,14.20]},
-    {name:'MSCI World',color:'#7C3AED',v:[-11.60,8.40,11.80,13.20]},
-  ];
-  var metrics=[
-    ['Annualised Return','+14.8%','+8.2%','+18.4%','+16.1%'],
-    ['Annualised Volatility','2.1%','8.4%','14.2%','12.8%'],
-    ['Sharpe Ratio','1.42','0.68','1.12','0.98'],
-    ['Max Drawdown','-5.8%','-12.4%','-18.2%','-16.4%'],
-    ['Beta vs KLCI','0.18','1.00','1.42','1.28'],
-    ['Correlation vs KLCI','0.32','1.00','0.64','0.71'],
-  ];
-  // Merged table: per-FY annual returns (colored by sign, same columns as
-  // the risk metrics below) stacked above the risk metrics — "Correlation
-  // vs KLCI" is dropped since the dedicated correlation matrix covers that.
-  var mergedRows=years.map(function(y,yi){
-    return '<tr style="border-bottom:1px solid var(--border);">'
-      +'<td style="padding:10px 16px;font-size:.84rem;color:var(--fg-2);">'+y+' Return</td>'
-      +annualRet.map(function(s){ var v=s.v[yi]; var up=v>=0; return '<td style="padding:10px 16px;font-size:.84rem;font-weight:600;color:'+(up?'var(--green)':'var(--red)')+';">'+(up?'+':'')+v.toFixed(2)+'%</td>'; }).join('')
-      +'</tr>';
-  }).join('') + metrics.filter(function(m){return m[0]!=='Correlation vs KLCI';}).map(function(m){
-    return '<tr style="border-bottom:1px solid var(--border);">'
-      +'<td style="padding:10px 16px;font-size:.84rem;color:var(--fg-2);">'+m[0]+'</td>'
-      +m.slice(1).map(function(v,j){return '<td style="padding:10px 16px;font-size:.84rem;font-weight:'+(j===0?'700':'500')+';color:'+(j===0?'var(--blue)':'var(--fg-1)')+';">'+v+'</td>';}).join('')
-      +'</tr>';
-  }).join('');
-  var mergedTable='<div style="margin-bottom:16px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:10px">Annual Returns &amp; Risk Metrics <span style="font-size:.78rem;font-weight:400;color:var(--fg-3)">Since inception</span></h3>'
-    +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)">'
-    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Metric</th>'
-    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue)">ZY-Invest</th>'
-    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">KLCI</th>'
-    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">S&P</th>'
-    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">MSCI</th>'
-    +'</tr></thead><tbody>'+mergedRows+'</tbody></table></div>';
-  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1></div>'
-    +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px">'+periodBar+'</div>'
+  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h1 style="margin:0">Fund <span class="acc">Comparison</span></h1>'+periodBar+'</div></div>'
+    +'<div style="margin-bottom:20px">'
     +chart+legend+'</div>'
     +mergedTable
     +corrTable
     +'</div>';
+}
+
+// Transposed comparison table — one row per fund/index, columns are the
+// last 3 calendar years' return (fixed, independent of the period filter)
+// followed by Annualised Return / Volatility / Sharpe / Max Drawdown / Beta
+// (all computed from whatever period is currently selected).
+function buildComparisonTable(yearList, yearReturns, periodMetrics){
+  if(!yearReturns.length) return '';
+  function pctCell(v){
+    if(v==null) return '<td style="padding:10px 16px;font-size:.84rem;color:var(--fg-3)">—</td>';
+    var up=v>=0;
+    return '<td style="padding:10px 16px;font-size:.84rem;font-weight:600;color:'+(up?'var(--green)':'var(--red)')+'">'+(up?'+':'')+v.toFixed(2)+'%</td>';
+  }
+  function plainCell(v,dp){
+    if(v==null) return '<td style="padding:10px 16px;font-size:.84rem;color:var(--fg-3)">—</td>';
+    return '<td style="padding:10px 16px;font-size:.84rem;font-weight:500;color:var(--fg-1)">'+v.toFixed(dp)+'</td>';
+  }
+  var metricsByName={}; periodMetrics.forEach(function(p){ metricsByName[p.name]=p; });
+  var rows=yearReturns.map(function(yr){
+    var m=metricsByName[yr.name]||{};
+    return '<tr style="border-bottom:1px solid var(--border);">'
+      +'<td style="padding:10px 16px;display:flex;align-items:center;gap:8px;white-space:nowrap">'
+      +'<span style="width:10px;height:10px;border-radius:50%;background:'+yr.color+';flex-shrink:0;display:inline-block"></span>'
+      +'<span style="font-size:.85rem;color:var(--fg-1)">'+yr.name+'</span></td>'
+      +yr.vals.map(pctCell).join('')
+      +pctCell(m.annReturn)
+      +plainCell(m.annVol,2)
+      +plainCell(m.sharpe,2)
+      +pctCell(m.maxDD)
+      +plainCell(m.beta,2)
+      +'</tr>';
+  }).join('');
+  var yearHeads=yearList.map(function(y){return '<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Y'+String(y).slice(-2)+'</th>';}).join('');
+  return '<div style="margin-bottom:16px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:4px">Returns &amp; Risk Metrics</h3>'
+    +'<p style="font-size:.78rem;color:var(--fg-3);margin:0 0 10px">Last 3 calendar years, plus annualised figures for the selected period above</p>'
+    +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)">'
+    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Fund</th>'
+    +yearHeads
+    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Ann. Return</th>'
+    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Ann. Volatility</th>'
+    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Sharpe</th>'
+    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Max Drawdown</th>'
+    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Beta</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 // ── FINANCIAL RESULTS ─────────────────────────────────────────────────────────
