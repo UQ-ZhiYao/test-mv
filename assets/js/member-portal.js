@@ -2567,7 +2567,7 @@ function buildCmpChart(seriesArr, dates, priceInfo){
   var grid=scale.ticks.map(function(v){
     var yy=py(v).toFixed(1);
     return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'
-      +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7.5" fill="#94A3B8">'+v.toFixed(0)+'%</text>';
+      +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7.5" fill="#000000">'+v.toFixed(0)+'%</text>';
   }).join('');
   var baseline='<line x1="'+padL+'" y1="'+py(0).toFixed(1)+'" x2="'+(W-padR)+'" y2="'+py(0).toFixed(1)+'" stroke="#CBD5E1" stroke-width="0.8" stroke-dasharray="4,3"/>';
   var xTickCount=Math.min(6,n);
@@ -2580,7 +2580,7 @@ function buildCmpChart(seriesArr, dates, priceInfo){
     // grows inward from the edge rather than being centered on it (which
     // was clipping the first letter of the leftmost label, e.g. "Jan").
     var anchor=(t===0)?'start':(t===xTickCount-1)?'end':'middle';
-    xLabels.push('<text x="'+px(idx).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+anchor+'" font-size="7.5" fill="#94A3B8">'+lbl+'</text>');
+    xLabels.push('<text x="'+px(idx).toFixed(1)+'" y="'+(H-5)+'" text-anchor="'+anchor+'" font-size="7.5" fill="#000000">'+lbl+'</text>');
   }
   var paths=seriesArr.map(function(s){
     var d='',started=false;
@@ -2607,7 +2607,7 @@ function buildCmpChart(seriesArr, dates, priceInfo){
   window._cmpDates = dates.slice();
   window._cmpPx = dates.map(function(_,i){ return px(i); });
   var priceBoxInner = priceInfo && priceInfo.length
-    ? '<div style="font-size:.66rem;color:#94A3B8;margin-bottom:2px">'+cmpDateLabel(dates[dates.length-1])+'</div>'
+    ? '<div style="font-size:.78rem;color:#000000;margin-bottom:4px">'+cmpDateLabel(dates[dates.length-1])+'</div>'
       + priceInfo.map(function(o){ return cmpPriceLineHtml(o.name,o.color,o.price,o.chg,o.chgPct); }).join('')
     : '';
   var priceBox = priceBoxInner
@@ -2632,7 +2632,7 @@ function fmtCmpOhlc(v,dp){ dp=dp||2; return (v||0).toLocaleString('en-MY',{minim
 function cmpPriceLineHtml(name,color,price,chg,chgPct){
   var dp=(name==='ZY-Invest')?4:2;
   var up=chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
-  return '<div style="font-size:.68rem;font-weight:400;white-space:nowrap">'
+  return '<div style="font-size:.8rem;font-weight:400;white-space:nowrap">'
     +'<span style="color:'+color+'">'+name+'</span> '
     +'<span style="color:'+col+'">'+fmtCmpOhlc(price,dp)+'</span> '
     +'<span style="color:'+col+'">'+sign+fmtCmpOhlc(Math.abs(chg),dp)+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)</span>'
@@ -2642,7 +2642,7 @@ function cmpHoverAt(i){
   var raw=window._cmpRaw, dates=window._cmpDates;
   var box=document.getElementById('cmpOhlcBox');
   if(!raw || !dates || !dates[i] || !box) return;
-  var html='<div style="font-size:.66rem;color:#94A3B8;margin-bottom:2px">'+cmpDateLabel(dates[i])+'</div>';
+  var html='<div style="font-size:.78rem;color:#000000;margin-bottom:4px">'+cmpDateLabel(dates[i])+'</div>';
   raw.forEach(function(s){
     // Walk backward from i to find the current point and the prior known
     // point, so "Change" is always period-over-period, never vs window start.
@@ -2807,14 +2807,6 @@ function pgComparison(){
     {name:'S&P 500',   color:'#2E7D32',v:[-13.90,9.20,12.60,14.20]},
     {name:'MSCI World',color:'#7C3AED',v:[-11.60,8.40,11.80,13.20]},
   ];
-  var annualRows=annualRet.map(function(s){
-    return '<tr style="border-bottom:1px solid var(--border);">'
-      +'<td style="padding:10px 16px;display:flex;align-items:center;gap:8px;">'
-      +'<span style="width:10px;height:10px;border-radius:50%;background:'+s.color+';flex-shrink:0;display:inline-block;"></span>'
-      +'<span style="font-size:.85rem;color:var(--fg-1);">'+s.name+'</span></td>'
-      +s.v.map(function(v){var up=v>=0;return '<td style="padding:10px 16px;font-size:.85rem;font-weight:600;color:'+(up?'var(--green)':'var(--red)')+';">'+(up?'+':'')+v.toFixed(2)+'%</td>';}).join('')
-      +'</tr>';
-  }).join('');
   var metrics=[
     ['Annualised Return','+14.8%','+8.2%','+18.4%','+16.1%'],
     ['Annualised Volatility','2.1%','8.4%','14.2%','12.8%'],
@@ -2823,30 +2815,33 @@ function pgComparison(){
     ['Beta vs KLCI','0.18','1.00','1.42','1.28'],
     ['Correlation vs KLCI','0.32','1.00','0.64','0.71'],
   ];
-  var metricRows=metrics.map(function(m){
+  // Merged table: per-FY annual returns (colored by sign, same columns as
+  // the risk metrics below) stacked above the risk metrics — "Correlation
+  // vs KLCI" is dropped since the dedicated correlation matrix covers that.
+  var mergedRows=years.map(function(y,yi){
+    return '<tr style="border-bottom:1px solid var(--border);">'
+      +'<td style="padding:10px 16px;font-size:.84rem;color:var(--fg-2);">'+y+' Return</td>'
+      +annualRet.map(function(s){ var v=s.v[yi]; var up=v>=0; return '<td style="padding:10px 16px;font-size:.84rem;font-weight:600;color:'+(up?'var(--green)':'var(--red)')+';">'+(up?'+':'')+v.toFixed(2)+'%</td>'; }).join('')
+      +'</tr>';
+  }).join('') + metrics.filter(function(m){return m[0]!=='Correlation vs KLCI';}).map(function(m){
     return '<tr style="border-bottom:1px solid var(--border);">'
       +'<td style="padding:10px 16px;font-size:.84rem;color:var(--fg-2);">'+m[0]+'</td>'
       +m.slice(1).map(function(v,j){return '<td style="padding:10px 16px;font-size:.84rem;font-weight:'+(j===0?'700':'500')+';color:'+(j===0?'var(--blue)':'var(--fg-1)')+';">'+v+'</td>';}).join('')
       +'</tr>';
   }).join('');
-  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1><p>ZY-Invest vs FBM KLCI, S&amp;P 500 and MSCI — rebased to 0% return at the start of the selected period · Weekly data via Yahoo Finance.</p></div>'
-    +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1)">Performance Comparison</h3>'+periodBar+'</div>'
-    +chart+legend+'</div>'
-    +corrTable
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
-    +'<div><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:10px">Annual Returns</h3>'
-    +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)">'
-    +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Fund</th>'
-    +years.map(function(y){return '<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">'+y+'</th>';}).join('')
-    +'</tr></thead><tbody>'+annualRows+'</tbody></table></div>'
-    +'<div><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:10px">Risk Metrics <span style="font-size:.78rem;font-weight:400;color:var(--fg-3)">Since inception</span></h3>'
+  var mergedTable='<div style="margin-bottom:16px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:10px">Annual Returns &amp; Risk Metrics <span style="font-size:.78rem;font-weight:400;color:var(--fg-3)">Since inception</span></h3>'
     +'<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:1px solid var(--border)">'
     +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">Metric</th>'
     +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--blue)">ZY-Invest</th>'
     +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">KLCI</th>'
     +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">S&P</th>'
     +'<th style="padding:9px 16px;text-align:left;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3)">MSCI</th>'
-    +'</tr></thead><tbody>'+metricRows+'</tbody></table></div>'
+    +'</tr></thead><tbody>'+mergedRows+'</tbody></table></div>';
+  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Fund <span class="acc">Comparison</span></h1></div>'
+    +'<div style="margin-bottom:20px"><div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:10px">'+periodBar+'</div>'
+    +chart+legend+'</div>'
+    +mergedTable
+    +corrTable
     +'</div>';
 }
 
