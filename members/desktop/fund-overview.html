@@ -298,7 +298,8 @@ loadLiveData().then(function(){
   return Promise.allSettled([
     (typeof mpLoadBalanceSheet==='function') ? mpLoadBalanceSheet() : Promise.resolve([]),
     (typeof mpLoadInceptionDate==='function') ? mpLoadInceptionDate() : Promise.resolve(null),
-    (typeof mpLoadIncomeStatement==='function') ? mpLoadIncomeStatement() : Promise.resolve([])
+    (typeof mpLoadIncomeStatement==='function') ? mpLoadIncomeStatement() : Promise.resolve([]),
+    (typeof mpLoadNtaMonthly==='function') ? mpLoadNtaMonthly() : Promise.resolve([])
   ]);
 }).then(function(results){
   BALANCE_SHEET = (results[0].status==='fulfilled') ? (results[0].value||[]) : [];
@@ -311,6 +312,10 @@ loadLiveData().then(function(){
   INCOME_STATEMENT = (results[2].status==='fulfilled') ? (results[2].value||[]) : [];
   INCOME_STATEMENT_ERROR = (results[2].status==='fulfilled') ? null : ((results[2].reason&&results[2].reason.message)||'Unknown error');
   if(INCOME_STATEMENT_ERROR) console.warn('Income statement load failed:', INCOME_STATEMENT_ERROR);
+
+  NTA_MONTHLY = (results[3].status==='fulfilled') ? (results[3].value||[]) : [];
+  NTA_MONTHLY_ERROR = (results[3].status==='fulfilled') ? null : ((results[3].reason&&results[3].reason.message)||'Unknown error');
+  if(NTA_MONTHLY_ERROR) console.warn('NTA monthly load failed:', NTA_MONTHLY_ERROR);
 }).finally(function(){
   document.getElementById('mainContent').innerHTML=pgFundOverview();renderNotifs();
 });

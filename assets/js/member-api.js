@@ -379,6 +379,49 @@ async function mpLoadProductTypes() {
 
 /* ── Fund Overview (public) ──────────────────────────────── */
 /* ── Inception Date (first day of capital injection, fund-wide) ──── */
+/* ── NTA Monthly OHLC (for the Fund Overview candlestick chart) ──
+   Groups nta_daily into calendar months: open = first day's nta,
+   close = last day's nta, high/low = max/min within the month.       */
+async function mpLoadNtaMonthly() {
+  const pageSize = 1000;
+  let all = [], page = 0;
+  while (true) {
+    const { data, error } = await sb.from('nta_daily')
+      .select('date, nta')
+      .order('date', { ascending: true })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    if (error) throw error;
+    if (!data || !data.length) break;
+    all = all.concat(data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+
+  const byMonth = {};
+  const order = [];
+  all.forEach(function(r) {
+    if (!r.date || r.nta == null) return;
+    const key = r.date.slice(0, 7); // YYYY-MM
+    const v = parseFloat(r.nta);
+    if (!byMonth[key]) {
+      byMonth[key] = { key: key, open: v, high: v, low: v, close: v };
+      order.push(key);
+    } else {
+      const m = byMonth[key];
+      m.high = Math.max(m.high, v);
+      m.low = Math.min(m.low, v);
+      m.close = v; // rows arrive in ascending date order, so last write wins
+    }
+  });
+
+  return order.map(function(key) {
+    const m = byMonth[key];
+    const d = new Date(key + '-01T00:00:00');
+    const label = d.toLocaleDateString('en-MY', { month: 'short', year: '2-digit' });
+    return { key: key, label: label, open: m.open, high: m.high, low: m.low, close: m.close };
+  });
+}
+
 async function mpLoadInceptionDate() {
   const { data, error } = await sb.from('capital_injection')
     .select('date')

@@ -39,6 +39,8 @@ let CASH_FLOW_ERROR = null;
 let RATIO_ANALYSIS = [];
 let RATIO_ANALYSIS_ERROR = null;
 let INCEPTION_DATE = null;
+let NTA_MONTHLY = [];
+let NTA_MONTHLY_ERROR = null;
 
 function mpInitials(name){
   if(!name) return '—';
@@ -1053,12 +1055,18 @@ function niceAxisScale(min,max,tickCount){
 }
 // Guarantees exactly 5 evenly-spaced gridlines (4 equal intervals) across a
 // nicely-rounded min/max — used by every bar/histogram chart for consistency.
-function fiveTicks(min,max){
+// Axis ticks for bar/histogram/candlestick charts: always anchors the
+// domain to include zero (so the zero baseline is always a gridline),
+// expands to the next round number beyond the data (headroom), and aims
+// for ~5 gridlines — landing on 4-6 is fine, since forcing exactly 5
+// sometimes produces uglier tick values than letting them land naturally.
+function fiveTicks(rawMin,rawMax,forceZero){
+  if(forceZero===undefined) forceZero=true;
+  var min=forceZero?Math.min(0,rawMin):rawMin, max=forceZero?Math.max(0,rawMax):rawMax;
   var scale=niceAxisScale(min,max,5);
-  var step=(scale.max-scale.min)/4;
   var ticks=[];
-  for(var i=0;i<5;i++){ ticks.push(scale.min+i*step); }
-  return {ticks:ticks,min:scale.min,max:scale.max,step:step};
+  for(var tv=scale.min; tv<=scale.max+scale.step*0.001; tv+=scale.step){ ticks.push(tv); }
+  return {ticks:ticks,min:scale.min,max:scale.max,step:scale.step};
 }
 
 function fmtChartNum(v){
@@ -1512,7 +1520,7 @@ function pgFundOverview(){
     // = largest slice, grey = smallest) is always applied consistently,
     // regardless of the order segments were passed in.
     var sorted=segs.slice().sort(function(a,b){return b.v-a.v;});
-    var s=300,cx=s/2,cy=s/2,R=s*0.42,ir=s*0.30;
+    var s=270,cx=s/2,cy=s/2,R=s*0.42,ir=s*0.35;
     var total=sorted.reduce(function(a,x){return a+x.v;},0);
     var ang=-Math.PI/2,paths='';
     sorted.forEach(function(sg,idx){
@@ -1749,6 +1757,64 @@ function pgFundOverview(){
     return chartSvg+leg;
   }
 
+  // Candlestick chart — monthly OHLC (used by NTA Performance)
+  function candlestick(months){
+    var W=420,H=220,padX=16,padR=42,padYT=14,padYB=24;
+    var tipId=nextTipId();
+    var n=months.length;
+    var allV=[];
+    months.forEach(function(m){ allV.push(m.high,m.low); });
+    var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV),false);
+    var mn=scale.min,mx=scale.max,rng=(mx-mn)||0.001;
+    var plotH=H-padYT-padYB;
+    function yFor(v){ return padYT+(mx-v)/rng*plotH; }
+    var colW=(W-padX-padR)/n;
+    var bodyW=Math.min(10,colW*0.45);
+    function cx(i){ return padX+i*colW+colW/2; }
+    var candles=months.map(function(m,i){
+      var up=m.close>=m.open;
+      var col=up?'#2E7D32':'#DC2626';
+      var x=cx(i);
+      var wickTop=yFor(m.high).toFixed(1), wickBot=yFor(m.low).toFixed(1);
+      var bodyTop=yFor(Math.max(m.open,m.close)).toFixed(1);
+      var bodyH=Math.max(1,Math.abs(yFor(m.open)-yFor(m.close)));
+      return '<line x1="'+x.toFixed(1)+'" y1="'+wickTop+'" x2="'+x.toFixed(1)+'" y2="'+wickBot+'" stroke="'+col+'" stroke-width="1"/>'
+        +'<rect x="'+(x-bodyW/2).toFixed(1)+'" y="'+bodyTop+'" width="'+bodyW.toFixed(1)+'" height="'+bodyH.toFixed(1)+'" fill="'+col+'" rx="1"/>';
+    }).join('');
+    var ticks=scale.ticks;
+    var grid=ticks.map(function(v){
+      var yy=yFor(v).toFixed(1);
+      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
+        +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
+    }).join('');
+    var lblEvery=Math.max(1,Math.ceil(n/6));
+    var xL=months.map(function(m,i){
+      if(i%lblEvery!==0 && i!==n-1) return '';
+      return '<text x="'+cx(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="8" fill="#6B7280">'+m.label+'</text>';
+    }).join('');
+    var overlays=months.map(function(m,i){
+      var up=m.close>=m.open;
+      var col=up?'#2E7D32':'#DC2626';
+      var tipLines=[
+        '#1565C0::Open: '+fmtTipNum(m.open),
+        '#6B7280::High: '+fmtTipNum(m.high),
+        '#6B7280::Low: '+fmtTipNum(m.low),
+        col+'::Close: '+fmtTipNum(m.close)
+      ];
+      var tip='FY:'+m.label+'|'+tipLines.join('|');
+      var ox=(padX+i*colW).toFixed(1);
+      var ccx=((padX+i*colW+colW/2)/W).toFixed(4);
+      return '<rect x="'+ox+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+ccx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+    }).join('');
+    var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+candles+xL+overlays+'</svg>'
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
+    var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px">'
+      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:9px;height:9px;border-radius:2px;background:#2E7D32;display:inline-block"></span>Up month</span>'
+      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:9px;height:9px;border-radius:2px;background:#DC2626;display:inline-block"></span>Down month</span>'
+      +'</div>';
+    return chartSvg+leg;
+  }
+
   // Combo chart — bars (DPS) + line (Yield)
   function comboChart(groups,barSeries,lineSeries){
     var W=420,H=220,padX=42,padR=42,padYT=16,padYB=24;
@@ -1928,8 +1994,8 @@ function pgFundOverview(){
     return chartSvg+leg;
   }
 
-  function card(title,chartHtml){
-    return '<div class="fov-cc"><div class="fov-ct">'+title+'</div><div class="fov-ch">'+chartHtml+'</div></div>';
+  function card(title,chartHtml,subline){
+    return '<div class="fov-cc"><div class="fov-ct">'+title+'</div>'+(subline?'<div class="fov-csub">'+subline+'</div>':'')+'<div class="fov-ch">'+chartHtml+'</div></div>';
   }
 
   // ── KEY FACTS (full width, no outline) ────────────────────────────────
@@ -1977,15 +2043,31 @@ function pgFundOverview(){
       )
     : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(BALANCE_SHEET_ERROR?('Could not load — '+BALANCE_SHEET_ERROR):'No financial years defined yet')+'</div>';
 
+  // ── BALANCE SHEET (this card only) — Total Assets vs Total Liabilities ─
+  var balanceSheetChart = BALANCE_SHEET.length
+    ? groupedBars(
+        BALANCE_SHEET.map(function(r){return r.fy;}),
+        [
+          {v:BALANCE_SHEET.map(function(r){return r.totalAssets;}),      color:'#1565C0', label:'Total Assets'},
+          {v:BALANCE_SHEET.map(function(r){return r.totalLiabilities;}), color:'#E65100', label:'Total Liabilities'}
+        ]
+      )
+    : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(BALANCE_SHEET_ERROR?('Could not load — '+BALANCE_SHEET_ERROR):'No financial years defined yet')+'</div>';
+
+  // ── NTA PERFORMANCE — monthly OHLC candlestick from nta_daily ──────────
+  var ntaPerfChart = NTA_MONTHLY.length
+    ? candlestick(NTA_MONTHLY)
+    : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(NTA_MONTHLY_ERROR?('Could not load — '+NTA_MONTHLY_ERROR):'No NTA history on record')+'</div>';
+
   // ── ABOUT — goes into first 2-col row (left only) ─────────────────────
-  var aboutCard='<div class="fov-cc"><div class="fov-ct">About</div><div style="padding-top:4px"><p class="fov-about">ZY-Invest is a private investment fund targeting long-term capital appreciation through a concentrated portfolio of Malaysian equity securities. The fund focuses on large-cap blue-chip stocks, selective growth equities and defensive consumer names on Bursa Malaysia, with flexibility on position sizing not typical of conventional unit trusts.</p></div></div>';
+  var aboutCard='<div class="fov-cc"><div class="fov-ct">About</div><div class="fov-csub">Fund mandate &amp; investment strategy</div><div style="padding-top:4px"><p class="fov-about">ZY-Invest is a private investment fund targeting long-term capital appreciation through a concentrated portfolio of Malaysian equity securities. The fund focuses on large-cap blue-chip stocks, selective growth equities and defensive consumer names on Bursa Malaysia, with flexibility on position sizing not typical of conventional unit trusts.</p></div></div>';
   var aboutBlank='<div></div>';
 
   // ── 2-COL CHART GRID ──────────────────────────────────────────────────
   var grid='<div class="fov-2col">'
     +aboutCard+aboutBlank
-    +card('Ownership',ownershipChart)
-    +card('Capital Structure',capStructChart)
+    +card('Ownership',ownershipChart,'Top 3 shareholders by units held')
+    +card('Capital Structure',capStructChart,'Total assets by category, per financial year')
     +card('Financial Results', INCOME_STATEMENT.length
       ? groupedBars(
           INCOME_STATEMENT.map(function(r){return r.fy;}),
@@ -1994,29 +2076,21 @@ function pgFundOverview(){
             {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#2E7D32', label:'NPAT', colorByValue:true}
           ]
         )
-      : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(INCOME_STATEMENT_ERROR?('Could not load — '+INCOME_STATEMENT_ERROR):'No financial years defined yet')+'</div>'
+      : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(INCOME_STATEMENT_ERROR?('Could not load — '+INCOME_STATEMENT_ERROR):'No financial years defined yet')+'</div>',
+      'Revenue vs. Net Profit After Tax, per financial year'
     )
-    +card('NTA Performance',line(
-      [{v:[1.000,1.008,1.015,1.024,1.032,1.041,1.051,1.058,1.065,1.072,1.080,1.0245],color:'#1565C0',id:'nta'}],
-      ['Jan 22','','','','','','','','','','','Mar 26']
-    ))
+    +card('NTA Performance',ntaPerfChart,'Monthly NTA per unit (open/high/low/close)')
     +card('Dividend Summary',donut([
       {v:752.20,color:'#1565C0',label:'FY25'},
       {v:98.20, color:'#2E7D32',label:'FY24'},
       {v:16.80, color:'#F59E0B',label:'FY23'}
-    ],'RM 867'))
+    ],'RM 867'),'Total dividends paid, by financial year')
     +card('Dividend History',comboChart(
       ['FY21','FY22','FY23','FY24','FY25'],
       {v:[0,0,0.56,1.77,6.11],color:'#1565C0',label:'DPS (sen)'},
       {v:[0,0,0.5,1.7,6.0],color:'#F59E0B',label:'Dividend Yield'}
-    ))
-    +card('Balance Sheet',groupedBars(
-      ['FY21','FY22','FY23','FY24','FY25'],
-      [
-        {v:[16.8,22.5,25.1,24.2,24.8],color:'#1565C0',label:'Total Assets (RM M)'},
-        {v:[0.10,0.22,0.18,0.21,0.19],color:'#F59E0B',label:'Total Liabilities (RM M)'}
-      ]
-    ))
+    ),'DPS and dividend yield trend, per financial year')
+    +card('Balance Sheet',balanceSheetChart,'Total assets vs. total liabilities, per financial year')
     +card('Cash Reserve Ratio',bars(
       [6.8,8.5,7.2,9.1,8.5],
       ['FY21','FY22','FY23','FY24','FY25'],
@@ -2024,7 +2098,7 @@ function pgFundOverview(){
       [{c:'#0891B2',l:'Cash Reserve (%)'}],
       false,
       true
-    ))
+    ),'Cash as a % of total assets, per financial year')
     +'</div>';
 
 
