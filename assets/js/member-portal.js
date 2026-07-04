@@ -38,6 +38,7 @@ let CASH_FLOW = [];
 let CASH_FLOW_ERROR = null;
 let RATIO_ANALYSIS = [];
 let RATIO_ANALYSIS_ERROR = null;
+let INCEPTION_DATE = null;
 
 function mpInitials(name){
   if(!name) return '—';
@@ -1018,7 +1019,25 @@ async function submitPwChange(){
 // ── FUND OVERVIEW ─────────────────────────────────────────────────────────
 function dlFactsheet(){showToast('Downloading factsheet...','success');}
 function getTip(el){return el.getAttribute('data-tip');}
+
+// ── Fund Overview chart number formatting ──────────────────────────────
+// Base: #,##0.00 · 6-digit+ (100,000+): #,##0.0"k" · 9-digit+ (100,000,000+): #,##0.0"Mil" · %: 0.0%
+function fmtChartNum(v){
+  var av=Math.abs(v||0), sign=(v||0)<0?'−':'';
+  if(av>=100000000) return sign+(av/1000000).toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'Mil';
+  if(av>=100000) return sign+(av/1000).toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'k';
+  return sign+av.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtChartPct(v){
+  var av=Math.abs(v||0), sign=(v||0)<0?'−':'';
+  return sign+av.toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+}
 function pgFundOverview(){
+  // Each chart instance gets its own tooltip element id, since several
+  // charts render on this page simultaneously and frTip()/frHide() target
+  // one element by id at a time.
+  var _fovTipSeq=0;
+  function nextTipId(){ return 'fovTip'+(_fovTipSeq++); }
 
   function kf(label,val,unit){
     return '<div class="fov-kf"><div class="fov-kl">'+label+'</div>'
@@ -1631,11 +1650,12 @@ function pgFundOverview(){
   }
   // Line chart — full width
   function line(series,labels){
-    var W=420,H=220,padX=36,padY=18;
+    var W=420,H=220,padX=16,padR=42,padY=18;
+    var tipId=nextTipId();
     var all=series.reduce(function(a,s){return a.concat(s.v);},[]);
     var mn=Math.min.apply(null,all),mx=Math.max.apply(null,all),rng=mx-mn||0.001;
     var n=labels.length;
-    function px(i){return padX+(i/(n-1))*(W-padX-8);}
+    function px(i){return padX+(i/(n-1))*(W-padX-padR);}
     function py(v){return H-padY-((v-mn)/rng)*(H-padY*2);}
     var paths=series.map(function(s){
       var d=s.v.map(function(v,i){return (i?'L':'M')+px(i).toFixed(1)+','+py(v).toFixed(1);}).join('');
@@ -1649,14 +1669,24 @@ function pgFundOverview(){
     }).join('');
     var grid=[0.25,0.5,0.75].map(function(f){
       var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=mn+f*rng;
-      var vStr=v>=100?v.toFixed(0):v>=1?v.toFixed(2):v.toFixed(4);
-      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-8)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
-        +'<text x="'+(padX-3)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="end" font-size="8" fill="#9CA3AF">'+vStr+'</text>';
+      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
+        +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
     }).join('');
     var xL=[0,Math.floor(n/2),n-1].map(function(i){
       return '<text x="'+px(i).toFixed(1)+'" y="'+(H-1)+'" text-anchor="middle" font-size="8.5" fill="#9CA3AF">'+labels[i]+'</text>';
     }).join('');
-    var chartSvg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+paths+xL+'</svg>';
+    // Group hover overlay per x-position — shows every series' value at that point
+    var segW=(W-padX-padR)/Math.max(1,n-1);
+    var overlays=labels.map(function(l,i){
+      if(!l) return '';
+      var tipLines=series.map(function(s){ return s.color+'::'+(s.label||s.id)+': '+fmtChartNum(s.v[i]); });
+      var tip='FY:'+l+'|'+tipLines.join('|');
+      var ox=Math.max(0,px(i)-segW/2).toFixed(1);
+      var cx=(px(i)/W).toFixed(4);
+      return '<rect x="'+ox+'" y="0" width="'+segW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+    }).join('');
+    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+paths+xL+overlays+'</svg>'
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     // Legend at bottom if multiple series
     var leg=series.length>1?'<div style="display:flex;gap:14px;justify-content:center;margin-top:6px">'
       +series.map(function(s){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:3px;background:'+s.color+';display:inline-block;border-radius:2px"></span>'+(s.label||s.id)+'</span>';}).join('')
@@ -1666,37 +1696,46 @@ function pgFundOverview(){
 
   // Combo chart — bars (DPS) + line (Yield)
   function comboChart(groups,barSeries,lineSeries){
-    var W=420,H=220,padX=42,padYT=16,padYB=24;
+    var W=420,H=220,padX=42,padR=42,padYT=16,padYB=24;
+    var tipId=nextTipId();
     var allBar=barSeries.v, allLine=lineSeries.v;
     var barMax=Math.max.apply(null,allBar)||1;
     var lineMax=Math.max.apply(null,allLine)||1;
     var n=groups.length;
-    var groupW=(W-padX-8)/n;
+    var groupW=(W-padX-padR)/n;
     var barW=Math.min(28,groupW*0.35);
     function bx(i){return (padX+i*groupW+groupW/2-barW/2).toFixed(1);}
     function barH(v){return Math.max(2,((v/barMax)*(H-padYT-padYB))).toFixed(1);}
     function barY(v){return (H-padYB-parseFloat(barH(v))).toFixed(1);}
     function lx(i){return (padX+i*groupW+groupW/2).toFixed(1);}
     function ly(v){return (H-padYB-((v/lineMax)*(H-padYT-padYB))).toFixed(1);}
-    // Bars
+    // Bars (left axis) — the fund's own value series
     var bPaths=allBar.map(function(v,i){
       return '<rect x="'+bx(i)+'" y="'+barY(v)+'" width="'+barW+'" height="'+barH(v)+'" fill="'+barSeries.color+'" rx="2"/>';
     }).join('');
-    // Line
+    // Line (right axis) — a percentage series
     var ld=allLine.map(function(v,i){return (i?'L':'M')+lx(i)+','+ly(v);}).join('');
     var ldots=allLine.map(function(v,i){return '<circle cx="'+lx(i)+'" cy="'+ly(v)+'" r="3" fill="#fff" stroke="'+lineSeries.color+'" stroke-width="2"/>';}).join('');
-    // Grid
+    // Grid — bar values on the inner right edge, line % just outside it
     var grid=[0.5,1].map(function(f){
       var yy=(H-padYB-f*(H-padYT-padYB)).toFixed(1);
-      var vLeft=(barMax*f).toFixed(2);
-      var vRight=(lineMax*f).toFixed(1);
-      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-8)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
-        +'<text x="'+(padX-3)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="end" font-size="8" fill="#9CA3AF">'+vLeft+'</text>'
-        +'<text x="'+(W-5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="'+lineSeries.color+'">'+vRight+'%</text>';
+      var vLeft=fmtChartNum(barMax*f);
+      var vRight=fmtChartPct(lineMax*f);
+      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
+        +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="'+barSeries.color+'">'+vLeft+'</text>'
+        +'<text x="'+(W-4)+'" y="'+(parseFloat(yy)-6)+'" text-anchor="end" font-size="7.5" fill="'+lineSeries.color+'">'+vRight+'</text>';
     }).join('');
     // X labels
     var xL=groups.map(function(l,i){return '<text x="'+lx(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#6B7280">'+l+'</text>';}).join('');
-    var chartSvg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+'<path d="'+ld+'" fill="none" stroke="'+lineSeries.color+'" stroke-width="2" stroke-linejoin="round"/>'+ldots+xL+'</svg>';
+    // Group hover overlay per FY — shows both the bar and line values together
+    var overlays=groups.map(function(g,gi){
+      var tip='FY:'+g+'|'+barSeries.color+'::'+barSeries.label+': '+fmtChartNum(allBar[gi])+'|'+lineSeries.color+'::'+lineSeries.label+': '+fmtChartPct(allLine[gi]);
+      var ox=(padX+gi*groupW).toFixed(1);
+      var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
+      return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+    }).join('');
+    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+'<path d="'+ld+'" fill="none" stroke="'+lineSeries.color+'" stroke-width="2" stroke-linejoin="round"/>'+ldots+xL+overlays+'</svg>'
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px">'
       +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+barSeries.color+';display:inline-block"></span>'+barSeries.label+'</span>'
       +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:16px;height:2px;background:'+lineSeries.color+';display:inline-block;border-radius:1px"></span>'+lineSeries.label+'</span>'
@@ -1706,63 +1745,82 @@ function pgFundOverview(){
 
 
   // Bar chart — full width + bottom legend + hover
-  function bars(data,labels,colors,legendItems,showLabels){
+  function bars(data,labels,colors,legendItems,showLabels,isPct){
     if(showLabels===undefined) showLabels=true;
-    var W=420,H=220,padX=36,padY=20,n=data.length;
-    var mx=Math.max.apply(null,data)||1,barW=Math.min(28,(W-padX-8)/n*0.30),gap=(W-padX-8)/n;
+    var fmtV=isPct?fmtChartPct:fmtChartNum;
+    var W=420,H=220,padX=16,padR=42,padY=20,n=data.length;
+    var tipId=nextTipId();
+    var mx=Math.max.apply(null,data)||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
     function bx(i){return padX+i*gap+gap/2-barW/2;}
     function bh(v){return Math.max(2,(v/mx)*(H-padY*2));}
     var bPaths=data.map(function(v,i){
       var h=bh(v),x=bx(i).toFixed(1),y=(H-padY-h).toFixed(1);
-      var tip=labels[i]+': '+v;
-      return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+(colors[i]||'#1565C0')+'" rx="2" data-tip="'+tip+'" onmouseenter="showPieTip(event,getTip(this))" onmouseout="hidePieTip()" style="cursor:pointer"/>'
-        +(showLabels?'<text x="'+(parseFloat(x)+barW/2).toFixed(1)+'" y="'+(parseFloat(y)-4).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#374151" font-weight="600">'+v+'</text>':'');
+      return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+(colors[i]||'#1565C0')+'" rx="2"/>'
+        +(showLabels?'<text x="'+(parseFloat(x)+barW/2).toFixed(1)+'" y="'+(parseFloat(y)-4).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#374151" font-weight="600">'+fmtV(v)+'</text>':'');
     }).join('');
     var grid=[0.2,0.4,0.6,0.8,1.0].map(function(f){
-      var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=(mx*f).toFixed(2);
-      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-8)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
-        +'<text x="'+(padX-3)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="end" font-size="8" fill="#9CA3AF">'+v+'</text>';
+      var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=(mx*f);
+      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
+        +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtV(v)+'</text>';
     }).join('');
     var xL=labels.map(function(l,i){return '<text x="'+(bx(i)+barW/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#6B7280">'+l+'</text>';}).join('');
-    var chartSvg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+xL+'</svg>';
+    // Group hover overlay per label
+    var overlays=labels.map(function(l,i){
+      var tip='FY:'+l+'|'+(colors[i]||'#1565C0')+'::Value: '+fmtV(data[i]);
+      var ox=(padX+i*gap).toFixed(1);
+      var cx=((padX+i*gap+gap/2)/W).toFixed(4);
+      return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+    }).join('');
+    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+xL+overlays+'</svg>'
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
     var leg=legendItems?'<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +legendItems.map(function(it){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+it.c+';display:inline-block"></span>'+it.l+'</span>';}).join('')+'</div>':'';
     return chartSvg+leg;
   }
   // Grouped bar chart — full width + bottom legend + hover
   function groupedBars(groups,series){
-    var W=420,H=220,padX=36,padY=20,n=groups.length,ns=series.length;
+    var W=420,H=220,padX=16,padR=42,padY=20,n=groups.length,ns=series.length;
+    var tipId=nextTipId();
     var allV=series.reduce(function(a,s){return a.concat(s.v);},[]);
     var mx=Math.max.apply(null,allV)||1;
-    var groupW=(W-padX-8)/n,barW=Math.min(16,groupW/ns*0.4);
+    var groupW=(W-padX-padR)/n,barW=Math.min(16,groupW/ns*0.4);
     function bx(gi,si){return padX+gi*groupW+groupW/2-(ns*barW+(ns-1)*3)/2+si*(barW+3);}
     function bh(v){return Math.max(2,(v/mx)*(H-padY*2));}
     var bPaths=series.map(function(s,si){
       return s.v.map(function(v,gi){
         var h=bh(v),x=bx(gi,si).toFixed(1),y=(H-padY-h).toFixed(1);
-        var tip=groups[gi]+' '+s.label+': '+v;
-        return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+s.color+'" rx="2" data-tip="'+tip+'" onmouseenter="showPieTip(event,getTip(this))" onmouseout="hidePieTip()" style="cursor:pointer"/>';
+        return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+s.color+'" rx="2"/>';
       }).join('');
     }).join('');
     var grid=[0.2,0.4,0.6,0.8,1.0].map(function(f){
-      var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=(mx*f).toFixed(2);
-      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-8)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
-        +'<text x="'+(padX-3)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="end" font-size="8" fill="#9CA3AF">'+v+'</text>';
+      var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=(mx*f);
+      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
+        +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
     }).join('');
     var xL=groups.map(function(l,i){
       var cx=padX+i*groupW+groupW/2;
       return '<text x="'+cx.toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#6B7280">'+l+'</text>';
     }).join('');
-    var chartSvg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+xL+'</svg>';
-    var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px">'
+    // Group hover overlay per FY — shows all series values together
+    var overlays=groups.map(function(g,gi){
+      var tipLines=series.map(function(s){ return s.color+'::'+s.label+': '+fmtChartNum(s.v[gi]); });
+      var tip='FY:'+g+'|'+tipLines.join('|');
+      var ox=(padX+gi*groupW).toFixed(1);
+      var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
+      return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+    }).join('');
+    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+xL+overlays+'</svg>'
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
+    var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +series.map(function(s){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+s.color+';display:inline-block"></span>'+s.label+'</span>';}).join('')+'</div>';
     return chartSvg+leg;
   }
   // Stacked bar — full width + legend
   function stackedBars(series,labels){
-    var W=420,H=220,padX=36,padY=20,n=labels.length;
+    var W=420,H=220,padX=16,padR=42,padY=20,n=labels.length;
+    var tipId=nextTipId();
     var totals=labels.map(function(_,i){return series.reduce(function(a,s){return a+s.v[i];},0);});
-    var mx=Math.max.apply(null,totals),barW=Math.min(28,(W-padX-8)/n*0.30),gap=(W-padX-8)/n;
+    var mx=Math.max.apply(null,totals)||1,barW=Math.min(28,(W-padX-padR)/n*0.30),gap=(W-padX-padR)/n;
     function bx(i){return (padX+i*gap+gap/2-barW/2).toFixed(1);}
     function bh(v){return Math.max(2,((v/mx)*(H-padY*2)));}
     var rects='';
@@ -1776,14 +1834,23 @@ function pgFundOverview(){
     });
     var grid=[0.5,1].map(function(f){
       var yy=(H-padY-f*(H-padY*2)).toFixed(1),v=(mx*f);
-      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-8)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
-        +'<text x="'+(padX-3)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="end" font-size="8" fill="#9CA3AF">'+v.toFixed(1)+'</text>';
+      return '<line x1="'+padX+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F3F4F6" stroke-width="1"/>'
+        +'<text x="'+(W-padR+4)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#9CA3AF">'+fmtChartNum(v)+'</text>';
     }).join('');
     var xL=labels.map(function(l,i){
       return '<text x="'+(parseFloat(bx(i))+barW/2).toFixed(1)+'" y="'+(H-2)+'" text-anchor="middle" font-size="9" fill="#6B7280">'+l+'</text>';
     }).join('');
-    var chartSvg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+xL+'</svg>';
-    var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px">'
+    // Group hover overlay per label — shows all series values together
+    var overlays=labels.map(function(l,i){
+      var tipLines=series.map(function(s){ return s.color+'::'+s.label+': '+fmtChartNum(s.v[i]); });
+      var tip='FY:'+l+'|'+tipLines.join('|');
+      var ox=(padX+i*gap).toFixed(1);
+      var cx=((padX+i*gap+gap/2)/W).toFixed(4);
+      return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+    }).join('');
+    var chartSvg='<div style="position:relative"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+xL+overlays+'</svg>'
+      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
+    var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px;flex-wrap:wrap">'
       +series.map(function(s){return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:10px;height:10px;border-radius:2px;background:'+s.color+';display:inline-block"></span>'+s.label+'</span>';}).join('')
       +'</div>';
     return chartSvg+leg;
@@ -1797,8 +1864,8 @@ function pgFundOverview(){
   var latestBS = BALANCE_SHEET.length ? BALANCE_SHEET[BALANCE_SHEET.length-1] : null;
   var fundSizeLbl = latestBS ? ('RM '+(latestBS.totalEquity/1000000).toFixed(2)+' M') : '—';
   var navLbl = NTA_PRICE>0 ? ('RM '+NTA_PRICE.toFixed(4)) : '—';
-  var inceptionLbl = (FUND_OVERVIEW && FUND_OVERVIEW.inception_date)
-    ? formatDate(FUND_OVERVIEW.inception_date)
+  var inceptionLbl = INCEPTION_DATE
+    ? formatDate(INCEPTION_DATE)
     : (BALANCE_SHEET.length ? formatDate(BALANCE_SHEET[0].startDate) : '—');
   var keyFacts='<div style="margin-bottom:28px"><div class="fov-section-label">Key Facts</div>'
     +'<div class="fov-kfgrid-full">'
@@ -1829,10 +1896,10 @@ function pgFundOverview(){
   var capStructChart = BALANCE_SHEET.length
     ? stackedBars(
         [
-          {v:BALANCE_SHEET.map(function(r){return r.securities;}),          color:'#1565C0', label:'Securities'},
-          {v:BALANCE_SHEET.map(function(r){return r.otherInvestments;}),    color:'#7C3AED', label:'Other Investments'},
-          {v:BALANCE_SHEET.map(function(r){return r.dividendReceivables;}), color:'#E65100', label:'Dividend Receivables'},
-          {v:BALANCE_SHEET.map(function(r){return r.cash;}),                color:'#2E7D32', label:'Cash &amp; Equivalents'}
+          {v:BALANCE_SHEET.map(function(r){return r.securities;}),          color:'#0D47A1', label:'Securities'},
+          {v:BALANCE_SHEET.map(function(r){return r.otherInvestments;}),    color:'#1565C0', label:'Other Assets'},
+          {v:BALANCE_SHEET.map(function(r){return r.dividendReceivables;}), color:'#42A5F5', label:'Receivables'},
+          {v:BALANCE_SHEET.map(function(r){return r.cash;}),                color:'#90CAF9', label:'Cash'}
         ],
         BALANCE_SHEET.map(function(r){return r.fy;})
       )
@@ -1847,13 +1914,16 @@ function pgFundOverview(){
     +aboutCard+aboutBlank
     +card('Ownership',ownershipChart)
     +card('Capital Structure',capStructChart)
-    +card('Financial Results',groupedBars(
-      ['FY21','FY22','FY23','FY24','FY25'],
-      [
-        {v:[0.52,0.85,1.20,1.58,2.10],color:'#93C5FD',label:'Revenue (RM M)'},
-        {v:[0.10,0.18,0.38,0.62,1.42],color:'#1565C0',label:'Net Income (RM M)'}
-      ]
-    ))
+    +card('Financial Results', INCOME_STATEMENT.length
+      ? groupedBars(
+          INCOME_STATEMENT.map(function(r){return r.fy;}),
+          [
+            {v:INCOME_STATEMENT.map(function(r){return r.revenue;}),   color:'#1565C0', label:'Revenue'},
+            {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#2E7D32', label:'NPAT'}
+          ]
+        )
+      : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(INCOME_STATEMENT_ERROR?('Could not load — '+INCOME_STATEMENT_ERROR):'No financial years defined yet')+'</div>'
+    )
     +card('NTA Performance',line(
       [{v:[1.000,1.008,1.015,1.024,1.032,1.041,1.051,1.058,1.065,1.072,1.080,1.0245],color:'#1565C0',id:'nta'}],
       ['Jan 22','','','','','','','','','','','Mar 26']
@@ -1880,7 +1950,8 @@ function pgFundOverview(){
       ['FY21','FY22','FY23','FY24','FY25'],
       ['#CBD5E1','#93C5FD','#60A5FA','#60A5FA','#0891B2'],
       [{c:'#0891B2',l:'Cash Reserve (%)'}],
-      false
+      false,
+      true
     ))
     +'</div>';
 
@@ -2611,8 +2682,8 @@ function pgFinancialResults(){
     +'<div style="margin-bottom:20px">'+chart+'</div>'
     +'<div style="margin-bottom:4px">'+table+'</div></div>';
 }
-function frTip(e,txt,cxStr){
-  var el=document.getElementById('frTipEl');
+function frTip(e,txt,cxStr,tipId){
+  var el=document.getElementById(tipId||'frTipEl');
   if(!el)return;
   var parts=txt.split('|');
   var fy=parts[0].replace('FY:','');
@@ -2640,7 +2711,7 @@ function frTip(e,txt,cxStr){
   el.style.top='10px';
   el.style.left=Math.max(4, colCenterCss - tipW/2)+'px';
 }
-function frHide(){var el=document.getElementById('frTipEl');if(el)el.style.display='none';}
+function frHide(tipId){var el=document.getElementById(tipId||'frTipEl');if(el)el.style.display='none';}
 
 // ── COMING SOON ───────────────────────────────────────────────────────────────
 function pgComingSoon(){

@@ -295,14 +295,22 @@ var S = { page:'fundoverview', period:'ytd', txf:'all' };
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
-  return (typeof mpLoadBalanceSheet==='function') ? mpLoadBalanceSheet() : [];
-}).then(function(rows){
-  BALANCE_SHEET = rows || [];
-  BALANCE_SHEET_ERROR = null;
-}).catch(function(e){
-  BALANCE_SHEET = [];
-  BALANCE_SHEET_ERROR = (e && e.message) || 'Unknown error';
-  console.warn('Balance sheet load failed:', BALANCE_SHEET_ERROR);
+  return Promise.allSettled([
+    (typeof mpLoadBalanceSheet==='function') ? mpLoadBalanceSheet() : Promise.resolve([]),
+    (typeof mpLoadInceptionDate==='function') ? mpLoadInceptionDate() : Promise.resolve(null),
+    (typeof mpLoadIncomeStatement==='function') ? mpLoadIncomeStatement() : Promise.resolve([])
+  ]);
+}).then(function(results){
+  BALANCE_SHEET = (results[0].status==='fulfilled') ? (results[0].value||[]) : [];
+  BALANCE_SHEET_ERROR = (results[0].status==='fulfilled') ? null : ((results[0].reason&&results[0].reason.message)||'Unknown error');
+  if(BALANCE_SHEET_ERROR) console.warn('Balance sheet load failed:', BALANCE_SHEET_ERROR);
+
+  INCEPTION_DATE = (results[1].status==='fulfilled') ? results[1].value : null;
+  if(results[1].status!=='fulfilled') console.warn('Inception date load failed:', results[1].reason && results[1].reason.message);
+
+  INCOME_STATEMENT = (results[2].status==='fulfilled') ? (results[2].value||[]) : [];
+  INCOME_STATEMENT_ERROR = (results[2].status==='fulfilled') ? null : ((results[2].reason&&results[2].reason.message)||'Unknown error');
+  if(INCOME_STATEMENT_ERROR) console.warn('Income statement load failed:', INCOME_STATEMENT_ERROR);
 }).finally(function(){
   document.getElementById('mainContent').innerHTML=pgFundOverview();renderNotifs();
 });

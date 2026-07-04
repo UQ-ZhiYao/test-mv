@@ -333,12 +333,33 @@ async function mpSubmitRedemption(investorId, { amount, units, note }) {
 }
 
 /* ── Shareholders (fund-wide, public/member-read) ────────── */
+/* ── Shareholders (units_held computed from capital_injection, since
+   profiles.units_held isn't kept up to date) ────────────────────── */
 async function mpLoadShareholders() {
-  const { data, error } = await sb.from('profiles')
-    .select('investor_id, full_name, account_type, units_held, joined_date, status')
-    .order('units_held', { ascending: false });
-  if (error) throw error;
-  return data || [];
+  const [profRes, ciRes] = await Promise.all([
+    sb.from('profiles').select('id, investor_id, full_name, account_type, joined_date, status'),
+    sb.from('capital_injection').select('uid, units, status').eq('status', 'Approved')
+  ]);
+  if (profRes.error) throw profRes.error;
+  if (ciRes.error) throw ciRes.error;
+
+  const unitsByUid = {};
+  (ciRes.data || []).forEach(function(r) {
+    unitsByUid[r.uid] = (unitsByUid[r.uid] || 0) + (parseFloat(r.units) || 0);
+  });
+
+  return (profRes.data || [])
+    .map(function(p) {
+      return {
+        investor_id: p.investor_id,
+        full_name: p.full_name,
+        account_type: p.account_type,
+        joined_date: p.joined_date,
+        status: p.status,
+        units_held: unitsByUid[p.id] || 0
+      };
+    })
+    .sort(function(a, b) { return b.units_held - a.units_held; });
 }
 
 /* ── Product Types (colour taxonomy for product pills) ───── */
@@ -354,6 +375,16 @@ async function mpLoadProductTypes() {
 }
 
 /* ── Fund Overview (public) ──────────────────────────────── */
+/* ── Inception Date (first day of capital injection, fund-wide) ──── */
+async function mpLoadInceptionDate() {
+  const { data, error } = await sb.from('capital_injection')
+    .select('date')
+    .order('date', { ascending: true })
+    .limit(1);
+  if (error) throw error;
+  return (data && data.length) ? data[0].date : null;
+}
+
 async function mpLoadFundOverview() {
   const { data, error } = await sb.from('fund_overview')
     .select('*').single();
