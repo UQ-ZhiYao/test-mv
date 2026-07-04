@@ -295,6 +295,15 @@ var S = { page:'shareholders', period:'ytd', txf:'all' };
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
+  return (typeof mpLoadShareholdersByFy==='function') ? mpLoadShareholdersByFy() : Promise.resolve([]);
+}).then(function(byFy){
+  SHAREHOLDERS_BY_FY = byFy || [];
+  SHAREHOLDERS_BY_FY_ERROR = null;
+}).catch(function(e){
+  SHAREHOLDERS_BY_FY = [];
+  SHAREHOLDERS_BY_FY_ERROR = (e && e.message) || 'Unknown error';
+  console.warn('Shareholders by FY load failed:', SHAREHOLDERS_BY_FY_ERROR);
+}).finally(function(){
   document.getElementById('mainContent').innerHTML=pgShareholders();renderNotifs();
 });
 </script>

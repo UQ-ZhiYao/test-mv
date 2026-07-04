@@ -365,6 +365,47 @@ async function mpLoadShareholders() {
     .sort(function(a, b) { return b.units_held - a.units_held; });
 }
 
+/* ── Shareholders by FY (point-in-time snapshot at each FY's end date) —
+   for the Shareholder List page's FY filter tabs. Cumulative units per
+   investor from all Approved capital_injection rows up to and including
+   that FY's end_date (units are already signed +/- for subscription vs.
+   redemption, so summing directly gives the correct running balance).    */
+async function mpLoadShareholdersByFy() {
+  const [fyRes, ciRes] = await Promise.all([
+    sb.from('fy_settings').select('*').order('start_date', { ascending: true }),
+    sb.from('capital_injection').select('uid, full_name, units, date, status').eq('status', 'Approved')
+  ]);
+  if (fyRes.error) throw fyRes.error;
+  if (ciRes.error) throw ciRes.error;
+  const FYS = fyRes.data || [];
+  const ciRows = (ciRes.data || []).slice().sort(function(a, b) { return (a.date || '').localeCompare(b.date || ''); });
+
+  return FYS.map(function(fy) {
+    const byUid = {};
+    ciRows.forEach(function(r) {
+      if (!r.date || r.date > fy.end_date) return;
+      if (!byUid[r.uid]) byUid[r.uid] = { uid: r.uid, full_name: r.full_name, units_held: 0, firstDate: r.date };
+      byUid[r.uid].units_held += parseFloat(r.units) || 0;
+      if (r.date < byUid[r.uid].firstDate) byUid[r.uid].firstDate = r.date;
+    });
+    const list = Object.keys(byUid)
+      .map(function(uid) {
+        const s = byUid[uid];
+        return {
+          investor_id: s.uid,
+          full_name: s.full_name || 'Unknown',
+          account_type: 'shareholder',
+          joined_date: s.firstDate,
+          status: 'Active',
+          units_held: s.units_held
+        };
+      })
+      .filter(function(s) { return s.units_held > 0; })
+      .sort(function(a, b) { return b.units_held - a.units_held; });
+    return { fy: fy.label, list: list };
+  });
+}
+
 /* ── Product Types (colour taxonomy for product pills) ───── */
 async function mpLoadProductTypes() {
   const { data, error } = await sb.from('product_types')

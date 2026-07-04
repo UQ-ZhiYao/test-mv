@@ -22,6 +22,8 @@ let ACTIVITY = [];
 let DOCS = [];
 let NOTIFS = [];
 let SHAREHOLDERS = [];
+let SHAREHOLDERS_BY_FY = [];
+let SHAREHOLDERS_BY_FY_ERROR = null;
 let FUND_OVERVIEW = null;
 let LIVE_DATA_READY = false;
 let PROFILE = null;
@@ -2367,12 +2369,33 @@ function pgFactsheet(){
 
 // ── SHAREHOLDERS ──────────────────────────────────────────────────────────
 function pgShareholders(){
-  var shareholders = SHAREHOLDERS;
-  var totalUnits = shareholders.reduce(function(a,s){return a+s.units;},0) || 1;
+  var fyOptions = SHAREHOLDERS_BY_FY.map(function(f){ return f.fy; });
+  var fySel = window._shFy && fyOptions.indexOf(window._shFy)>=0 ? window._shFy : fyOptions[fyOptions.length-1];
+  var fyBucket = SHAREHOLDERS_BY_FY.filter(function(f){ return f.fy===fySel; })[0];
+  var rawList = fyBucket ? fyBucket.list : [];
+  var totalUnits = rawList.reduce(function(a,s){return a+(parseFloat(s.units_held)||0);},0) || 1;
+  var shareholders = rawList.map(function(s){
+    return {
+      initials: mpInitials(s.full_name),
+      name: s.full_name || 'Unknown',
+      position: s.account_type==='director' ? 'Director' : 'Shareholder',
+      since: formatDate(s.joined_date),
+      units: parseFloat(s.units_held) || 0,
+      pct: ((parseFloat(s.units_held)||0) / totalUnits * 100)
+    };
+  });
   var maxPct = shareholders.length ? Math.max.apply(null, shareholders.map(function(s){return s.pct;})) : 1;
+
+  function fyTabBtn(fy){
+    return '<button class="'+(fySel===fy?'on':'')+'" onclick="switchShareholderFy(\''+fy+'\')">'+fy+'</button>';
+  }
+  var fyTabs = fyOptions.length ? '<div class="seg">'+fyOptions.map(fyTabBtn).join('')+'</div>' : '';
 
   // Avatar colour pool (teal/green gradient shades matching image)
   var avBg=['#2E7D7C','#3A7D6B','#2E6B7C','#3A6B5A','#2E7D7C','#2E6B7C','#2E7D7C','#3D5A80'];
+
+  // Position / Holding Since / Units share one fixed, equal, centered width.
+  var eqCol='width:14%;text-align:center;';
 
   var rows=shareholders.map(function(s,i){
     var barW=(s.pct/maxPct*100).toFixed(1);
@@ -2383,9 +2406,9 @@ function pgShareholders(){
         +'<div style="width:36px;height:36px;border-radius:50%;background:'+avBg[i%avBg.length]+';color:#fff;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">'+s.initials+'</div>'
       +'</td>'
       +'<td style="padding:14px 8px;font-weight:400;color:var(--fg-1);font-size:.88rem;">'+s.name+'</td>'
-      +'<td style="padding:14px 16px;color:var(--fg-2);font-size:.88rem;">'+s.position+'</td>'
-      +'<td style="padding:14px 16px;color:var(--fg-2);font-size:.88rem;">'+s.since+'</td>'
-      +'<td style="padding:14px 16px;text-align:right;font-size:.88rem;font-weight:400;">'+s.units.toLocaleString()+'</td>'
+      +'<td style="padding:14px 16px;'+eqCol+'color:var(--fg-2);font-size:.88rem;">'+s.position+'</td>'
+      +'<td style="padding:14px 16px;'+eqCol+'color:var(--fg-2);font-size:.88rem;">'+s.since+'</td>'
+      +'<td style="padding:14px 16px;'+eqCol+'font-size:.88rem;font-weight:400;">'+s.units.toLocaleString()+'</td>'
       +'<td style="padding:14px 16px;min-width:160px;">'
         +'<div style="display:flex;align-items:center;gap:10px;">'
           +'<div style="flex:1;height:5px;background:var(--gray-100);border-radius:99px;overflow:hidden;">'
@@ -2397,28 +2420,28 @@ function pgShareholders(){
       +'</tr>';
   }).join('');
 
-  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><h1>Shareholder <span class="acc">List</span></h1><p>Current unitholders of ZY-Invest.</p></div>'
-    // 4 summary cards
-    +'<div class="mrow" style="margin-bottom:28px">'
-    +'<div class="mc"><div class="lbl">TOTAL SHAREHOLDERS</div><div class="val" style="font-size:1.25rem;font-weight:600;">'+shareholders.length+'</div><div class="sub">active unitholders</div></div>'
-    +'<div class="mc"><div class="lbl">TOTAL UNITS</div><div class="val" style="font-size:1.25rem;font-weight:600;">'+totalUnits.toLocaleString()+'</div><div class="sub">units in issue</div></div>'
-    +'<div class="mc"><div class="lbl">YOUR UNITS</div><div class="val" style="font-size:1.25rem;font-weight:400;color:var(--fg-3);">—</div><div class="sub">—</div></div>'
-    +'<div class="mc"><div class="lbl">YOUR POSITION</div><div class="val" style="font-size:1.25rem;font-weight:400;color:var(--fg-3);">—</div><div class="sub">by units held</div></div>'
-    +'</div>'
+  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h1 style="margin:0">Shareholder <span class="acc">List</span></h1>'+fyTabs+'</div></div>'
     // Table
-    +'<div style="margin-bottom:4px"><h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:12px">Unitholders</h3>'
-    +'<table style="width:100%;border-collapse:collapse;">'
-    +'<thead><tr style="border-bottom:1px solid var(--border);">'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">#</th>'
-    +'<th style="padding:10px 8px;"></th>'
-    +'<th style="padding:10px 8px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Name</th>'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Position</th>'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Holding Since</th>'
-    +'<th style="padding:10px 16px;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Units</th>'
-    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);min-width:160px;">Ownership %</th>'
-    +'</tr></thead>'
-    +'<tbody>'+rows+'</tbody>'
-    +'</table></div></div>';
+    +(shareholders.length
+      ? '<table style="width:100%;border-collapse:collapse;">'
+        +'<thead><tr style="border-bottom:1px solid var(--border);">'
+        +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">#</th>'
+        +'<th style="padding:10px 8px;"></th>'
+        +'<th style="padding:10px 8px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Name</th>'
+        +'<th style="padding:10px 16px;'+eqCol+'font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Position</th>'
+        +'<th style="padding:10px 16px;'+eqCol+'font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Holding Since</th>'
+        +'<th style="padding:10px 16px;'+eqCol+'font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Units</th>'
+        +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);min-width:160px;">Ownership %</th>'
+        +'</tr></thead>'
+        +'<tbody>'+rows+'</tbody>'
+        +'</table>'
+      : '<div style="padding:40px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">'+(SHAREHOLDERS_BY_FY_ERROR?('Could not load — '+SHAREHOLDERS_BY_FY_ERROR):'No shareholders on record for this financial year')+'</div>')
+    +'</div>';
+}
+function switchShareholderFy(fy){
+  window._shFy=fy;
+  var el=document.getElementById('mainContent');
+  if(el) el.innerHTML=pgShareholders();
 }
 
 // ── NAVIGATION ───────────────────────────────────────────────────────────────
