@@ -2423,18 +2423,19 @@ function pgShareholders(){
       +'</tr>';
   }).join('');
 
-  // Total row — always pinned as the very last row of the table.
-  var totalRow = shareholders.length
-    ? '<tr style="border-top:2px solid var(--border-strong,var(--border));background:var(--gray-50)">'
+  // Total row — always pinned as the very last row of the table, and
+  // always rendered (even at 0) so every FY tab shows the same structure.
+  var totalRow = '<tr style="border-top:2px solid var(--border-strong,var(--border));background:var(--gray-50)">'
       +'<td style="padding:14px 16px;"></td>'
       +'<td style="padding:14px 16px;"></td>'
       +'<td style="padding:14px 8px;font-weight:700;color:var(--fg-1);font-size:.88rem;">Total</td>'
       +'<td style="padding:14px 16px;'+eqCol+'"></td>'
       +'<td style="padding:14px 16px;'+eqCol+'"></td>'
-      +'<td style="padding:14px 32px 14px 16px;text-align:right;font-size:.88rem;font-weight:700;color:var(--fg-1);font-variant-numeric:tabular-nums;">'+fmtUnits4dp(totalUnits)+'</td>'
-      +'<td style="padding:14px 16px;font-size:.84rem;font-weight:700;color:var(--fg-1);">100.00%</td>'
-      +'</tr>'
-    : '';
+      +'<td style="padding:14px 32px 14px 16px;text-align:right;font-size:.88rem;font-weight:700;color:var(--fg-1);font-variant-numeric:tabular-nums;">'+fmtUnits4dp(shareholders.length?totalUnits:0)+'</td>'
+      +'<td style="padding:14px 16px;font-size:.84rem;font-weight:700;color:var(--fg-1);">'+(shareholders.length?'100.00%':'—')+'</td>'
+      +'</tr>';
+
+  var emptyRow = '<tr><td colspan="7" style="padding:40px 16px;text-align:center;color:var(--fg-3);font-size:.85rem">'+(SHAREHOLDERS_BY_FY_ERROR?('Could not load — '+SHAREHOLDERS_BY_FY_ERROR):'No shareholders on record for this financial year')+'</td></tr>';
 
   var colgroup='<colgroup>'
     +'<col style="width:5%">'
@@ -2446,24 +2447,25 @@ function pgShareholders(){
     +'<col style="width:19%">'
     +'</colgroup>';
 
+  // Table is ALWAYS rendered with the same colgroup — even a financial
+  // year with zero shareholders keeps the exact same fixed column widths
+  // (an empty state that swaps out the whole <table> for a plain <div>
+  // was what made the very first FY look narrower/different).
   return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%"><div class="ph-xl"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h1 style="margin:0">Shareholder <span class="acc">List</span></h1>'+fyTabs+'</div></div>'
-    // 1-2 lines of breathing room before the table
-    +'<div style="height:36px"></div>'
-    // Table — fixed column widths regardless of content length
-    +(shareholders.length
-      ? '<table style="width:100%;table-layout:fixed;border-collapse:collapse;">'+colgroup
-        +'<thead><tr style="border-bottom:1px solid var(--border);">'
-        +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">#</th>'
-        +'<th style="padding:10px 16px;"></th>'
-        +'<th style="padding:10px 8px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Name</th>'
-        +'<th style="padding:10px 16px;'+eqCol+'font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Position</th>'
-        +'<th style="padding:10px 16px;'+eqCol+'font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Holding Since</th>'
-        +'<th style="padding:10px 32px 10px 16px;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Units</th>'
-        +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Ownership %</th>'
-        +'</tr></thead>'
-        +'<tbody>'+rows+totalRow+'</tbody>'
-        +'</table>'
-      : '<div style="padding:40px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">'+(SHAREHOLDERS_BY_FY_ERROR?('Could not load — '+SHAREHOLDERS_BY_FY_ERROR):'No shareholders on record for this financial year')+'</div>')
+    // 2 blank lines of breathing room before the table
+    +'<div aria-hidden="true" style="line-height:24px">&nbsp;<br>&nbsp;</div>'
+    +'<table style="width:100%;table-layout:fixed;border-collapse:collapse;">'+colgroup
+    +'<thead><tr style="border-bottom:1px solid var(--border);">'
+    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">#</th>'
+    +'<th style="padding:10px 16px;"></th>'
+    +'<th style="padding:10px 8px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Name</th>'
+    +'<th style="padding:10px 16px;'+eqCol+'font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Position</th>'
+    +'<th style="padding:10px 16px;'+eqCol+'font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Holding Since</th>'
+    +'<th style="padding:10px 32px 10px 16px;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Units</th>'
+    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Ownership %</th>'
+    +'</tr></thead>'
+    +'<tbody>'+(shareholders.length?rows:emptyRow)+totalRow+'</tbody>'
+    +'</table>'
     +'</div>';
 }
 function switchShareholderFy(fy){
