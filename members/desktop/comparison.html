@@ -301,7 +301,7 @@ loadLiveData().then(function(){
     (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^GSPC') : Promise.resolve([]),
     (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('MSCI') : Promise.resolve([]),
     (typeof mpLoadInceptionDate==='function') ? mpLoadInceptionDate() : Promise.resolve(null),
-    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('WISGP.SI') : Promise.resolve([]),
+    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^STI') : Promise.resolve([]),
     (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^IXIC') : Promise.resolve([])
   ]);
 }).then(function(results){
@@ -310,12 +310,12 @@ loadLiveData().then(function(){
   var sp   = (results[2].status==='fulfilled') ? (results[2].value||[]) : [];
   var msci = (results[3].status==='fulfilled') ? (results[3].value||[]) : [];
   var inception = (results[4].status==='fulfilled') ? results[4].value : null;
-  var ftsesg = (results[5].status==='fulfilled') ? (results[5].value||[]) : [];
+  var sti = (results[5].status==='fulfilled') ? (results[5].value||[]) : [];
   var nasdaq = (results[6].status==='fulfilled') ? (results[6].value||[]) : [];
   results.forEach(function(r,i){
     if(r.status!=='fulfilled') console.warn('Comparison data source '+i+' failed:', r.reason && r.reason.message);
   });
-  COMPARISON_DATA = { fund:fund, klci:klci, sp:sp, msci:msci, inception:inception, ftsesg:ftsesg, nasdaq:nasdaq };
+  COMPARISON_DATA = { fund:fund, klci:klci, sp:sp, msci:msci, inception:inception, sti:sti, nasdaq:nasdaq };
   COMPARISON_ERROR = fund.length ? null : 'Fund NTA history unavailable';
 }).catch(function(e){
   COMPARISON_DATA = null;

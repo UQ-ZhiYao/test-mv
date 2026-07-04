@@ -2742,7 +2742,7 @@ function pgComparison(){
       {name:'FBM KLCI',  color:'#E65100', pts:CMP.klci||[]},
       {name:'S&P 500',   color:'#2E7D32', pts:CMP.sp||[]},
       {name:'MSCI',      color:'#7C3AED', pts:CMP.msci||[]},
-      {name:'FTSE Singapore', color:'#DB2777', pts:CMP.ftsesg||[]},
+      {name:'STI',       color:'#DB2777', pts:CMP.sti||[]},
       {name:'NASDAQ',    color:'#0891B2', pts:CMP.nasdaq||[]}
     ].filter(function(s){return s.pts && s.pts.length;});
 
