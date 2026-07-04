@@ -2094,11 +2094,13 @@ function pgFundOverview(){
       paths+='<path d="'+d+'" fill="'+sg.color+'" stroke="none" data-tip="'+groupTip+'" onmouseenter="showGroupPieTip(event,getTip(this))" onmousemove="showGroupPieTip(event,getTip(this))" onmouseout="hideGroupPieTip()" style="cursor:pointer"/>';
       ang=ea;
     });
-    var legend=segs.map(function(sg){
+    var legendRows=segs.map(function(sg){
       return '<div style="display:flex;align-items:center;gap:6px;font-size:.78rem;color:#374151">'
         +'<span style="width:8px;height:8px;border-radius:50%;background:'+sg.color+';flex-shrink:0;display:inline-block"></span>'
-        +sg.label+' <span style="color:#9CA3AF">'+fmtSen(sg.v)+' sen</span></div>';
+        +'<span style="flex:1">'+sg.label+'</span>'
+        +'<span style="color:#0F172A;font-weight:400">'+fmtSen(sg.v)+' sen</span></div>';
     }).join('');
+    var legend='<div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid #E2E8F0;border-radius:8px;min-width:170px">'+legendRows+'</div>';
     return '<div style="display:flex;align-items:center;justify-content:flex-start;gap:20px;flex:1;padding:8px 0;min-height:0">'
       +'<svg viewBox="0 0 '+s+' '+s+'" style="width:'+s+'px;height:'+s+'px;max-width:90%;max-height:100%;flex-shrink:0">'
       +paths
@@ -2106,7 +2108,7 @@ function pgFundOverview(){
       +'<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="19" font-weight="400" fill="#0F172A" style="pointer-events:none">'+label+'</text>'
       +'<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" fill="#6B7280" style="pointer-events:none">'+(caption||'total')+'</text>'
       +'</svg>'
-      +'<div style="display:flex;flex-direction:column;gap:7px;min-width:0">'+legend+'</div>'
+      +'<div style="display:flex;flex-direction:column;min-width:0">'+legend+'</div>'
       +'</div>';
   }
 
@@ -2184,12 +2186,12 @@ function pgFundOverview(){
   var DIST_BY_FY_MAP = {}; DIST_BY_FY.forEach(function(r){ DIST_BY_FY_MAP[r.fy]=r; });
   var INCOME_BY_FY = {}; INCOME_STATEMENT.forEach(function(r){ INCOME_BY_FY[r.fy]=r; });
 
-  // ── DISTRIBUTION PAYOUT RATIO — center number stays Last FY's Total DPS
-  // ÷ previous FY's EPS. The donut itself now breaks down into just 2
-  // segments: last FY's Interim DPS, and previous FY's GPS (Gross Income
-  // per share) less that Interim DPS. One shared multi-line hover tooltip
-  // covers the whole chart: FYxxxx header, then Interim DPS and GPS each
-  // on their own line. ─────────────────────────────────────────────────
+  // ── DISTRIBUTION PAYOUT RATIO — center number is Interim DPS ÷ previous
+  // FY's GPS (the full figure, not net of Interim DPS). The donut breaks
+  // down into 2 segments: last FY's Interim DPS (dark blue), and previous
+  // FY's GPS (Gross Income per share) less that Interim DPS (grey). One
+  // shared multi-line hover tooltip covers the whole chart: FYxxxx header,
+  // then Interim DPS and GPS each on their own line. ─────────────────────
   function fmtSen(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   var payoutLastFy = ALL_FY.length ? ALL_FY[ALL_FY.length-1] : null;
   var payoutPrevFy = ALL_FY.length>1 ? ALL_FY[ALL_FY.length-2] : null;
@@ -2197,20 +2199,19 @@ function pgFundOverview(){
   if(payoutLastFy && payoutPrevFy){
     var lastDist = DIST_BY_FY_MAP[payoutLastFy] || {interimDps:0,finalDps:0,totalDps:0};
     var prevIS   = INCOME_BY_FY[payoutPrevFy];
-    var prevEps  = (prevIS && prevIS.epsCents!=null) ? prevIS.epsCents : null;
     var prevGps  = (prevIS && prevIS.outstandingShares>0) ? (prevIS.grossIncome/prevIS.outstandingShares*100) : null;
-    if(prevEps!=null && prevGps!=null){
-      var payoutRatio = prevEps ? (lastDist.totalDps/prevEps*100) : null;
+    if(prevGps!=null){
       var interimVal  = lastDist.interimDps||0;
+      var payoutRatio = prevGps ? (interimVal/prevGps*100) : null;
       var gpsExclInterim = Math.max(0, prevGps-interimVal);
       var distSegs=[
         {v:interimVal,     color:'#0D47A1', label:'Interim DPS'},
-        {v:gpsExclInterim, color:'#64B5F6', label:'GPS excl. Interim DPS'}
+        {v:gpsExclInterim, color:'#9CA3AF', label:'GPS excl. Interim DPS'}
       ];
       var groupTip=payoutLastFy+'|Interim DPS: '+fmtSen(interimVal)+' sen|GPS: '+fmtSen(prevGps)+' sen';
       distSummaryChart = payoutDonut(distSegs, (payoutRatio!=null?payoutRatio.toFixed(1):'—')+'%', 'Payout Ratio', groupTip);
     } else {
-      distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">No EPS/Gross Income data on record</div>';
+      distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">No Gross Income data on record</div>';
     }
   } else {
     distSummaryChart = '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(DIST_BY_FY_ERROR?('Could not load — '+DIST_BY_FY_ERROR):'No distribution history on record')+'</div>';
