@@ -1518,8 +1518,12 @@ function pgFundOverview(){
   function donut(segs,label,caption){
     // Sort by value descending so the rank-based color gradient (dark blue
     // = largest slice, grey = smallest) is always applied consistently,
-    // regardless of the order segments were passed in.
-    var sorted=segs.slice().sort(function(a,b){return b.v-a.v;});
+    // regardless of the order segments were passed in. Segments flagged
+    // pinLast (e.g. "The rest of shareholder") are excluded from the sort
+    // and always appended at the end, regardless of their value.
+    var pinned=segs.filter(function(s){return s.pinLast;});
+    var ranked=segs.filter(function(s){return !s.pinLast;});
+    var sorted=ranked.slice().sort(function(a,b){return b.v-a.v;}).concat(pinned);
     var s=270,cx=s/2,cy=s/2,R=s*0.42,ir=s*0.35;
     var total=sorted.reduce(function(a,x){return a+x.v;},0);
     var ang=-Math.PI/2,paths='';
@@ -1760,7 +1764,7 @@ function pgFundOverview(){
   // Candlestick chart — monthly OHLC (used by NTA Performance)
   function candlestick(months){
     var W=420,H=220,padX=16,padR=42,padYT=14,padYB=24;
-    var tipId=nextTipId();
+    var infoId=nextTipId();
     var n=months.length;
     var allV=[];
     months.forEach(function(m){ allV.push(m.high,m.low); });
@@ -1792,27 +1796,27 @@ function pgFundOverview(){
       if(i%lblEvery!==0 && i!==n-1) return '';
       return '<text x="'+cx(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="8" fill="#6B7280">'+m.label+'</text>';
     }).join('');
+    // Build the "mmm yy  O: .. H: .. L: .. C: .. (Change)" info string for
+    // a given month, changed against the previous month's close (falls
+    // back to open->close for the first bar, which has no prior month).
+    function infoStr(m,prev){
+      var base=prev?prev.close:m.open;
+      var chg=m.close-base;
+      var chgPct=base?(chg/base*100):0;
+      var up=chg>=0;
+      var sign=up?'+':'−';
+      return m.label+'|'+fmtTipNum(m.open)+'|'+fmtTipNum(m.high)+'|'+fmtTipNum(m.low)+'|'+fmtTipNum(m.close)+'|'+sign+fmtChartNum(Math.abs(chg))+'|'+sign+Math.abs(chgPct).toFixed(2)+'%|'+(up?1:0);
+    }
+    var defaultTip=n?infoStr(months[n-1],n>1?months[n-2]:null):'';
     var overlays=months.map(function(m,i){
-      var up=m.close>=m.open;
-      var col=up?'#2E7D32':'#DC2626';
-      var tipLines=[
-        '#1565C0::Open: '+fmtTipNum(m.open),
-        '#6B7280::High: '+fmtTipNum(m.high),
-        '#6B7280::Low: '+fmtTipNum(m.low),
-        col+'::Close: '+fmtTipNum(m.close)
-      ];
-      var tip='FY:'+m.label+'|'+tipLines.join('|');
+      var prev=i>0?months[i-1]:null;
+      var tip=infoStr(m,prev);
       var ox=(padX+i*colW).toFixed(1);
-      var ccx=((padX+i*colW+colW/2)/W).toFixed(4);
-      return '<rect x="'+ox+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+ccx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" data-tip="'+tip+'" onmouseenter="candleInfo(getTip(this),\''+infoId+'\')" onmousemove="candleInfo(getTip(this),\''+infoId+'\')" onmouseleave="candleInfo(\''+defaultTip+'\',\''+infoId+'\')" style="cursor:crosshair"/>';
     }).join('');
-    var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+candles+xL+overlays+'</svg>'
-      +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
-    var leg='<div style="display:flex;gap:14px;justify-content:center;margin-top:6px">'
-      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:9px;height:9px;border-radius:2px;background:#2E7D32;display:inline-block"></span>Up month</span>'
-      +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:#6B7280"><span style="width:9px;height:9px;border-radius:2px;background:#DC2626;display:inline-block"></span>Down month</span>'
-      +'</div>';
-    return chartSvg+leg;
+    var infoLine='<div id="'+infoId+'" style="font-size:.82rem;color:#374151;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #F1F5F9;min-height:20px;display:flex;align-items:center;flex-wrap:wrap">'+candleInfoHtml(defaultTip)+'</div>';
+    var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+candles+xL+overlays+'</svg></div>';
+    return infoLine+chartSvg;
   }
 
   // Combo chart — bars (DPS) + line (Yield)
@@ -2025,7 +2029,7 @@ function pgFundOverview(){
   var shTotalUnits = shSorted.reduce(function(s,r){return s+(r.units||0);},0);
   var OWN_COL = ['#1565C0','#2E7D32','#E65100'];
   var ownershipSegs = shTop3.map(function(s,i){ return {v:s.units||0, color:OWN_COL[i], label:s.name}; });
-  if(shRest.length) ownershipSegs.push({v:shRestUnits, color:'#9CA3AF', label:'The rest of shareholder'});
+  if(shRest.length) ownershipSegs.push({v:shRestUnits, color:'#9CA3AF', label:'The rest of shareholder', pinLast:true});
   var ownershipChart = ownershipSegs.length
     ? donut(ownershipSegs, Math.round(shTotalUnits).toLocaleString('en-MY'), 'units')
     : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">No shareholder data on record</div>';
@@ -2858,6 +2862,26 @@ function frTip(e,txt,cxStr,tipId){
   el.style.left=Math.max(4, colCenterCss - tipW/2)+'px';
 }
 function frHide(tipId){var el=document.getElementById(tipId||'frTipEl');if(el)el.style.display='none';}
+
+// NTA Performance candlestick — builds the "mmm yy  O: .. H: .. L: .. C: .. (Change)"
+// markup shown in the static info line above the plot area (no floating tooltip).
+function candleInfoHtml(tip){
+  if(!tip) return '';
+  var p=tip.split('|');
+  var label=p[0],o=p[1],h=p[2],l=p[3],c=p[4],chg=p[5],chgPct=p[6],up=p[7]==='1';
+  var col=up?'#2E7D32':'#DC2626';
+  return '<span style="font-weight:700;color:#0F172A;margin-right:12px">'+label+'</span>'
+    +'<span style="color:#6B7280">O:</span> <span style="font-weight:600;color:#0F172A;margin-right:10px">'+o+'</span>'
+    +'<span style="color:#6B7280">H:</span> <span style="font-weight:600;color:#0F172A;margin-right:10px">'+h+'</span>'
+    +'<span style="color:#6B7280">L:</span> <span style="font-weight:600;color:#0F172A;margin-right:10px">'+l+'</span>'
+    +'<span style="color:#6B7280">C:</span> <span style="font-weight:600;color:#0F172A;margin-right:10px">'+c+'</span>'
+    +'<span style="color:'+col+';font-weight:700">('+chg+', '+chgPct+')</span>';
+}
+function candleInfo(tip,infoId){
+  var el=document.getElementById(infoId);
+  if(!el)return;
+  el.innerHTML=candleInfoHtml(tip);
+}
 
 // ── COMING SOON ───────────────────────────────────────────────────────────────
 function pgComingSoon(){
