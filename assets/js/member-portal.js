@@ -2314,14 +2314,16 @@ function pgFinancialResults(){
         var yTop=yFor(Math.max(0,v)), yBot=yFor(Math.min(0,v));
         var h=Math.max(0.5,yBot-yTop);
         var x=bx(gi,si).toFixed(1);
-        bars+='<rect x="'+x+'" y="'+yTop.toFixed(1)+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+s.color+'" rx="2"/>';
+        var col=s.colorByValue?(v<0?'#DC2626':'#2E7D32'):s.color;
+        bars+='<rect x="'+x+'" y="'+yTop.toFixed(1)+'" width="'+barW+'" height="'+h.toFixed(1)+'" fill="'+col+'" rx="2"/>';
       });
     });
     // Group hover overlay per FY
     var overlays=fyLabels.map(function(fy,gi){
       var tipLines=series.map(function(s){
         var v=s.v[gi];
-        return s.color+'::'+s.label+': '+(v<0?('−'+fmtFull(v)):fmtFull(v));
+        var dotCol=s.colorByValue?(v<0?'#DC2626':'#2E7D32'):s.color;
+        return dotCol+'::'+s.label+': '+(v<0?('−'+fmtFull(v)):fmtFull(v));
       });
       var tip='FY:'+fy+'|'+tipLines.join('|');
       var ox=(padL+gi*SEG).toFixed(1);
@@ -2332,7 +2334,8 @@ function pgFinancialResults(){
       return '<text x="'+(padL+i*SEG+SEG/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="7" fill="#374151">'+l+'</text>';
     }).join('');
     var leg='<div style="display:flex;gap:14px;margin-top:8px;justify-content:center">'+series.map(function(s){
-      return '<span style="display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--fg-3)"><span style="width:9px;height:9px;border-radius:2px;background:'+s.color+';display:inline-block"></span>'+s.label+'</span>';
+      var swatch=s.colorByValue?'linear-gradient(90deg,#2E7D32 50%,#DC2626 50%)':s.color;
+      return '<span style="display:flex;align-items:center;gap:5px;font-size:.73rem;color:var(--fg-3)"><span style="width:9px;height:9px;border-radius:2px;background:'+swatch+';display:inline-block"></span>'+s.label+(s.colorByValue?' (green=profit, red=loss)':'')+'</span>';
     }).join('')+'</div>';
     return '<div style="width:100%">'
       +'<div style="width:'+pctW+';min-width:'+W+'px;max-width:100%;margin-left:auto;position:relative;overflow:visible">'
@@ -2458,7 +2461,7 @@ function pgFinancialResults(){
     } else {
       chart=barChartFR(INCOME_STATEMENT.map(function(r){return r.fy;}),[
         {v:INCOME_STATEMENT.map(function(r){return r.revenue;}),   color:'#1565C0', label:'Revenue'},
-        {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#2E7D32', label:'NPAT'}
+        {v:INCOME_STATEMENT.map(function(r){return r.netIncome;}), color:'#2E7D32', label:'NPAT', colorByValue:true}
       ]);
       table='<table style="width:100%;border-collapse:collapse;table-layout:fixed">'+fsThead(INCOME_STATEMENT,'RM')+'<tbody>'
         +fsRow(INCOME_STATEMENT,'Dividend Income','dividendIncome',false)
