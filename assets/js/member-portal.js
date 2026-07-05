@@ -2331,23 +2331,72 @@ function pgFundOverview(){
 // ── FACTSHEET ─────────────────────────────────────────────────────────────
 // ── FACTSHEET ───────────────────────────────────────────────────────────
 var FS_HOLD_PALETTE=['#1565C0','#2E7D32','#E65100','#7C3AED','#0891B2','#B45309','#DB2777','#059669','#9333EA','#0D9488'];
+var FS_OTHER_PALETTE=['#0891B2','#DB2777','#059669','#9333EA','#B45309','#0D9488','#E11D48','#4F46E5','#65A30D','#EA580C'];
 function switchFsFy(fy){
   window._fsFy=fy;
   var el=document.getElementById('mainContent');
   if(el) el.innerHTML=pgFactsheet();
 }
-// Stacked column chart — one bar per FY, segments are SECTOR composition
-// (not individual instruments), colored by the same rank-based dark-blue
-// → grey gradient used across the app's other donuts (pieGradientColor),
-// so the largest sector is darkest blue and an "Others" bucket (sectors
-// outside the top 6) is grey. No legend — clicking a bar (or its FY
-// label) switches the Holdings table below to that FY, and the currently
-// selected bar gets a dark outline plus a bold FY label. Smooth, lightly
-// tinted ribbons connect each sector's segment across consecutive FYs so
-// the flow between years reads at a glance, like a stream graph.
-function buildHoldingsStackChart(fyList, holdingsByFy, selectedFy){
+function switchFsMode(mode){
+  window._fsMode=mode;
+  var el=document.getElementById('mainContent');
+  if(el) el.innerHTML=pgFactsheet();
+}
+// Ranks whichever field ('sector' or 'product') into a top-6 + "Others"
+// group, and assigns colors: the chart's active grouping always gets the
+// rank-based dark-blue → grey gradient (pieGradientColor, same one used
+// by the app's donuts); this is reused as-is for the matching table
+// column's color boxes so they visually match the chart exactly.
+function fsGroupAndColor(fyList, holdingsByFy, field){
+  var byFy = fyList.map(function(fy){
+    var bucket=holdingsByFy.filter(function(f){return f.fy===fy;})[0];
+    var holdings=bucket?bucket.holdings:[];
+    var map={};
+    holdings.forEach(function(h){ var k=h[field]||'Other'; map[k]=(map[k]||0)+h.pct; });
+    return map;
+  });
+  var overallTotals={};
+  byFy.forEach(function(m){ Object.keys(m).forEach(function(k){ overallTotals[k]=(overallTotals[k]||0)+m[k]; }); });
+  var ranked=Object.keys(overallTotals).sort(function(a,b){return overallTotals[b]-overallTotals[a];});
+  var TOP_N=6;
+  var mainKeys=ranked.slice(0,TOP_N);
+  var hasOthers=ranked.length>TOP_N;
+  var segOrder=mainKeys.concat(hasOthers?['Others']:[]);
+  var colorFor={};
+  segOrder.forEach(function(k,idx){ colorFor[k]=pieGradientColor(idx,segOrder.length); });
+  var valsByFy=byFy.map(function(m){
+    var vals={}; segOrder.forEach(function(k){vals[k]=0;});
+    Object.keys(m).forEach(function(k){
+      var key=mainKeys.indexOf(k)>=0?k:'Others';
+      vals[key]=(vals[key]||0)+m[k];
+    });
+    return vals;
+  });
+  return {segOrder:segOrder, colorFor:colorFor, mainKeys:mainKeys, valsByFy:valsByFy};
+}
+// A simple rotating, non-blue palette for whichever field ISN'T the
+// active chart grouping — so its table color boxes are still visually
+// distinct without competing with the chart's blue-family gradient.
+function fsOtherColorMap(fyList, holdingsByFy, field){
+  var seen=[], colorFor={};
+  fyList.forEach(function(fy){
+    var bucket=holdingsByFy.filter(function(f){return f.fy===fy;})[0];
+    var holdings=bucket?bucket.holdings:[];
+    holdings.forEach(function(h){ var k=h[field]||'Other'; if(seen.indexOf(k)<0) seen.push(k); });
+  });
+  seen.forEach(function(k,idx){ colorFor[k]=FS_OTHER_PALETTE[idx%FS_OTHER_PALETTE.length]; });
+  return colorFor;
+}
+// Stacked column chart — one bar per FY; segments follow whichever
+// grouping (sector or product) is currently selected via the top-right
+// tab. No legend — clicking a bar (or its FY label) switches the
+// Holdings table below to that FY, and the selected bar gets a dark
+// outline plus a bold FY label. Smooth, moderately-tinted ribbons connect
+// each segment across consecutive FYs, like a stream graph.
+function buildHoldingsStackChart(fyList, groupData, selectedFy){
   var n=fyList.length;
   if(!n) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">No holdings data on record</div>';
+  var segOrder=groupData.segOrder, colorFor=groupData.colorFor, valsByFy=groupData.valsByFy;
   var W=800,H=380,padL=8,padR=44,padYT=14,padYB=28;
   var pctW=Math.min(100,(n/10*100)).toFixed(1)+'%';
   var gap=(W-padL-padR)/n;
@@ -2356,40 +2405,10 @@ function buildHoldingsStackChart(fyList, holdingsByFy, selectedFy){
   var grid=[0,25,50,75,100].map(function(v){
     var yy=(H-padYB-(v/100)*(H-padYT-padYB)).toFixed(1);
     return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'
-      +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#000000">'+v+'%</text>';
+      +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="9.5" fill="#000000">'+v+'%</text>';
   }).join('');
 
-  // Sector composition per FY
-  var byFySec = fyList.map(function(fy){
-    var bucket=holdingsByFy.filter(function(f){return f.fy===fy;})[0];
-    var holdings=bucket?bucket.holdings:[];
-    var secMap={};
-    holdings.forEach(function(h){ secMap[h.sector]=(secMap[h.sector]||0)+h.pct; });
-    return secMap;
-  });
-
-  // Rank sectors by combined weight across all FYs; top 6 get their own
-  // segment/color, everything else folds into a single grey "Others".
-  var overallTotals={};
-  byFySec.forEach(function(secMap){ Object.keys(secMap).forEach(function(s){ overallTotals[s]=(overallTotals[s]||0)+secMap[s]; }); });
-  var rankedSectors=Object.keys(overallTotals).sort(function(a,b){return overallTotals[b]-overallTotals[a];});
-  var TOP_N=6;
-  var mainSectors=rankedSectors.slice(0,TOP_N);
-  var hasOthers=rankedSectors.length>TOP_N;
-  var segOrder=mainSectors.concat(hasOthers?['Others']:[]);
-  var colorFor={};
-  segOrder.forEach(function(s,idx){ colorFor[s]=pieGradientColor(idx,segOrder.length); });
-
-  var segValsByFy=byFySec.map(function(secMap){
-    var vals={}; segOrder.forEach(function(s){vals[s]=0;});
-    Object.keys(secMap).forEach(function(s){
-      var key=mainSectors.indexOf(s)>=0?s:'Others';
-      vals[key]=(vals[key]||0)+secMap[s];
-    });
-    return vals;
-  });
-
-  var boundsByFy=segValsByFy.map(function(vals){
+  var boundsByFy=valsByFy.map(function(vals){
     var y=H-padYB, b={};
     segOrder.forEach(function(s){
       var v=vals[s]||0;
@@ -2401,7 +2420,7 @@ function buildHoldingsStackChart(fyList, holdingsByFy, selectedFy){
     return b;
   });
 
-  // Smooth ribbons linking each sector's segment between consecutive FYs
+  // Smooth ribbons linking each segment between consecutive FYs
   var ribbons='';
   for(var i=0;i<n-1;i++){
     var x1=bx(i)+barW, x2=bx(i+1);
@@ -2414,7 +2433,7 @@ function buildHoldingsStackChart(fyList, holdingsByFy, selectedFy){
         +' L'+x2.toFixed(1)+','+b2.bot.toFixed(1)
         +' C'+midX.toFixed(1)+','+b2.bot.toFixed(1)+' '+midX.toFixed(1)+','+b1.bot.toFixed(1)+' '+x1.toFixed(1)+','+b1.bot.toFixed(1)
         +' Z';
-      ribbons+='<path d="'+d+'" fill="'+colorFor[s]+'" opacity="0.16" stroke="none"/>';
+      ribbons+='<path d="'+d+'" fill="'+colorFor[s]+'" opacity="0.34" stroke="none"/>';
     });
   }
 
@@ -2435,7 +2454,7 @@ function buildHoldingsStackChart(fyList, holdingsByFy, selectedFy){
   });
   var xL=fyList.map(function(fy,i){
     var isSel=(fy===selectedFy);
-    return '<text x="'+(bx(i)+barW/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" font-weight="'+(isSel?'700':'400')+'" fill="#000000" style="cursor:pointer" onclick="switchFsFy(\''+fy+'\')">'+fy+'</text>';
+    return '<text x="'+(bx(i)+barW/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="10.5" font-weight="'+(isSel?'700':'400')+'" fill="#000000" style="cursor:pointer" onclick="switchFsFy(\''+fy+'\')">'+fy+'</text>';
   }).join('');
 
   return '<div style="width:100%">'
@@ -2448,33 +2467,68 @@ function buildHoldingsStackChart(fyList, holdingsByFy, selectedFy){
 function pgFactsheet(){
   var fyOptions = HOLDINGS_BY_FY.map(function(f){ return f.fy; });
   var fySel = window._fsFy && fyOptions.indexOf(window._fsFy)>=0 ? window._fsFy : fyOptions[fyOptions.length-1];
+  var mode = window._fsMode==='product' ? 'product' : 'sector';
   var bucket = HOLDINGS_BY_FY.filter(function(f){ return f.fy===fySel; })[0];
   var holdings = bucket ? bucket.holdings : [];
 
+  function modeBtn(lbl,m){ return '<button class="'+(mode===m?'on':'')+'" onclick="switchFsMode(\''+m+'\')">'+lbl+'</button>'; }
+  var modeTabs='<div class="seg">'+modeBtn('Sector','sector')+modeBtn('Product','product')+'</div>';
+
+  // Active grouping (drives the chart) gets the blue-family gradient;
+  // the other field gets a separate rotating palette for its table pills.
+  var activeGroup = fsGroupAndColor(fyOptions, HOLDINGS_BY_FY, mode);
+  var otherField = mode==='sector' ? 'product' : 'sector';
+  var otherColorFor = fsOtherColorMap(fyOptions, HOLDINGS_BY_FY, otherField);
+
+  function colorBox(color){ return '<span style="width:8px;height:8px;border-radius:2px;background:'+color+';display:inline-block;margin-right:6px;flex-shrink:0"></span>'; }
+
+  var totalMV = holdings.reduce(function(s,h){ return s+(h.mv||0); },0);
   var hRows = holdings.length
-    ? holdings.map(function(h,i){
+    ? holdings.map(function(h){
         var sub = (h.code && h.ticker) ? (h.code+' | '+h.ticker) : (h.code||h.ticker||'—');
-        return '<tr style="'+(i%2===0?'background:var(--gray-50)':'')+'">'
-          +'<td style="padding:10px 16px"><b>'+h.name+'</b><div style="font-size:.75rem;color:var(--fg-3);font-family:var(--font-mono)">'+sub+'</div></td>'
-          +'<td style="padding:10px 16px">'+h.product+'</td>'
-          +'<td style="padding:10px 16px"><span class="pill" style="background:var(--blue-bg);color:var(--blue)">'+h.sector+'</span></td>'
-          +'<td style="padding:10px 16px">RM '+(h.mv||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
-          +'<td style="padding:10px 16px;font-weight:700">'+h.pct.toFixed(1)+'%</td>'
+        var sectorColor = mode==='sector' ? (activeGroup.colorFor[activeGroup.mainKeys.indexOf(h.sector)>=0?h.sector:'Others']) : otherColorFor[h.sector];
+        var productColor = mode==='product' ? (activeGroup.colorFor[activeGroup.mainKeys.indexOf(h.product)>=0?h.product:'Others']) : otherColorFor[h.product];
+        return '<tr style="background:#fff">'
+          +'<td style="padding:10px 16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>'+h.name+'</b><div style="font-size:.75rem;color:var(--fg-3);font-family:var(--font-mono)">'+sub+'</div></td>'
+          +'<td style="padding:10px 16px"><div style="display:flex;align-items:center">'+colorBox(productColor)+h.product+'</div></td>'
+          +'<td style="padding:10px 16px"><div style="display:flex;align-items:center">'+colorBox(sectorColor)+h.sector+'</div></td>'
+          +'<td style="padding:10px 16px;text-align:right">RM '+(h.mv||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+          +'<td style="padding:10px 16px;text-align:right;font-weight:700">'+h.pct.toFixed(1)+'%</td>'
           +'</tr>';
       }).join('')
-    : '<tr><td colspan="5" style="padding:30px 16px;text-align:center;color:var(--fg-3);font-size:.85rem">'+(HOLDINGS_BY_FY_ERROR?('Could not load — '+HOLDINGS_BY_FY_ERROR):'No holdings on record for this financial year')+'</td></tr>';
+    : '<tr><td colspan="5" style="padding:30px 16px;text-align:center;color:var(--fg-3);font-size:.85rem;background:#fff">'+(HOLDINGS_BY_FY_ERROR?('Could not load — '+HOLDINGS_BY_FY_ERROR):'No holdings on record for this financial year')+'</td></tr>';
+
+  var totalRow = holdings.length
+    ? '<tr style="border-top:2px solid var(--border-strong,var(--border));background:#fff">'
+      +'<td style="padding:10px 16px;font-weight:700;color:var(--fg-1)">Total</td>'
+      +'<td style="padding:10px 16px"></td>'
+      +'<td style="padding:10px 16px"></td>'
+      +'<td style="padding:10px 16px;text-align:right;font-weight:700">RM '+totalMV.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+      +'<td style="padding:10px 16px;text-align:right;font-weight:700">100.0%</td>'
+      +'</tr>'
+    : '';
+
+  var colgroup='<colgroup><col style="width:34%"><col style="width:18%"><col style="width:18%"><col style="width:15%"><col style="width:15%"></colgroup>';
 
   return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%">'
-    +'<div class="ph-xl"><h1 style="margin:0">Fund <span class="acc">Factsheet</span></h1></div>'
-    // Stacked column chart — sector composition per FY, click a bar to
-    // switch the table below
-    +'<div style="margin-bottom:24px">'+buildHoldingsStackChart(fyOptions, HOLDINGS_BY_FY, fySel)+'</div>'
-    // Holdings table for the selected FY
+    +'<div class="ph-xl"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h1 style="margin:0">Fund <span class="acc">Factsheet</span></h1>'+modeTabs+'</div></div>'
+    // Stacked column chart — click a bar to switch the table below
+    +'<div style="margin-bottom:24px">'+buildHoldingsStackChart(fyOptions, activeGroup, fySel)+'</div>'
+    // Holdings table for the selected FY — fixed column widths, no
+    // outline other than the header divider, all rows white, Total pinned last
     +'<div class="panel"><div class="ph"><h3>Holdings</h3><span style="font-size:.8rem;color:var(--fg-3)">'+fySel+'</span></div>'
-    +'<table class="tbl"><thead><tr><th>Instrument</th><th>Product</th><th>Sector</th><th>Value</th><th>Weight</th></tr></thead>'
-    +'<tbody>'+hRows+'</tbody></table></div>'
+    +'<table style="width:100%;table-layout:fixed;border-collapse:collapse">'+colgroup
+    +'<thead><tr style="border-bottom:1px solid var(--border)">'
+    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)">Instrument</th>'
+    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)">Product</th>'
+    +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)">Sector</th>'
+    +'<th style="padding:10px 16px;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)">Value</th>'
+    +'<th style="padding:10px 16px;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)">Weight</th>'
+    +'</tr></thead>'
+    +'<tbody>'+hRows+totalRow+'</tbody></table></div>'
     +'</div>';
 }
+
 
 // ── SHAREHOLDERS ──────────────────────────────────────────────────────────
 function pgShareholders(){
