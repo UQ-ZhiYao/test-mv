@@ -2336,14 +2336,16 @@ function switchFsFy(fy){
   var el=document.getElementById('mainContent');
   if(el) el.innerHTML=pgFactsheet();
 }
-// Stacked column chart — one bar per FY, segments are each holding's % of
-// that FY's total invested value (top holdings colored individually, the
-// remainder folded into a grey "Other" segment so the chart stays
-// readable). Width logic matches the Financial Result page's bar charts:
-// pctW scales with the number of FYs (10 FYs = 100%) so a page with only
-// 2-3 FYs doesn't stretch into oversized bars, capped at 100% and never
-// shrinking below the chart's natural pixel width.
-function buildHoldingsStackChart(fyList, holdingsByFy){
+// Stacked column chart — one bar per FY, segments are SECTOR composition
+// (not individual instruments), colored by the same rank-based dark-blue
+// → grey gradient used across the app's other donuts (pieGradientColor),
+// so the largest sector is darkest blue and an "Others" bucket (sectors
+// outside the top 6) is grey. No legend — clicking a bar (or its FY
+// label) switches the Holdings table below to that FY, and the currently
+// selected bar gets a dark outline plus a bold FY label. Smooth, lightly
+// tinted ribbons connect each sector's segment across consecutive FYs so
+// the flow between years reads at a glance, like a stream graph.
+function buildHoldingsStackChart(fyList, holdingsByFy, selectedFy){
   var n=fyList.length;
   if(!n) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">No holdings data on record</div>';
   var W=800,H=380,padL=8,padR=44,padYT=14,padYB=28;
@@ -2351,60 +2353,96 @@ function buildHoldingsStackChart(fyList, holdingsByFy){
   var gap=(W-padL-padR)/n;
   var barW=Math.min(64,gap*0.6);
   function bx(i){ return padL+i*gap+gap/2-barW/2; }
-  function py(v){ return H-padYB-(v/100)*(H-padYT-padYB); }
   var grid=[0,25,50,75,100].map(function(v){
-    var yy=py(v).toFixed(1);
+    var yy=(H-padYB-(v/100)*(H-padYT-padYB)).toFixed(1);
     return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'
       +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#000000">'+v+'%</text>';
   }).join('');
 
-  // Assign a stable color per holding name across all FYs (top N overall).
-  var totals={};
-  holdingsByFy.forEach(function(f){ f.holdings.forEach(function(h){ totals[h.name]=(totals[h.name]||0)+h.pct; }); });
-  var rankedNames=Object.keys(totals).sort(function(a,b){ return totals[b]-totals[a]; });
-  var TOP_N=8;
-  var colorByName={};
-  rankedNames.slice(0,TOP_N).forEach(function(name,i){ colorByName[name]=FS_HOLD_PALETTE[i%FS_HOLD_PALETTE.length]; });
+  // Sector composition per FY
+  var byFySec = fyList.map(function(fy){
+    var bucket=holdingsByFy.filter(function(f){return f.fy===fy;})[0];
+    var holdings=bucket?bucket.holdings:[];
+    var secMap={};
+    holdings.forEach(function(h){ secMap[h.sector]=(secMap[h.sector]||0)+h.pct; });
+    return secMap;
+  });
+
+  // Rank sectors by combined weight across all FYs; top 6 get their own
+  // segment/color, everything else folds into a single grey "Others".
+  var overallTotals={};
+  byFySec.forEach(function(secMap){ Object.keys(secMap).forEach(function(s){ overallTotals[s]=(overallTotals[s]||0)+secMap[s]; }); });
+  var rankedSectors=Object.keys(overallTotals).sort(function(a,b){return overallTotals[b]-overallTotals[a];});
+  var TOP_N=6;
+  var mainSectors=rankedSectors.slice(0,TOP_N);
+  var hasOthers=rankedSectors.length>TOP_N;
+  var segOrder=mainSectors.concat(hasOthers?['Others']:[]);
+  var colorFor={};
+  segOrder.forEach(function(s,idx){ colorFor[s]=pieGradientColor(idx,segOrder.length); });
+
+  var segValsByFy=byFySec.map(function(secMap){
+    var vals={}; segOrder.forEach(function(s){vals[s]=0;});
+    Object.keys(secMap).forEach(function(s){
+      var key=mainSectors.indexOf(s)>=0?s:'Others';
+      vals[key]=(vals[key]||0)+secMap[s];
+    });
+    return vals;
+  });
+
+  var boundsByFy=segValsByFy.map(function(vals){
+    var y=H-padYB, b={};
+    segOrder.forEach(function(s){
+      var v=vals[s]||0;
+      var hgt=(v/100)*(H-padYT-padYB);
+      var yTop=y-hgt;
+      b[s]={top:yTop,bot:y,v:v};
+      y=yTop;
+    });
+    return b;
+  });
+
+  // Smooth ribbons linking each sector's segment between consecutive FYs
+  var ribbons='';
+  for(var i=0;i<n-1;i++){
+    var x1=bx(i)+barW, x2=bx(i+1);
+    var midX=(x1+x2)/2;
+    segOrder.forEach(function(s){
+      var b1=boundsByFy[i][s], b2=boundsByFy[i+1][s];
+      if(b1.v<=0.05 && b2.v<=0.05) return;
+      var d='M'+x1.toFixed(1)+','+b1.top.toFixed(1)
+        +' C'+midX.toFixed(1)+','+b1.top.toFixed(1)+' '+midX.toFixed(1)+','+b2.top.toFixed(1)+' '+x2.toFixed(1)+','+b2.top.toFixed(1)
+        +' L'+x2.toFixed(1)+','+b2.bot.toFixed(1)
+        +' C'+midX.toFixed(1)+','+b2.bot.toFixed(1)+' '+midX.toFixed(1)+','+b1.bot.toFixed(1)+' '+x1.toFixed(1)+','+b1.bot.toFixed(1)
+        +' Z';
+      ribbons+='<path d="'+d+'" fill="'+colorFor[s]+'" opacity="0.16" stroke="none"/>';
+    });
+  }
 
   var bars='', overlays='';
   fyList.forEach(function(fy,i){
-    var bucket=holdingsByFy.filter(function(f){return f.fy===fy;})[0];
-    var holdings=bucket?bucket.holdings:[];
-    var top=holdings.filter(function(h){ return colorByName[h.name]; });
-    var otherPct=holdings.filter(function(h){ return !colorByName[h.name]; }).reduce(function(s,h){return s+h.pct;},0);
-    var y=H-padYB;
+    var b=boundsByFy[i];
+    var isSel=(fy===selectedFy);
     var tipLines=[];
-    top.forEach(function(h){
-      var hgt=(h.pct/100)*(H-padYT-padYB);
-      y-=hgt;
-      bars+='<rect x="'+bx(i).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+hgt.toFixed(1)+'" fill="'+colorByName[h.name]+'"/>';
-      tipLines.push(colorByName[h.name]+'::'+h.name+': '+h.pct.toFixed(1)+'%');
+    segOrder.forEach(function(s){
+      if(b[s].v<=0.05) return;
+      bars+='<rect x="'+bx(i).toFixed(1)+'" y="'+b[s].top.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+(b[s].bot-b[s].top).toFixed(1)+'" fill="'+colorFor[s]+'" stroke="'+(isSel?'#0F172A':'none')+'" stroke-width="'+(isSel?'1.4':'0')+'" onclick="switchFsFy(\''+fy+'\')" style="cursor:pointer"/>';
+      tipLines.push(colorFor[s]+'::'+s+': '+b[s].v.toFixed(1)+'%');
     });
-    if(otherPct>0.05){
-      var hgt2=(otherPct/100)*(H-padYT-padYB);
-      y-=hgt2;
-      bars+='<rect x="'+bx(i).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+hgt2.toFixed(1)+'" fill="#CBD5E1"/>';
-      tipLines.push('#CBD5E1::Other: '+otherPct.toFixed(1)+'%');
-    }
     var tip='FY:'+fy+'|'+(tipLines.length?tipLines.join('|'):'No holdings');
     var ox=(padL+i*gap).toFixed(1);
     var cx=((padL+i*gap+gap/2)/W).toFixed(4);
-    overlays+='<rect x="'+ox+'" y="'+padYT+'" width="'+gap.toFixed(1)+'" height="'+(H-padYT-padYB)+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'))" onmouseleave="frHide()" style="cursor:crosshair"/>';
+    overlays+='<rect x="'+ox+'" y="'+padYT+'" width="'+gap.toFixed(1)+'" height="'+(H-padYT-padYB)+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'))" onmouseleave="frHide()" onclick="switchFsFy(\''+fy+'\')" style="cursor:pointer"/>';
   });
   var xL=fyList.map(function(fy,i){
-    return '<text x="'+(bx(i)+barW/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" fill="#000000">'+fy+'</text>';
+    var isSel=(fy===selectedFy);
+    return '<text x="'+(bx(i)+barW/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" font-weight="'+(isSel?'700':'400')+'" fill="#000000" style="cursor:pointer" onclick="switchFsFy(\''+fy+'\')">'+fy+'</text>';
   }).join('');
-  var legend='<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;justify-content:center">'
-    +rankedNames.slice(0,TOP_N).map(function(name){
-      return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:var(--fg-2)"><span style="width:9px;height:9px;border-radius:2px;background:'+colorByName[name]+';display:inline-block"></span>'+name+'</span>';
-    }).join('')
-    +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:var(--fg-3)"><span style="width:9px;height:9px;border-radius:2px;background:#CBD5E1;display:inline-block"></span>Other</span>'
-    +'</div>';
+
   return '<div style="width:100%">'
     +'<div style="width:'+pctW+';min-width:'+W+'px;max-width:100%;margin-left:auto;position:relative;overflow:visible">'
-    +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">'+grid+bars+overlays+xL+'</svg>'
+    +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">'+grid+ribbons+bars+overlays+xL+'</svg>'
     +'<div id="frTipEl" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13);"></div>'
-    +'</div></div>'+legend;
+    +'</div></div>';
 }
 
 function pgFactsheet(){
@@ -2413,53 +2451,28 @@ function pgFactsheet(){
   var bucket = HOLDINGS_BY_FY.filter(function(f){ return f.fy===fySel; })[0];
   var holdings = bucket ? bucket.holdings : [];
 
-  function fyTabBtn(fy){
-    return '<button class="'+(fySel===fy?'on':'')+'" onclick="switchFsFy(\''+fy+'\')">'+fy+'</button>';
-  }
-  var fyTabs = fyOptions.length ? '<div class="seg">'+fyOptions.map(fyTabBtn).join('')+'</div>' : '';
-
   var hRows = holdings.length
     ? holdings.map(function(h,i){
+        var sub = (h.code && h.ticker) ? (h.code+' | '+h.ticker) : (h.code||h.ticker||'—');
         return '<tr style="'+(i%2===0?'background:var(--gray-50)':'')+'">'
-          +'<td style="padding:10px 16px;font-weight:600">'+(i+1)+'</td>'
-          +'<td style="padding:10px 16px"><b>'+h.name+'</b></td>'
+          +'<td style="padding:10px 16px"><b>'+h.name+'</b><div style="font-size:.75rem;color:var(--fg-3);font-family:var(--font-mono)">'+sub+'</div></td>'
+          +'<td style="padding:10px 16px">'+h.product+'</td>'
           +'<td style="padding:10px 16px"><span class="pill" style="background:var(--blue-bg);color:var(--blue)">'+h.sector+'</span></td>'
-          +'<td style="padding:10px 16px;font-weight:700">'+h.pct.toFixed(1)+'%</td>'
           +'<td style="padding:10px 16px">RM '+(h.mv||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+          +'<td style="padding:10px 16px;font-weight:700">'+h.pct.toFixed(1)+'%</td>'
           +'</tr>';
       }).join('')
     : '<tr><td colspan="5" style="padding:30px 16px;text-align:center;color:var(--fg-3);font-size:.85rem">'+(HOLDINGS_BY_FY_ERROR?('Could not load — '+HOLDINGS_BY_FY_ERROR):'No holdings on record for this financial year')+'</td></tr>';
 
-  var secTotals={};
-  holdings.forEach(function(h){ secTotals[h.sector]=(secTotals[h.sector]||0)+h.pct; });
-  var secEntries=Object.keys(secTotals).map(function(s){ return {s:s, w:secTotals[s]}; }).sort(function(a,b){return b.w-a.w;});
-  var SEC_COL=['#1565C0','#2E7D32','#E65100','#7C3AED','#0891B2','#B45309','#DB2777','#9CA3AF'];
-  var maxAlloc=secEntries.length ? Math.max.apply(null,secEntries.map(function(s){return s.w;})) : 1;
-  var allocBars=secEntries.length
-    ? secEntries.map(function(s,i){
-        var barPct=(s.w/maxAlloc*100).toFixed(1);
-        return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
-          +'<div style="font-size:.82rem;color:var(--fg-2);width:120px;flex-shrink:0">'+s.s+'</div>'
-          +'<div style="flex:1;height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden">'
-          +'<div style="width:'+barPct+'%;height:100%;background:'+SEC_COL[i%SEC_COL.length]+';border-radius:99px"></div>'
-          +'</div>'
-          +'<div style="font-size:.82rem;font-weight:700;width:40px;text-align:right">'+s.w.toFixed(1)+'%</div>'
-          +'</div>';
-      }).join('')
-    : '<div style="padding:20px 0;color:var(--fg-3);font-size:.85rem;text-align:center">No sector data</div>';
-
   return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%">'
-    +'<div class="ph-xl"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h1 style="margin:0">Fund <span class="acc">Factsheet</span></h1>'+fyTabs+'</div></div>'
-    // Stacked column chart — holdings composition per FY
-    +'<div style="margin-bottom:24px">'+buildHoldingsStackChart(fyOptions, HOLDINGS_BY_FY)+'</div>'
-    // Top holdings + sector allocation for the selected FY
-    +'<div style="display:grid;grid-template-columns:1fr 280px;gap:16px;margin-bottom:16px">'
+    +'<div class="ph-xl"><h1 style="margin:0">Fund <span class="acc">Factsheet</span></h1></div>'
+    // Stacked column chart — sector composition per FY, click a bar to
+    // switch the table below
+    +'<div style="margin-bottom:24px">'+buildHoldingsStackChart(fyOptions, HOLDINGS_BY_FY, fySel)+'</div>'
+    // Holdings table for the selected FY
     +'<div class="panel"><div class="ph"><h3>Holdings</h3><span style="font-size:.8rem;color:var(--fg-3)">'+fySel+'</span></div>'
-    +'<table class="tbl"><thead><tr><th>#</th><th>Security</th><th>Sector</th><th>Weight</th><th>Value</th></tr></thead>'
+    +'<table class="tbl"><thead><tr><th>Instrument</th><th>Product</th><th>Sector</th><th>Value</th><th>Weight</th></tr></thead>'
     +'<tbody>'+hRows+'</tbody></table></div>'
-    +'<div class="panel"><div class="ph"><h3>Sector Allocation</h3></div>'
-    +'<div style="padding:16px 20px">'+allocBars+'</div></div>'
-    +'</div>'
     +'</div>';
 }
 

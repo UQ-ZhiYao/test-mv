@@ -1055,7 +1055,7 @@ async function mpLoadHoldingsByFy() {
   const [fyRes, trRes, inRes] = await Promise.all([
     sb.from('fy_settings').select('*').order('start_date', { ascending: true }),
     sb.from('transaction_trading').select('*').order('trade_date', { ascending: true }),
-    sb.from('instruments').select('name, sector, product')
+    sb.from('instruments').select('name, sector, product, ticker, code')
   ]);
   if (fyRes.error) throw fyRes.error;
   if (trRes.error) throw trRes.error;
@@ -1086,7 +1086,11 @@ async function mpLoadHoldingsByFy() {
         const h = byName[name];
         const inst = instByName[name] || {};
         const mv = (h.units || 0) * (h.lastPrice || 0);
-        return { name: name, sector: inst.sector || 'Other', units: h.units, price: h.lastPrice, mv: mv };
+        return {
+          name: name, sector: inst.sector || 'Other', product: inst.product || 'Other',
+          ticker: (inst.ticker || '').trim(), code: (inst.code || '').trim(),
+          units: h.units, price: h.lastPrice, mv: mv
+        };
       })
       .filter(function(h) { return Math.abs(h.units) > 0.0001 && h.mv > 0; });
     const totalMV = holdings.reduce(function(s, h) { return s + h.mv; }, 0);
