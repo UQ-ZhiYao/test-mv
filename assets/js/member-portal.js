@@ -2509,7 +2509,7 @@ function nthCandleInfoHtml(dateLbl,o,h,l,c,chg,chgPct){
   var up=chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
   return '<div style="font-size:.78rem;color:#000;margin-bottom:4px">'+dateLbl+'</div>'
     +'<div style="font-size:.8rem;font-weight:400;white-space:nowrap">'
-    +'<span style="color:#000">O'+fmtNtaOhlc(o)+' H'+fmtNtaOhlc(h)+' L'+fmtNtaOhlc(l)+' C'+fmtNtaOhlc(c)+'</span> '
+    +'<span style="color:'+col+'">O'+fmtNtaOhlc(o)+' H'+fmtNtaOhlc(h)+' L'+fmtNtaOhlc(l)+' C'+fmtNtaOhlc(c)+'</span> '
     +'<span style="color:'+col+'">'+sign+fmtNtaOhlc(Math.abs(chg))+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)</span>'
     +'</div>';
 }
@@ -2637,6 +2637,11 @@ function buildNtaCandleChart(rows){
     +'</div>';
 }
 
+function switchNtaChartType(t){
+  window._nthChartType=t;
+  var el=document.getElementById('mainContent');
+  if(el) el.innerHTML=pgNtaHistory();
+}
 function switchNtaGran(g){
   window._nthGran=g;
   window._nthPage=0;
@@ -2658,6 +2663,11 @@ function switchNtaPage(p){
 function pgNtaHistory(){
   var gran = window._nthGran || 'daily';
   var period = window._nthPeriod || '3y';
+  var chartType = window._nthChartType || 'line';
+
+  var chartTypeDropdown='<select onchange="switchNtaChartType(this.value)" style="font-size:.8rem;font-weight:600;color:var(--fg-1);border:1px solid var(--border);border-radius:8px;padding:7px 10px;background:#fff;cursor:pointer">'
+    +['line','candle'].map(function(t){ return '<option value="'+t+'"'+(chartType===t?' selected':'')+'>'+(t==='line'?'Line':'Candle')+'</option>'; }).join('')
+    +'</select>';
 
   var granOptions=['daily','weekly','monthly'];
   var granDropdown='<select onchange="switchNtaGran(this.value)" style="font-size:.8rem;font-weight:600;color:var(--fg-1);border:1px solid var(--border);border-radius:8px;padding:7px 10px;background:#fff;cursor:pointer">'
@@ -2677,7 +2687,18 @@ function pgNtaHistory(){
     var filtered=srcRows.filter(function(r){ return r.date>=cutoff; });
     if(filtered.length<2) filtered=srcRows;
 
-    chart = gran==='daily' ? buildNtaLineChart(filtered) : buildNtaCandleChart(filtered);
+    // Chart type (Line/Candle) is independent of the Data Layer granularity
+    // now — Daily data has no intraday range, so "Candle" on Daily shows a
+    // degenerate O=H=L=C candle for each day rather than being disallowed.
+    if(chartType==='candle'){
+      var candleRows = gran==='daily'
+        ? filtered.map(function(r){ return {date:r.date, label:new Date(r.date+'T00:00:00').toLocaleDateString('en-MY',{day:'numeric',month:'short'}), open:r.nta, high:r.nta, low:r.nta, close:r.nta}; })
+        : filtered;
+      chart = buildNtaCandleChart(candleRows);
+    } else {
+      var lineRows = gran==='daily' ? filtered : filtered.map(function(r){ return {date:r.date, nta:r.close}; });
+      chart = buildNtaLineChart(lineRows);
+    }
 
     // Table — latest first, paginated 20 at a time
     var tableRows=filtered.slice().reverse();
@@ -2741,7 +2762,7 @@ function pgNtaHistory(){
 
   return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%">'
     +'<div class="ph-xl"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h1 style="margin:0">NTA <span class="acc">History</span></h1>'
-    +'<div style="display:flex;align-items:center;gap:10px">'+granDropdown+periodBar+'</div>'
+    +'<div style="display:flex;align-items:center;gap:10px">'+chartTypeDropdown+granDropdown+periodBar+'</div>'
     +'</div></div>'
     +chart
     // 2 lines of breathing room before the table
