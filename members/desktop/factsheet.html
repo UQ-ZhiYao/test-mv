@@ -295,6 +295,15 @@ var S = { page:'factsheet', period:'ytd', txf:'all' };
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
+  return (typeof mpLoadHoldingsByFy==='function') ? mpLoadHoldingsByFy() : Promise.resolve([]);
+}).then(function(byFy){
+  HOLDINGS_BY_FY = byFy || [];
+  HOLDINGS_BY_FY_ERROR = null;
+}).catch(function(e){
+  HOLDINGS_BY_FY = [];
+  HOLDINGS_BY_FY_ERROR = (e && e.message) || 'Unknown error';
+  console.warn('Holdings by FY load failed:', HOLDINGS_BY_FY_ERROR);
+}).finally(function(){
   document.getElementById('mainContent').innerHTML=pgFactsheet();renderNotifs();
 });
 </script>

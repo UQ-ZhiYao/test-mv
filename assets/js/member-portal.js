@@ -24,6 +24,8 @@ let NOTIFS = [];
 let SHAREHOLDERS = [];
 let SHAREHOLDERS_BY_FY = [];
 let SHAREHOLDERS_BY_FY_ERROR = null;
+let HOLDINGS_BY_FY = [];
+let HOLDINGS_BY_FY_ERROR = null;
 let FUND_OVERVIEW = null;
 let LIVE_DATA_READY = false;
 let PROFILE = null;
@@ -2327,70 +2329,138 @@ function pgFundOverview(){
 }
 
 // ── FACTSHEET ─────────────────────────────────────────────────────────────
+// ── FACTSHEET ───────────────────────────────────────────────────────────
+var FS_HOLD_PALETTE=['#1565C0','#2E7D32','#E65100','#7C3AED','#0891B2','#B45309','#DB2777','#059669','#9333EA','#0D9488'];
+function switchFsFy(fy){
+  window._fsFy=fy;
+  var el=document.getElementById('mainContent');
+  if(el) el.innerHTML=pgFactsheet();
+}
+// Stacked column chart — one bar per FY, segments are each holding's % of
+// that FY's total invested value (top holdings colored individually, the
+// remainder folded into a grey "Other" segment so the chart stays
+// readable). Width logic matches the Financial Result page's bar charts:
+// pctW scales with the number of FYs (10 FYs = 100%) so a page with only
+// 2-3 FYs doesn't stretch into oversized bars, capped at 100% and never
+// shrinking below the chart's natural pixel width.
+function buildHoldingsStackChart(fyList, holdingsByFy){
+  var n=fyList.length;
+  if(!n) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">No holdings data on record</div>';
+  var W=800,H=380,padL=8,padR=44,padYT=14,padYB=28;
+  var pctW=Math.min(100,(n/10*100)).toFixed(1)+'%';
+  var gap=(W-padL-padR)/n;
+  var barW=Math.min(64,gap*0.6);
+  function bx(i){ return padL+i*gap+gap/2-barW/2; }
+  function py(v){ return H-padYB-(v/100)*(H-padYT-padYB); }
+  var grid=[0,25,50,75,100].map(function(v){
+    var yy=py(v).toFixed(1);
+    return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'
+      +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="8" fill="#000000">'+v+'%</text>';
+  }).join('');
+
+  // Assign a stable color per holding name across all FYs (top N overall).
+  var totals={};
+  holdingsByFy.forEach(function(f){ f.holdings.forEach(function(h){ totals[h.name]=(totals[h.name]||0)+h.pct; }); });
+  var rankedNames=Object.keys(totals).sort(function(a,b){ return totals[b]-totals[a]; });
+  var TOP_N=8;
+  var colorByName={};
+  rankedNames.slice(0,TOP_N).forEach(function(name,i){ colorByName[name]=FS_HOLD_PALETTE[i%FS_HOLD_PALETTE.length]; });
+
+  var bars='', overlays='';
+  fyList.forEach(function(fy,i){
+    var bucket=holdingsByFy.filter(function(f){return f.fy===fy;})[0];
+    var holdings=bucket?bucket.holdings:[];
+    var top=holdings.filter(function(h){ return colorByName[h.name]; });
+    var otherPct=holdings.filter(function(h){ return !colorByName[h.name]; }).reduce(function(s,h){return s+h.pct;},0);
+    var y=H-padYB;
+    var tipLines=[];
+    top.forEach(function(h){
+      var hgt=(h.pct/100)*(H-padYT-padYB);
+      y-=hgt;
+      bars+='<rect x="'+bx(i).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+hgt.toFixed(1)+'" fill="'+colorByName[h.name]+'"/>';
+      tipLines.push(colorByName[h.name]+'::'+h.name+': '+h.pct.toFixed(1)+'%');
+    });
+    if(otherPct>0.05){
+      var hgt2=(otherPct/100)*(H-padYT-padYB);
+      y-=hgt2;
+      bars+='<rect x="'+bx(i).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+barW.toFixed(1)+'" height="'+hgt2.toFixed(1)+'" fill="#CBD5E1"/>';
+      tipLines.push('#CBD5E1::Other: '+otherPct.toFixed(1)+'%');
+    }
+    var tip='FY:'+fy+'|'+(tipLines.length?tipLines.join('|'):'No holdings');
+    var ox=(padL+i*gap).toFixed(1);
+    var cx=((padL+i*gap+gap/2)/W).toFixed(4);
+    overlays+='<rect x="'+ox+'" y="'+padYT+'" width="'+gap.toFixed(1)+'" height="'+(H-padYT-padYB)+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'))" onmouseleave="frHide()" style="cursor:crosshair"/>';
+  });
+  var xL=fyList.map(function(fy,i){
+    return '<text x="'+(bx(i)+barW/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" fill="#000000">'+fy+'</text>';
+  }).join('');
+  var legend='<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;justify-content:center">'
+    +rankedNames.slice(0,TOP_N).map(function(name){
+      return '<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:var(--fg-2)"><span style="width:9px;height:9px;border-radius:2px;background:'+colorByName[name]+';display:inline-block"></span>'+name+'</span>';
+    }).join('')
+    +'<span style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:var(--fg-3)"><span style="width:9px;height:9px;border-radius:2px;background:#CBD5E1;display:inline-block"></span>Other</span>'
+    +'</div>';
+  return '<div style="width:100%">'
+    +'<div style="width:'+pctW+';min-width:'+W+'px;max-width:100%;margin-left:auto;position:relative;overflow:visible">'
+    +'<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">'+grid+bars+overlays+xL+'</svg>'
+    +'<div id="frTipEl" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13);"></div>'
+    +'</div></div>'+legend;
+}
+
 function pgFactsheet(){
+  var fyOptions = HOLDINGS_BY_FY.map(function(f){ return f.fy; });
+  var fySel = window._fsFy && fyOptions.indexOf(window._fsFy)>=0 ? window._fsFy : fyOptions[fyOptions.length-1];
+  var bucket = HOLDINGS_BY_FY.filter(function(f){ return f.fy===fySel; })[0];
+  var holdings = bucket ? bucket.holdings : [];
 
-  var topHoldings=[
-    {name:'Hartalega Holdings',ticker:'5168.KL',sec:'Healthcare',wt:'14.2%',nta:'RM 0.145'},
-    {name:'Public Bank',ticker:'1295.KL',sec:'Financials',wt:'12.8%',nta:'RM 0.131'},
-    {name:'IHH Healthcare',ticker:'5225.KL',sec:'Healthcare',wt:'11.4%',nta:'RM 0.117'},
-    {name:'DiGi.Com',ticker:'6947.KL',sec:'Telcos',wt:'9.1%',nta:'RM 0.093'},
-    {name:'Nestle Malaysia',ticker:'4707.KL',sec:'Consumer',wt:'8.7%',nta:'RM 0.089'},
-    {name:'Bursa Malaysia',ticker:'1818.KL',sec:'Financials',wt:'7.9%',nta:'RM 0.081'},
-    {name:'Dialog Group',ticker:'7277.KL',sec:'Energy',wt:'6.8%',nta:'RM 0.070'},
-    {name:'Inari Amertron',ticker:'0166.KL',sec:'Technology',wt:'5.4%',nta:'RM 0.055'},
-    {name:'AEON Co. (M)',ticker:'6599.KL',sec:'Consumer',wt:'4.5%',nta:'RM 0.046'},
-    {name:'99 Speed Mart',ticker:'5250.KL',sec:'Consumer',wt:'3.2%',nta:'RM 0.033'},
-  ];
+  function fyTabBtn(fy){
+    return '<button class="'+(fySel===fy?'on':'')+'" onclick="switchFsFy(\''+fy+'\')">'+fy+'</button>';
+  }
+  var fyTabs = fyOptions.length ? '<div class="seg">'+fyOptions.map(fyTabBtn).join('')+'</div>' : '';
 
-  var hRows=topHoldings.map(function(h,i){
-    return '<tr style="'+(i%2===0?'background:var(--gray-50)':'')+'">'
-      +'<td style="padding:10px 16px;font-weight:600">'+(i+1)+'</td>'
-      +'<td style="padding:10px 16px"><b>'+h.name+'</b><div style="font-size:.75rem;color:var(--fg-3);font-family:var(--font-mono)">'+h.ticker+'</div></td>'
-      +'<td style="padding:10px 16px"><span class="pill" style="background:var(--blue-bg);color:var(--blue)">'+h.sec+'</span></td>'
-      +'<td style="padding:10px 16px;font-weight:700">'+h.wt+'</td>'
-      +'<td style="padding:10px 16px">'+h.nta+'</td>'
-      +'</tr>';
-  }).join('');
+  var hRows = holdings.length
+    ? holdings.map(function(h,i){
+        return '<tr style="'+(i%2===0?'background:var(--gray-50)':'')+'">'
+          +'<td style="padding:10px 16px;font-weight:600">'+(i+1)+'</td>'
+          +'<td style="padding:10px 16px"><b>'+h.name+'</b></td>'
+          +'<td style="padding:10px 16px"><span class="pill" style="background:var(--blue-bg);color:var(--blue)">'+h.sector+'</span></td>'
+          +'<td style="padding:10px 16px;font-weight:700">'+h.pct.toFixed(1)+'%</td>'
+          +'<td style="padding:10px 16px">RM '+(h.mv||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+          +'</tr>';
+      }).join('')
+    : '<tr><td colspan="5" style="padding:30px 16px;text-align:center;color:var(--fg-3);font-size:.85rem">'+(HOLDINGS_BY_FY_ERROR?('Could not load — '+HOLDINGS_BY_FY_ERROR):'No holdings on record for this financial year')+'</td></tr>';
 
-  var secAlloc=[
-    {s:'Healthcare',w:25.6,c:'#1565C0'},
-    {s:'Financials',w:20.7,c:'#2E7D32'},
-    {s:'Consumer',w:16.4,c:'#E65100'},
-    {s:'Telcos',w:9.1,c:'#7C3AED'},
-    {s:'Energy',w:6.8,c:'#B45309'},
-    {s:'Technology',w:5.4,c:'#0891B2'},
-    {s:'Cash & MM',w:8.5,c:'#9CA3AF'},
-    {s:'Other',w:7.5,c:'#CBD5E1'},
-  ];
-  var maxAlloc=Math.max.apply(null,secAlloc.map(function(s){return s.w;}));
-  var allocBars=secAlloc.map(function(s){
-    var barPct=(s.w/maxAlloc*100).toFixed(1);
-    return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
-      +'<div style="font-size:.82rem;color:var(--fg-2);width:120px;flex-shrink:0">'+s.s+'</div>'
-      +'<div style="flex:1;height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden">'
-      +'<div style="width:'+barPct+'%;height:100%;background:'+s.c+';border-radius:99px"></div>'
-      +'</div>'
-      +'<div style="font-size:.82rem;font-weight:700;width:40px;text-align:right">'+s.w+'%</div>'
-      +'</div>';
-  }).join('');
+  var secTotals={};
+  holdings.forEach(function(h){ secTotals[h.sector]=(secTotals[h.sector]||0)+h.pct; });
+  var secEntries=Object.keys(secTotals).map(function(s){ return {s:s, w:secTotals[s]}; }).sort(function(a,b){return b.w-a.w;});
+  var SEC_COL=['#1565C0','#2E7D32','#E65100','#7C3AED','#0891B2','#B45309','#DB2777','#9CA3AF'];
+  var maxAlloc=secEntries.length ? Math.max.apply(null,secEntries.map(function(s){return s.w;})) : 1;
+  var allocBars=secEntries.length
+    ? secEntries.map(function(s,i){
+        var barPct=(s.w/maxAlloc*100).toFixed(1);
+        return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+          +'<div style="font-size:.82rem;color:var(--fg-2);width:120px;flex-shrink:0">'+s.s+'</div>'
+          +'<div style="flex:1;height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden">'
+          +'<div style="width:'+barPct+'%;height:100%;background:'+SEC_COL[i%SEC_COL.length]+';border-radius:99px"></div>'
+          +'</div>'
+          +'<div style="font-size:.82rem;font-weight:700;width:40px;text-align:right">'+s.w.toFixed(1)+'%</div>'
+          +'</div>';
+      }).join('')
+    : '<div style="padding:20px 0;color:var(--fg-3);font-size:.85rem;text-align:center">No sector data</div>';
 
-  return '<div class="ph-xl"><h1>Fund <span class="acc">Factsheet</span></h1><p>Quarterly factsheets — portfolio composition, NTA history and key metrics.</p></div>'
-    // Summary cards
-    +'<div class="mrow" style="margin-bottom:20px">'
-    +'<div class="mc"><div class="lbl">Latest NTA</div><div class="val b">RM 1.0245</div><div class="sub">19 Mar 2026</div></div>'
-    +'<div class="mc"><div class="lbl">Fund AUM</div><div class="val">RM 24.6 M</div><div class="sub">+2.45% YTD</div></div>'
-    +'<div class="mc"><div class="lbl">Total Units</div><div class="val">24.0 M</div><div class="sub">Outstanding</div></div>'
-    +'<div class="mc"><div class="lbl">Unitholders</div><div class="val">47</div><div class="sub">Active accounts</div></div>'
-    +'</div>'
-    // Top holdings + sector allocation
+  return '<div style="background:#fff;margin:-26px -28px -48px;padding:26px 28px 48px;min-height:100%">'
+    +'<div class="ph-xl"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h1 style="margin:0">Fund <span class="acc">Factsheet</span></h1>'+fyTabs+'</div></div>'
+    // Stacked column chart — holdings composition per FY
+    +'<div style="margin-bottom:24px">'+buildHoldingsStackChart(fyOptions, HOLDINGS_BY_FY)+'</div>'
+    // Top holdings + sector allocation for the selected FY
     +'<div style="display:grid;grid-template-columns:1fr 280px;gap:16px;margin-bottom:16px">'
-    +'<div class="panel"><div class="ph"><h3>Top 10 Holdings</h3><span style="font-size:.8rem;color:var(--fg-3)">As at 19 Mar 2026</span></div>'
-    +'<table class="tbl"><thead><tr><th>#</th><th>Security</th><th>Sector</th><th>Weight</th><th>Contribution</th></tr></thead>'
+    +'<div class="panel"><div class="ph"><h3>Holdings</h3><span style="font-size:.8rem;color:var(--fg-3)">'+fySel+'</span></div>'
+    +'<table class="tbl"><thead><tr><th>#</th><th>Security</th><th>Sector</th><th>Weight</th><th>Value</th></tr></thead>'
     +'<tbody>'+hRows+'</tbody></table></div>'
     +'<div class="panel"><div class="ph"><h3>Sector Allocation</h3></div>'
     +'<div style="padding:16px 20px">'+allocBars+'</div></div>'
     +'</div>'
-;
+    +'</div>';
 }
 
 // ── SHAREHOLDERS ──────────────────────────────────────────────────────────

@@ -1041,6 +1041,61 @@ async function mpLoadCashFlow(incomeStatementRows, balanceSheetRows) {
    Assets) / 2 — previous defaults to 0 for the first FY, same
    convention as the Cash Flow tab's "Changes in" rows.
    The "Others" trading stats exclude Cash Funds product entirely.     */
+/* ── Holdings by FY (fund-wide) — for the Factsheet page's stacked column
+   chart. For each FY, takes every trade at-or-before that FY's end_date,
+   nets each instrument's cumulative units (units are signed: positive =
+   buy, negative = sell, same convention as capital_injection), and values
+   the position at that instrument's own most recent trade price on or
+   before the FY end (no separate historical price feed exists for
+   individual securities, unlike the Yahoo-sourced index comparisons — the
+   last executed trade price is the closest available proxy for "price at
+   FY end"). select('*') is used defensively since the exact column name
+   for the instrument identifier isn't guaranteed across environments.    */
+async function mpLoadHoldingsByFy() {
+  const [fyRes, trRes, inRes] = await Promise.all([
+    sb.from('fy_settings').select('*').order('start_date', { ascending: true }),
+    sb.from('transaction_trading').select('*').order('trade_date', { ascending: true }),
+    sb.from('instruments').select('name, sector, product')
+  ]);
+  if (fyRes.error) throw fyRes.error;
+  if (trRes.error) throw trRes.error;
+  const FYS = fyRes.data || [];
+  const trades = trRes.data || [];
+  const instByName = {};
+  (inRes.data || []).forEach(function(i) { instByName[i.name] = i; });
+
+  function nameOf(r) { return r.instrument_name || r.product || 'Unknown'; }
+  function isCashName(n) { return (n || '').toLowerCase().indexOf('cash') !== -1; }
+
+  return FYS.map(function(fy) {
+    const byName = {};
+    trades.forEach(function(r) {
+      if (!r.trade_date || r.trade_date > fy.end_date) return;
+      const name = nameOf(r);
+      if (isCashName(name)) return; // this chart is about invested holdings, not cash
+      if (!byName[name]) byName[name] = { name: name, units: 0, lastPrice: null, lastDate: null };
+      byName[name].units += parseFloat(r.units) || 0;
+      const p = parseFloat(r.price);
+      if (!isNaN(p) && (!byName[name].lastDate || r.trade_date >= byName[name].lastDate)) {
+        byName[name].lastPrice = p;
+        byName[name].lastDate = r.trade_date;
+      }
+    });
+    const holdings = Object.keys(byName)
+      .map(function(name) {
+        const h = byName[name];
+        const inst = instByName[name] || {};
+        const mv = (h.units || 0) * (h.lastPrice || 0);
+        return { name: name, sector: inst.sector || 'Other', units: h.units, price: h.lastPrice, mv: mv };
+      })
+      .filter(function(h) { return Math.abs(h.units) > 0.0001 && h.mv > 0; });
+    const totalMV = holdings.reduce(function(s, h) { return s + h.mv; }, 0);
+    holdings.forEach(function(h) { h.pct = totalMV > 0 ? (h.mv / totalMV * 100) : 0; });
+    holdings.sort(function(a, b) { return b.pct - a.pct; });
+    return { fy: fy.label, totalMV: totalMV, holdings: holdings };
+  });
+}
+
 async function mpLoadRatioAnalysis(incomeStatementRows, balanceSheetRows) {
   const [fyRes, distRes, tradeRes] = await Promise.all([
     sb.from('fy_settings').select('*').order('start_date', { ascending: true }),
