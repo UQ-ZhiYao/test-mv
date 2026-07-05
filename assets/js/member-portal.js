@@ -2148,8 +2148,11 @@ function pgFundOverview(){
       +'</div>';
   }
 
-  function card(title,chartHtml,subline){
-    return '<div class="fov-cc"><div class="fov-ct">'+title+'</div>'+(subline?'<div class="fov-csub">'+subline+'</div>':'')+'<div class="fov-ch">'+chartHtml+'</div></div>';
+  function card(title,chartHtml,subline,href){
+    var titleRow = href
+      ? '<div class="fov-ct" style="display:flex;justify-content:space-between;align-items:center"><span>'+title+'</span><a href="'+href+'" style="font-size:.78rem;font-weight:600;color:var(--blue);text-decoration:none;white-space:nowrap;flex-shrink:0;margin-left:10px">Details &rarr;</a></div>'
+      : '<div class="fov-ct">'+title+'</div>';
+    return '<div class="fov-cc">'+titleRow+(subline?'<div class="fov-csub">'+subline+'</div>':'')+'<div class="fov-ch">'+chartHtml+'</div></div>';
   }
 
   // ── KEY FACTS (full width, no outline) ────────────────────────────────
@@ -2300,8 +2303,8 @@ function pgFundOverview(){
   // ── 2-COL CHART GRID ──────────────────────────────────────────────────
   var grid='<div class="fov-2col">'
     +aboutCard+aboutBlank
-    +card('Ownership',ownershipChart,'Top 3 shareholders by units held')
-    +card('Capital Structure',capStructChart,'Total assets by category, per financial year')
+    +card('Ownership',ownershipChart,'Top 3 shareholders by units held','shareholders.html')
+    +card('Capital Structure',capStructChart,'Total assets by category, per financial year','factsheet.html')
     +card('Financial Results', INCOME_STATEMENT.length
       ? groupedBars(
           INCOME_STATEMENT.map(function(r){return r.fy;}),
@@ -2311,13 +2314,14 @@ function pgFundOverview(){
           ]
         )
       : '<div style="padding:20px;color:var(--fg-3);font-size:.85rem">'+(INCOME_STATEMENT_ERROR?('Could not load — '+INCOME_STATEMENT_ERROR):'No financial years defined yet')+'</div>',
-      'Revenue vs. Net Profit After Tax, per financial year'
+      'Revenue vs. Net Profit After Tax, per financial year',
+      'financial-results.html?tab=income'
     )
-    +card('NTA Performance',ntaPerfChart,'Monthly NTA per unit (open/high/low/close)')
-    +card('Distribution Payout Ratio',distSummaryChart,'Interim DPS ÷ previous FY gross per share')
-    +card('Distribution History',distHistChart,'Interim &amp; final DPS with dividend yield trend, per financial year')
-    +card('Balance Sheet',balanceSheetChart,'Total assets vs. total liabilities, per financial year')
-    +card('Cash Reserve Ratio',cashReserveChart,'Cash as a % of total assets, per financial year')
+    +card('NTA Performance',ntaPerfChart,'Monthly NTA per unit (open/high/low/close)','nta-history.html')
+    +card('Distribution Payout Ratio',distSummaryChart,'Interim DPS ÷ previous FY gross per share','financial-results.html?tab=ratios')
+    +card('Distribution History',distHistChart,'Interim &amp; final DPS with dividend yield trend, per financial year','financial-results.html?tab=ratios')
+    +card('Balance Sheet',balanceSheetChart,'Total assets vs. total liabilities, per financial year','financial-results.html?tab=balance')
+    +card('Cash Reserve Ratio',cashReserveChart,'Cash as a % of total assets, per financial year','financial-results.html?tab=balance')
     +'</div>';
 
 

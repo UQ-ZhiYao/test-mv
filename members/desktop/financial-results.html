@@ -292,6 +292,14 @@
 var S = { page:'financialresults', period:'ytd', txf:'all' };
 // [init removed for standalone page]
 
+// Deep-link support: ?tab=income|balance|cashflow|ratios (used by the
+// Fund Overview page's "Details →" links on each card).
+(function(){
+  var qs=new URLSearchParams(window.location.search);
+  var tab=qs.get('tab');
+  if(tab && ['income','balance','cashflow','ratios'].indexOf(tab)>=0){ window._frTab=tab; }
+})();
+
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
