@@ -1081,6 +1081,26 @@ function fiveTicks(rawMin,rawMax,forceZero){
   return {ticks:ticks,min:scale.min,max:scale.max,step:scale.step};
 }
 
+// Tight-fit axis for line/candle charts (Comparison, NTA History): unlike
+// fiveTicks/niceAxisScale — which round the DOMAIN itself out to the next
+// step multiple, so a small dip to -8% with a step of 50 blows the axis
+// out to -50 — this only rounds the TICK step, and keeps min/max as the
+// actual data range plus a small padding margin. Gridlines are then
+// generated at nice step multiples that land inside that tight range
+// (which may mean 4-6 gridlines rather than an exact count), so the axis
+// always hugs whatever data is actually on screen.
+function tightTicks(rawMin,rawMax){
+  var range=rawMax-rawMin;
+  if(range<=0){ rawMin-=1; rawMax+=1; range=2; }
+  var pad=range*0.08;
+  var min=rawMin-pad, max=rawMax+pad;
+  var step=niceNum((max-min)/4,true);
+  var start=Math.ceil(min/step)*step;
+  var ticks=[];
+  for(var tv=start; tv<=max+step*0.001; tv+=step){ ticks.push(tv); }
+  return {ticks:ticks,min:min,max:max,step:step};
+}
+
 function fmtChartNum(v){
   var av=Math.abs(v||0), sign=(v||0)<0?'−':'';
   if(av>=100000000) return sign+(av/1000000).toLocaleString('en-MY',{minimumFractionDigits:1,maximumFractionDigits:1})+'Mil';
@@ -1802,7 +1822,7 @@ function pgFundOverview(){
     var n=months.length;
     var allV=[];
     months.forEach(function(m){ allV.push(m.high,m.low); });
-    var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV),false);
+    var scale=tightTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
     var mn=scale.min,mx=scale.max,rng=(mx-mn)||0.001;
     var plotH=H-padYT-padYB;
     function yFor(v){ return padYT+(mx-v)/rng*plotH; }
@@ -2551,7 +2571,7 @@ function buildNtaLineChart(rows){
   if(n<2) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
   var W=1000,H=420,padL=8,padR=52,padYT=14,padYB=22;
   var vals=rows.map(function(r){return r.nta;});
-  var scale=fiveTicks(Math.min.apply(null,vals),Math.max.apply(null,vals),false);
+  var scale=tightTicks(Math.min.apply(null,vals),Math.max.apply(null,vals));
   var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
   function px(i){ return padL+(i/(n-1))*(W-padL-padR); }
   function py(v){ return H-padYB-((v-mn)/rng)*(H-padYT-padYB); }
@@ -2598,7 +2618,7 @@ function buildNtaCandleChart(rows){
   if(n<2) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
   var W=1000,H=420,padL=8,padR=52,padYT=14,padYB=22;
   var allV=[]; rows.forEach(function(r){ allV.push(r.high,r.low); });
-  var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV),false);
+  var scale=tightTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
   var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
   var colW=(W-padL-padR)/n;
   function cx(i){ return padL+i*colW+colW/2; }
@@ -2875,7 +2895,7 @@ function buildCmpChart(seriesArr, dates, priceInfo, hidden){
   var W=1000,H=520,padL=8,padR=40,padYT=14,padYB=22;
   var allV=[]; (visible.length?visible:seriesArr).forEach(function(s){ s.v.forEach(function(v){ if(v!=null) allV.push(v); }); });
   if(!allV.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">No data</div>';
-  var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV),false);
+  var scale=tightTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
   var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
   function px(i){ return padL+(i/(n-1))*(W-padL-padR); }
   function py(v){ return H-padYB-((v-mn)/rng)*(H-padYT-padYB); }
@@ -3086,9 +3106,9 @@ function pgComparison(){
     var rawSeries=[
       {name:'ZY-Invest', color:'#1565C0', pts:CMP.fund},
       {name:'FBM KLCI',  color:'#E65100', pts:CMP.klci||[]},
-      {name:'S&P 500',   color:'#2E7D32', pts:CMP.sp||[]},
-      {name:'MSCI',      color:'#7C3AED', pts:CMP.msci||[]},
       {name:'STI',       color:'#DB2777', pts:CMP.sti||[]},
+      {name:'MSCI',      color:'#7C3AED', pts:CMP.msci||[]},
+      {name:'S&P 500',   color:'#2E7D32', pts:CMP.sp||[]},
       {name:'NASDAQ',    color:'#0891B2', pts:CMP.nasdaq||[]}
     ].filter(function(s){return s.pts && s.pts.length;});
 
