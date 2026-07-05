@@ -1064,7 +1064,12 @@ async function mpLoadHoldingsByFy() {
   const instByName = {};
   (inRes.data || []).forEach(function(i) { instByName[i.name] = i; });
 
-  function nameOf(r) { return r.instrument_name || r.product || 'Unknown'; }
+  // Broadened fallback chain: only drop to the generic 'product' category
+  // (e.g. "Equity") as an absolute last resort — falling back too early
+  // merges every distinct instrument that's missing instrument_name into
+  // one bucket, which is what was corrupting the most recent FY (the one
+  // most likely to have a not-yet-fully-tagged trade row).
+  function nameOf(r) { return r.instrument_name || r.name || r.security_name || r.instrument || r.code || r.ticker || r.product || 'Unknown'; }
   function isCashName(n) { return (n || '').toLowerCase().indexOf('cash') !== -1; }
 
   return FYS.map(function(fy) {
@@ -1092,9 +1097,13 @@ async function mpLoadHoldingsByFy() {
           units: h.units, price: h.lastPrice, mv: mv
         };
       })
-      .filter(function(h) { return Math.abs(h.units) > 0.0001 && h.mv > 0; });
-    const totalMV = holdings.reduce(function(s, h) { return s + h.mv; }, 0);
-    holdings.forEach(function(h) { h.pct = totalMV > 0 ? (h.mv / totalMV * 100) : 0; });
+      // Only drop fully-exited positions (~0 units) — a position with a
+      // missing/zero last price is still real and must stay in the total,
+      // otherwise every OTHER holding's weight% gets silently inflated
+      // because the denominator (totalMV) is understated.
+      .filter(function(h) { return Math.abs(h.units) > 0.0001; });
+    const totalMV = holdings.reduce(function(s, h) { return s + Math.max(0, h.mv); }, 0);
+    holdings.forEach(function(h) { h.pct = totalMV > 0 ? (Math.max(0, h.mv) / totalMV * 100) : 0; });
     holdings.sort(function(a, b) { return b.pct - a.pct; });
     return { fy: fy.label, totalMV: totalMV, holdings: holdings };
   });

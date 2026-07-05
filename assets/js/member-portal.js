@@ -2480,7 +2480,19 @@ function pgFactsheet(){
   var otherField = mode==='sector' ? 'product' : 'sector';
   var otherColorFor = fsOtherColorMap(fyOptions, HOLDINGS_BY_FY, otherField);
 
-  function colorBox(color){ return '<span style="width:8px;height:8px;border-radius:2px;background:'+color+';display:inline-block;margin-right:6px;flex-shrink:0"></span>'; }
+  // Full color pill instead of a small swatch dot — background is the
+  // sector/product's own color, text switches to white/dark for contrast.
+  function fsPillTextColor(color){
+    var r,g,b;
+    var m=/rgb\((\d+),(\d+),(\d+)\)/.exec(color);
+    if(m){ r=+m[1]; g=+m[2]; b=+m[3]; }
+    else { var h=color.replace('#',''); r=parseInt(h.substr(0,2),16); g=parseInt(h.substr(2,2),16); b=parseInt(h.substr(4,2),16); }
+    var lum=0.299*r+0.587*g+0.114*b;
+    return lum<140 ? '#fff' : '#0F172A';
+  }
+  function colorPill(color,label){
+    return '<span style="display:inline-block;padding:3px 10px;border-radius:99px;background:'+color+';color:'+fsPillTextColor(color)+';font-size:.78rem;font-weight:500;white-space:nowrap">'+label+'</span>';
+  }
 
   var totalMV = holdings.reduce(function(s,h){ return s+(h.mv||0); },0);
   var hRows = holdings.length
@@ -2490,8 +2502,8 @@ function pgFactsheet(){
         var productColor = mode==='product' ? (activeGroup.colorFor[activeGroup.mainKeys.indexOf(h.product)>=0?h.product:'Others']) : otherColorFor[h.product];
         return '<tr style="background:#fff">'
           +'<td style="padding:10px 16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>'+h.name+'</b><div style="font-size:.75rem;color:var(--fg-3);font-family:var(--font-mono)">'+sub+'</div></td>'
-          +'<td style="padding:10px 16px"><div style="display:flex;align-items:center">'+colorBox(productColor)+h.product+'</div></td>'
-          +'<td style="padding:10px 16px"><div style="display:flex;align-items:center">'+colorBox(sectorColor)+h.sector+'</div></td>'
+          +'<td style="padding:10px 16px">'+colorPill(productColor,h.product)+'</td>'
+          +'<td style="padding:10px 16px">'+colorPill(sectorColor,h.sector)+'</td>'
           +'<td style="padding:10px 16px;text-align:right">RM '+(h.mv||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
           +'<td style="padding:10px 16px;text-align:right;font-weight:700">'+h.pct.toFixed(1)+'%</td>'
           +'</tr>';
@@ -2514,9 +2526,10 @@ function pgFactsheet(){
     +'<div class="ph-xl"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h1 style="margin:0">Fund <span class="acc">Factsheet</span></h1>'+modeTabs+'</div></div>'
     // Stacked column chart — click a bar to switch the table below
     +'<div style="margin-bottom:24px">'+buildHoldingsStackChart(fyOptions, activeGroup, fySel)+'</div>'
-    // Holdings table for the selected FY — fixed column widths, no
-    // outline other than the header divider, all rows white, Total pinned last
-    +'<div class="panel"><div class="ph"><h3>Holdings</h3><span style="font-size:.8rem;color:var(--fg-3)">'+fySel+'</span></div>'
+    // Holdings table for the selected FY — no card/outline, fixed column
+    // widths, only the header divider line, all rows white, Total pinned last
+    +'<h3 style="font-size:.95rem;font-weight:700;color:var(--fg-1);margin-bottom:4px">Holdings</h3>'
+    +'<p style="font-size:.78rem;color:var(--fg-3);margin:0 0 10px">'+fySel+'</p>'
     +'<table style="width:100%;table-layout:fixed;border-collapse:collapse">'+colgroup
     +'<thead><tr style="border-bottom:1px solid var(--border)">'
     +'<th style="padding:10px 16px;text-align:left;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)">Instrument</th>'
@@ -2525,7 +2538,7 @@ function pgFactsheet(){
     +'<th style="padding:10px 16px;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)">Value</th>'
     +'<th style="padding:10px 16px;text-align:right;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3)">Weight</th>'
     +'</tr></thead>'
-    +'<tbody>'+hRows+totalRow+'</tbody></table></div>'
+    +'<tbody>'+hRows+totalRow+'</tbody></table>'
     +'</div>';
 }
 
