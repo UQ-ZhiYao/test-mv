@@ -2875,7 +2875,7 @@ function buildCmpChart(seriesArr, dates, priceInfo, hidden){
   var W=1000,H=520,padL=8,padR=40,padYT=14,padYB=22;
   var allV=[]; (visible.length?visible:seriesArr).forEach(function(s){ s.v.forEach(function(v){ if(v!=null) allV.push(v); }); });
   if(!allV.length) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">No data</div>';
-  var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
+  var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV),false);
   var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
   function px(i){ return padL+(i/(n-1))*(W-padL-padR); }
   function py(v){ return H-padYB-((v-mn)/rng)*(H-padYT-padYB); }
@@ -2884,7 +2884,7 @@ function buildCmpChart(seriesArr, dates, priceInfo, hidden){
     return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(W-padR)+'" y2="'+yy+'" stroke="#F1F5F9" stroke-width="1"/>'
       +'<text x="'+(W-padR+5)+'" y="'+(parseFloat(yy)+3)+'" text-anchor="start" font-size="7.5" fill="#000000">'+v.toFixed(0)+'%</text>';
   }).join('');
-  var baseline='<line x1="'+padL+'" y1="'+py(0).toFixed(1)+'" x2="'+(W-padR)+'" y2="'+py(0).toFixed(1)+'" stroke="#CBD5E1" stroke-width="0.8" stroke-dasharray="4,3"/>';
+  var baseline=(mn<=0 && mx>=0) ? ('<line x1="'+padL+'" y1="'+py(0).toFixed(1)+'" x2="'+(W-padR)+'" y2="'+py(0).toFixed(1)+'" stroke="#CBD5E1" stroke-width="0.8" stroke-dasharray="4,3"/>') : '';
   // Short windows (roughly ≤3 months of weekly data) show "d MMM" instead
   // of "MMM yy" — a bare month/year is too coarse to read when the whole
   // chart only spans a few weeks, and the year is implicit at that zoom.
