@@ -534,6 +534,47 @@ async function mpLoadNtaWeeklyOHLC() {
   });
 }
 
+/* ── NTA Quarterly OHLC — same aggregation as monthly/weekly, bucketed by
+   calendar quarter (Q1 Jan-Mar, Q2 Apr-Jun, Q3 Jul-Sep, Q4 Oct-Dec).      */
+async function mpLoadNtaQuarterlyOHLC() {
+  const pageSize = 1000;
+  let all = [], page = 0;
+  while (true) {
+    const { data, error } = await sb.from('nta_daily')
+      .select('date, nta')
+      .order('date', { ascending: true })
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    if (error) throw error;
+    if (!data || !data.length) break;
+    all = all.concat(data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+  const byQuarter = {};
+  const order = [];
+  all.forEach(function(r) {
+    if (!r.date || r.nta == null) return;
+    const d = new Date(r.date + 'T00:00:00');
+    const q = Math.floor(d.getMonth() / 3) + 1;
+    const key = d.getFullYear() + '-Q' + q;
+    const v = parseFloat(r.nta);
+    if (!byQuarter[key]) {
+      byQuarter[key] = { key: key, date: r.date, open: v, high: v, low: v, close: v };
+      order.push(key);
+    } else {
+      const qq = byQuarter[key];
+      qq.high = Math.max(qq.high, v);
+      qq.low = Math.min(qq.low, v);
+      qq.close = v; // ascending order → last write wins
+      qq.date = r.date;
+    }
+  });
+  return order.map(function(key) {
+    const qq = byQuarter[key];
+    return { key: key, date: qq.date, label: key, open: qq.open, high: qq.high, low: qq.low, close: qq.close };
+  });
+}
+
 function isoWeekKey(d) {
   const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const day = (dt.getUTCDay() + 6) % 7;

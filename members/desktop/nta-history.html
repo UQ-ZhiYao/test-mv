@@ -298,7 +298,8 @@ loadLiveData().then(function(){
   return Promise.allSettled([
     (typeof mpLoadNtaDaily==='function') ? mpLoadNtaDaily() : Promise.resolve([]),
     (typeof mpLoadNtaWeeklyOHLC==='function') ? mpLoadNtaWeeklyOHLC() : Promise.resolve([]),
-    (typeof mpLoadNtaMonthly==='function') ? mpLoadNtaMonthly() : Promise.resolve([])
+    (typeof mpLoadNtaMonthly==='function') ? mpLoadNtaMonthly() : Promise.resolve([]),
+    (typeof mpLoadNtaQuarterlyOHLC==='function') ? mpLoadNtaQuarterlyOHLC() : Promise.resolve([])
   ]);
 }).then(function(results){
   NTA_DAILY = (results[0].status==='fulfilled') ? (results[0].value||[]) : [];
@@ -312,6 +313,10 @@ loadLiveData().then(function(){
   NTA_MONTHLY = (results[2].status==='fulfilled') ? (results[2].value||[]) : [];
   NTA_MONTHLY_ERROR = (results[2].status==='fulfilled') ? null : ((results[2].reason&&results[2].reason.message)||'Unknown error');
   if(NTA_MONTHLY_ERROR) console.warn('NTA monthly load failed:', NTA_MONTHLY_ERROR);
+
+  NTA_QUARTERLY_OHLC = (results[3].status==='fulfilled') ? (results[3].value||[]) : [];
+  NTA_QUARTERLY_OHLC_ERROR = (results[3].status==='fulfilled') ? null : ((results[3].reason&&results[3].reason.message)||'Unknown error');
+  if(NTA_QUARTERLY_OHLC_ERROR) console.warn('NTA quarterly load failed:', NTA_QUARTERLY_OHLC_ERROR);
 }).catch(function(e){
   console.warn('NTA History page data load failed:', e && e.message);
 }).finally(function(){

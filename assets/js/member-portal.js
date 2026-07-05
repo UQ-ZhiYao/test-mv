@@ -47,6 +47,8 @@ let NTA_DAILY = [];
 let NTA_DAILY_ERROR = null;
 let NTA_WEEKLY_OHLC = [];
 let NTA_WEEKLY_OHLC_ERROR = null;
+let NTA_QUARTERLY_OHLC = [];
+let NTA_QUARTERLY_OHLC_ERROR = null;
 let DIST_BY_FY = [];
 let DIST_BY_FY_ERROR = null;
 let COMPARISON_DATA = null;
@@ -2509,7 +2511,10 @@ function nthCandleInfoHtml(dateLbl,o,h,l,c,chg,chgPct){
   var up=chg>=0, col=up?'#2E7D32':'#DC2626', sign=up?'+':'−';
   return '<div style="font-size:.78rem;color:#000;margin-bottom:4px">'+dateLbl+'</div>'
     +'<div style="font-size:.8rem;font-weight:400;white-space:nowrap">'
-    +'<span style="color:'+col+'">O'+fmtNtaOhlc(o)+' H'+fmtNtaOhlc(h)+' L'+fmtNtaOhlc(l)+' C'+fmtNtaOhlc(c)+'</span> '
+    +'<span style="color:#000">O</span><span style="color:'+col+'">'+fmtNtaOhlc(o)+'</span> '
+    +'<span style="color:#000">H</span><span style="color:'+col+'">'+fmtNtaOhlc(h)+'</span> '
+    +'<span style="color:#000">L</span><span style="color:'+col+'">'+fmtNtaOhlc(l)+'</span> '
+    +'<span style="color:#000">C</span><span style="color:'+col+'">'+fmtNtaOhlc(c)+'</span> '
     +'<span style="color:'+col+'">'+sign+fmtNtaOhlc(Math.abs(chg))+' ('+sign+Math.abs(chgPct).toFixed(2)+'%)</span>'
     +'</div>';
 }
@@ -2546,7 +2551,7 @@ function buildNtaLineChart(rows){
   if(n<2) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
   var W=1000,H=420,padL=8,padR=52,padYT=14,padYB=22;
   var vals=rows.map(function(r){return r.nta;});
-  var scale=fiveTicks(Math.min.apply(null,vals),Math.max.apply(null,vals));
+  var scale=fiveTicks(Math.min.apply(null,vals),Math.max.apply(null,vals),false);
   var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
   function px(i){ return padL+(i/(n-1))*(W-padL-padR); }
   function py(v){ return H-padYB-((v-mn)/rng)*(H-padYT-padYB); }
@@ -2593,7 +2598,7 @@ function buildNtaCandleChart(rows){
   if(n<2) return '<div style="padding:50px 20px;color:var(--fg-3);font-size:.85rem;text-align:center">Not enough data for this period</div>';
   var W=1000,H=420,padL=8,padR=52,padYT=14,padYB=22;
   var allV=[]; rows.forEach(function(r){ allV.push(r.high,r.low); });
-  var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV));
+  var scale=fiveTicks(Math.min.apply(null,allV),Math.max.apply(null,allV),false);
   var mn=scale.min,mx=scale.max,rng=(mx-mn)||1;
   var colW=(W-padL-padR)/n;
   function cx(i){ return padL+i*colW+colW/2; }
@@ -2637,8 +2642,32 @@ function buildNtaCandleChart(rows){
     +'</div>';
 }
 
+// Maps the currently-selected period to the granularity that keeps candle
+// counts in a readable range — used to auto-pick Data Layer when switching
+// to Candle mode, since a period spanning years of daily candles would be
+// an unreadable wall of bars.
+function bestNtaGranForPeriod(period){
+  switch(period){
+    case '1m':
+    case '3m':
+      return 'daily';
+    case '6m':
+    case 'ytd':
+    case '1y':
+      return 'weekly';
+    case '3y':
+      return 'monthly';
+    case 'all':
+    default:
+      return 'quarterly';
+  }
+}
 function switchNtaChartType(t){
   window._nthChartType=t;
+  if(t==='candle'){
+    window._nthGran=bestNtaGranForPeriod(window._nthPeriod||'3y');
+    window._nthPage=0;
+  }
   var el=document.getElementById('mainContent');
   if(el) el.innerHTML=pgNtaHistory();
 }
@@ -2651,6 +2680,9 @@ function switchNtaGran(g){
 function switchNtaPeriod(p){
   window._nthPeriod=p;
   window._nthPage=0;
+  if((window._nthChartType||'line')==='candle'){
+    window._nthGran=bestNtaGranForPeriod(p);
+  }
   var el=document.getElementById('mainContent');
   if(el) el.innerHTML=pgNtaHistory();
 }
@@ -2669,7 +2701,7 @@ function pgNtaHistory(){
     +['line','candle'].map(function(t){ return '<option value="'+t+'"'+(chartType===t?' selected':'')+'>'+(t==='line'?'Line':'Candle')+'</option>'; }).join('')
     +'</select>';
 
-  var granOptions=['daily','weekly','monthly'];
+  var granOptions=['daily','weekly','monthly','quarterly'];
   var granDropdown='<select onchange="switchNtaGran(this.value)" style="font-size:.8rem;font-weight:600;color:var(--fg-1);border:1px solid var(--border);border-radius:8px;padding:7px 10px;background:#fff;cursor:pointer">'
     +granOptions.map(function(g){ return '<option value="'+g+'"'+(gran===g?' selected':'')+'>'+g.charAt(0).toUpperCase()+g.slice(1)+'</option>'; }).join('')
     +'</select>';
@@ -2677,8 +2709,8 @@ function pgNtaHistory(){
   function segBtn(lbl,p){ return '<button class="'+(period===p?'on':'')+'" onclick="switchNtaPeriod(\''+p+'\')">'+lbl+'</button>'; }
   var periodBar='<div class="seg">'+segBtn('YTD','ytd')+segBtn('1M','1m')+segBtn('3M','3m')+segBtn('6M','6m')+segBtn('1Y','1y')+segBtn('3Y','3y')+segBtn('ALL','all')+'</div>';
 
-  var srcRows = gran==='daily' ? NTA_DAILY : gran==='weekly' ? NTA_WEEKLY_OHLC : NTA_MONTHLY;
-  var srcError = gran==='daily' ? NTA_DAILY_ERROR : gran==='weekly' ? NTA_WEEKLY_OHLC_ERROR : NTA_MONTHLY_ERROR;
+  var srcRows = gran==='daily' ? NTA_DAILY : gran==='weekly' ? NTA_WEEKLY_OHLC : gran==='monthly' ? NTA_MONTHLY : NTA_QUARTERLY_OHLC;
+  var srcError = gran==='daily' ? NTA_DAILY_ERROR : gran==='weekly' ? NTA_WEEKLY_OHLC_ERROR : gran==='monthly' ? NTA_MONTHLY_ERROR : NTA_QUARTERLY_OHLC_ERROR;
 
   var chart, tableSection;
   if(srcRows.length){
@@ -2707,18 +2739,33 @@ function pgNtaHistory(){
     var pageIdx=Math.min(window._nthPage||0, totalPages-1);
     var pageRows=tableRows.slice(pageIdx*pageSize, pageIdx*pageSize+pageSize);
 
+    // Change/Change% collapse to "–" in black when they round to
+    // 0.0000/0.00% — a value like 0.00003 is technically nonzero but
+    // reads as noise, not a meaningful move.
+    function nthChgCell(chg){
+      var rounded=parseFloat(chg.toFixed(4));
+      if(rounded===0) return '<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:#000">-</td>';
+      var up=chg>=0;
+      return '<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(up?'var(--green)':'var(--red)')+';">'+(up?'+':'')+chg.toFixed(4)+'</td>';
+    }
+    function nthChgPctCell(chgPct){
+      var rounded=parseFloat(chgPct.toFixed(2));
+      if(rounded===0) return '<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:#000">-</td>';
+      var up=chgPct>=0;
+      return '<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(up?'var(--green)':'var(--red)')+';">'+(up?'+':'')+chgPct.toFixed(2)+'%</td>';
+    }
+
     var bodyRows;
     if(gran==='daily'){
       bodyRows=pageRows.map(function(r){
         var idx=filtered.indexOf(r);
         var prev=filtered[idx-1];
         var chg=prev?(r.nta-prev.nta):0, chgPct=prev&&prev.nta?(chg/prev.nta*100):0;
-        var up=chg>=0;
         return '<tr style="border-bottom:1px solid var(--border);">'
           +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">'+nthDateLabel(r.date)+'</td>'
           +'<td style="padding:11px 16px;font-size:.88rem;font-weight:600;color:var(--fg-1);">RM '+r.nta.toFixed(4)+'</td>'
-          +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(chg===0?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+';">'+(up&&chg!==0?'+':'')+chg.toFixed(4)+'</td>'
-          +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(chgPct===0?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+';">'+(up&&chgPct!==0?'+':'')+chgPct.toFixed(2)+'%</td>'
+          +nthChgCell(chg)
+          +nthChgPctCell(chgPct)
           +'</tr>';
       }).join('');
     } else {
@@ -2726,15 +2773,14 @@ function pgNtaHistory(){
         var idx=filtered.indexOf(r);
         var prev=filtered[idx-1];
         var chg=prev?(r.close-prev.close):0, chgPct=prev&&prev.close?(chg/prev.close*100):0;
-        var up=chg>=0;
         return '<tr style="border-bottom:1px solid var(--border);">'
           +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">'+nthDateLabel(r.date)+'</td>'
           +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">RM '+r.open.toFixed(4)+'</td>'
           +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">RM '+r.high.toFixed(4)+'</td>'
           +'<td style="padding:11px 16px;font-size:.85rem;color:var(--fg-2);">RM '+r.low.toFixed(4)+'</td>'
           +'<td style="padding:11px 16px;font-size:.88rem;font-weight:600;color:var(--fg-1);">RM '+r.close.toFixed(4)+'</td>'
-          +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(chg===0?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+';">'+(up&&chg!==0?'+':'')+chg.toFixed(4)+'</td>'
-          +'<td style="padding:11px 16px;font-size:.85rem;font-weight:600;color:'+(chgPct===0?'var(--fg-3)':(up?'var(--green)':'var(--red)'))+';">'+(up&&chgPct!==0?'+':'')+chgPct.toFixed(2)+'%</td>'
+          +nthChgCell(chg)
+          +nthChgPctCell(chgPct)
           +'</tr>';
       }).join('');
     }
