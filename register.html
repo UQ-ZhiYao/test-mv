@@ -24,6 +24,7 @@
 .pw-meter.s4 span{background:#2E7D32;}
 .reg-terms{display:flex;gap:9px;align-items:flex-start;font-size:0.82rem;color:#64748b;line-height:1.5;margin:4px 0 16px;cursor:pointer;}
 .reg-terms input{margin-top:2px;flex:none;}
+.reg-terms span{flex:1;text-align:left;}
 .reg-terms a{color:#1565C0;}
 </style>
 </head>
@@ -182,7 +183,7 @@
           <label class="form-label" for="password2">Confirm Password</label>
           <input type="password" id="password2" name="password2" class="form-input" placeholder="Re-enter password" autocomplete="new-password" required>
         </div>
-        <label class="reg-terms"><input type="checkbox" id="agree"> I agree to the <a href="about.html">terms</a> and acknowledge the fund is for sophisticated investors only.</label>
+        <label class="reg-terms"><input type="checkbox" id="agree"><span style="text-align:left">I agree to the <a href="assets/doc/terms.pdf" onclick="event.preventDefault();window.open('assets/doc/terms.pdf','termsPopup','width=800,height=900,scrollbars=yes,resizable=yes');return false;">terms</a> and acknowledge the fund is for sophisticated investors only.</span></label>
         <button type="submit" class="form-submit" id="submitBtn">
           <span id="btnText">Create Account</span>
           <div class="spinner" id="spinner"></div>
