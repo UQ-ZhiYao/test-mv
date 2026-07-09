@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+button,a{touch-action:manipulation;}
 :root{
   --blue:#1565C0;--blue-light:#1E88E5;--blue-dark:#0D47A1;--blue-bg:#EFF6FF;
   --green:#2E7D32;--green-bg:#F0FDF4;
@@ -26,10 +27,14 @@
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --tab-h:60px;
 }
-html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:var(--gray-50);color:var(--fg-1);}
+html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--font-body);background:var(--gray-50);color:var(--fg-1);
+  touch-action:pan-y;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+input,textarea{-webkit-user-select:text;user-select:text;}
 
 /* ── SHELL ── */
-.app{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;background:#fff;position:relative;box-shadow:0 0 40px rgba(0,0,0,.12);}
+.app{display:flex;flex-direction:column;height:100%;height:100dvh;max-width:430px;margin:0 auto;background:#fff;position:relative;box-shadow:0 0 40px rgba(0,0,0,.12);}
 
 /* ── TOP BAR ── */
 .topbar{height:calc(52px + var(--safe-top));padding:var(--safe-top) 18px 0;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
