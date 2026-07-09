@@ -40,6 +40,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .topbar-logo img{height:24px;}
 .topbar-logo-txt{font-size:.88rem;font-weight:700;color:var(--fg-1);}
 .topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar-back{display:none;align-items:center;gap:6px;}
 .icon-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);}
 .icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .notif-wrap{position:relative;}
@@ -47,11 +48,13 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .avatar-sm{width:30px;height:30px;border-radius:50%;background:linear-gradient(145deg,var(--blue),var(--green));color:#fff;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;}
 
 /* ── SCROLL AREA ── */
-.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;}
+.scroll::-webkit-scrollbar{display:none;}
 
 /* ── PAGES ── */
 .page{display:none;padding:0 0 16px;}
 .page.active{display:block;}
+/* pages handled by JS */
 
 /* ── CARDS / PANELS ── */
 .hero-card{background:linear-gradient(145deg,var(--blue-dark) 0%,var(--blue) 60%,var(--blue-light) 100%);color:#fff;padding:24px 20px 28px;margin-bottom:16px;}
@@ -108,6 +111,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .seg-sm button.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
 #mChart{width:100%;height:130px;display:block;}
 
+/* Fund sub-tabs */
+.ftab{flex-shrink:0;font:inherit;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.55);background:none;border:none;border-bottom:2.5px solid transparent;padding:10px 14px;cursor:pointer;transition:.15s;white-space:nowrap;}
+.ftab.active{color:#fff;border-bottom-color:#fff;}
+
 /* Fund overview */
 .fund-card{background:linear-gradient(145deg,var(--blue-dark),var(--blue));color:#fff;margin:0 16px 16px;border-radius:14px;padding:18px;}
 .fund-card-label{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:4px;}
@@ -128,26 +135,96 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .dist-amt{font-size:.84rem;font-weight:700;color:var(--green);}
 
 /* Profile */
-.prof-header{background:linear-gradient(145deg,var(--blue-dark),var(--blue));padding:28px 20px 24px;color:#fff;}
-.prof-av-lg{width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;margin-bottom:12px;}
-.prof-name{font-size:1.05rem;font-weight:700;margin-bottom:3px;}
-.prof-email{font-size:.78rem;opacity:.75;}
-.prof-badge{display:inline-block;margin-top:8px;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:99px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);}
+.prof-header{background:var(--gray-100);padding:28px 20px 24px;color:var(--fg-1);text-align:center;}
+.prof-av-lg{width:62px;height:62px;border-radius:50%;background:#fff;border:2px solid rgba(21,101,192,.3);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;color:var(--blue);margin:0 auto 10px;}eight:700;color:var(--blue);margin:0 auto 10px;}weight:700;margin-bottom:12px;}
+.prof-name{font-size:1.05rem;font-weight:700;margin-bottom:3px;color:var(--fg-1);}
+.prof-email{font-size:.78rem;opacity:.7;color:var(--fg-2);}
+.prof-badge{display:inline-block;margin-top:8px;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:99px;background:#fff;color:var(--blue);border:1px solid rgba(21,101,192,.2);}er:1px solid rgba(255,255,255,.3);}
 .menu-group{margin:0 16px 6px;}
 .menu-group-label{font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;padding:0 4px;}
-.menu-list{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;}
-.menu-item{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.15s;}
+.menu-list{background:#fff;border:none;border-radius:14px;overflow:hidden;box-shadow:none;}
+.menu-item{display:flex;align-items:center;gap:12px;padding:7px 16px;border-bottom:none;cursor:pointer;transition:.15s;}
 .menu-item:last-child{border-bottom:none;}
 .menu-item:active{background:var(--gray-50);}
-.menu-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.menu-ic svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.menu-ic{width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#0F172A;}
+.menu-ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;}
 .menu-text{flex:1;}
-.menu-text b{display:block;font-size:.88rem;font-weight:600;color:var(--fg-1);}
+.menu-text b{display:block;font-size:.88rem;font-weight:400;color:var(--fg-1);}
 .menu-text span{display:block;font-size:.72rem;color:var(--fg-3);margin-top:1px;}
 .menu-arr{color:var(--fg-3);font-size:.8rem;}
 .menu-item.danger .menu-text b{color:var(--red);}
 
-/* Bottom tab bar */
+/* Transaction page */
+.tx-filters{display:flex;align-items:center;gap:8px;padding:14px 16px 12px;}
+.tx-seg{display:flex;gap:2px;background:var(--gray-100);border-radius:10px;padding:3px;flex:1;}
+.tx-seg button{flex:1;font:inherit;font-size:.78rem;font-weight:600;padding:5px 6px;border:none;background:none;border-radius:8px;color:var(--fg-3);cursor:pointer;transition:.15s;white-space:nowrap;}
+.tx-seg button.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.tx-acct-select{flex-shrink:0;font:inherit;font-size:.8rem;font-weight:700;color:var(--fg-1);background:var(--gray-100);border:none;border-radius:10px;padding:6px 26px 6px 12px;-webkit-appearance:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 8px center;background-size:14px;}
+.tx-list{margin:0 16px;}
+.tx-row{display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
+.tx-row:last-child{border-bottom:none;}
+.txr-left{display:flex;flex-direction:column;gap:3px;}
+.txr-date{font-size:.88rem;font-weight:600;color:var(--fg-1);}
+.txr-type{font-size:.74rem;color:var(--fg-3);}
+.txr-right{display:flex;flex-direction:column;gap:3px;text-align:right;}
+.txr-amt{font-size:.9rem;font-weight:700;}
+.txr-amt.dep{color:var(--green);}
+.txr-amt.wd{color:var(--red);}
+.tx-units{font-size:.74rem;color:var(--fg-3);}
+.tx-empty{padding:60px 24px;text-align:center;color:var(--fg-3);font-size:.86rem;}
+
+/* Distribution page */
+.dx-filters{display:flex;align-items:center;gap:8px;padding:14px 16px 12px;}
+.dx-seg{display:flex;gap:2px;background:var(--gray-100);border-radius:10px;padding:3px;flex:1;}
+.dx-seg button{flex:1;font:inherit;font-size:.78rem;font-weight:600;padding:5px 6px;border:none;background:none;border-radius:8px;color:var(--fg-3);cursor:pointer;transition:.15s;white-space:nowrap;}
+.dx-seg button.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.dx-acct-select{flex-shrink:0;font:inherit;font-size:.8rem;font-weight:700;color:var(--fg-1);background:var(--gray-100);border:none;border-radius:10px;padding:6px 26px 6px 12px;-webkit-appearance:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 8px center;background-size:14px;}
+.dx-list{margin:0 16px;}
+.dx-row{display:flex;align-items:flex-start;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
+.dx-row:last-child{border-bottom:none;}
+.dxr-left{display:flex;flex-direction:column;gap:3px;}
+.dxr-date{font-size:.88rem;font-weight:600;color:var(--fg-1);}
+.dxr-type{font-size:.74rem;color:var(--fg-3);}
+.dxr-right{display:flex;flex-direction:column;gap:3px;text-align:right;}
+.dxr-amt{font-size:.9rem;font-weight:700;color:var(--green);}
+.dx-units{font-size:.74rem;color:var(--fg-3);}
+.dx-empty{padding:60px 24px;text-align:center;color:var(--fg-3);font-size:.86rem;}
+
+/* Asset Details page */
+.ad-donut-wrap{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px;}
+.ad-donut-total-l{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);}
+.ad-donut-total-v{font-size:1.5rem;font-weight:700;color:var(--fg-1);letter-spacing:-.02em;}
+.ad-legend{display:flex;justify-content:center;gap:22px;margin-top:14px;}
+.ad-legend-item{display:flex;align-items:center;gap:7px;}
+.ad-legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.ad-legend-label{font-size:.78rem;color:var(--fg-2);}
+.ad-legend-value{font-size:.78rem;font-weight:700;color:var(--fg-1);}
+.ad-seg{display:flex;gap:2px;background:var(--gray-100);border-radius:8px;padding:3px;}
+.ad-seg button{font:inherit;font-size:.72rem;font-weight:600;padding:4px 8px;border:none;background:none;border-radius:6px;color:var(--fg-3);cursor:pointer;}
+.ad-seg button.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.ad-trend-lbls{display:flex;justify-content:space-between;margin-top:4px;font-size:.68rem;color:var(--fg-3);}
+
+/* When embedded, the persistent topbar handles back+title, so each page's own back-bar is redundant */
+.scroll .back-bar{display:none;}
+
+/* Password & Security page */
+.back-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 4px;}
+.back-btn{background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:inherit;font-size:.88rem;font-weight:600;color:var(--blue);padding:0;}
+.back-btn svg{stroke:var(--blue);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.sec-block{margin:0 16px 32px;}
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sec-label{font-size:.84rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-1);}
+.sec-edit{font:inherit;font-size:.78rem;font-weight:600;color:var(--blue);background:none;border:none;padding:0;cursor:pointer;}
+.sec-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;}
+.sec-lbl{font-size:.8rem;color:var(--fg-3);}
+.sec-val{font-size:.84rem;font-weight:600;color:var(--fg-1);text-align:right;}
+.badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:99px;}
+.badge-green{background:#F0FDF4;color:var(--green);}
+.badge-gray{background:var(--gray-100);color:var(--fg-3);}
+.save-bar{position:sticky;bottom:0;padding:12px 16px;background:#fff;border-top:1px solid var(--border);}
+.save-btn{width:100%;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;}
+
+
 .tabbar{height:calc(var(--tab-h) + var(--safe-bottom));background:#fff;border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:6px;padding-bottom:var(--safe-bottom);flex-shrink:0;}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;cursor:pointer;border:none;background:none;transition:.15s;}
 .tab-ic{width:24px;height:24px;display:flex;align-items:center;justify-content:center;}
@@ -180,7 +257,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" style="position:relative;">
 
   <!-- STATUS BAR -->
   <div class="status">
@@ -194,11 +271,17 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
   <!-- TOP BAR -->
   <div class="topbar">
-    <div class="topbar-logo">
-      <img src="../assets/img/logo.png" alt="ZY">
+    <div class="topbar-logo" id="topbarLogo">
+      <img src="assets/img/logo.png" alt="ZY">
       <span class="topbar-logo-txt">ZY-Invest</span>
     </div>
-    <div class="topbar-right">
+    <div class="topbar-back" id="topbarBack">
+      <button class="icon-btn" style="width:32px;height:32px;margin-left:-8px;" onclick="topbarBackClick()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="topbar-logo-txt" id="topbarBackTitle">Title</span>
+    </div>
+    <div class="topbar-right" id="topbarRight">
       <button class="icon-btn" onclick="openMktSearch()">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       </button>
@@ -206,7 +289,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
         <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
         <div class="notif-dot"></div>
       </button>
-      <div class="avatar-sm" onclick="switchTab('profile')">HM</div>
+      <div class="avatar-sm" style="display:none;" onclick="switchTab('profile')">HM</div>
     </div>
   </div>
 
@@ -216,429 +299,193 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
     <!-- ── ACCOUNT PAGE ── -->
     <div class="page active" id="pg-portfolio">
 
-      <!-- Hero -->
-      <div class="hero-card">
-        <div class="hero-label">Total Portfolio Value</div>
-        <div class="hero-value">RM 61,228.00</div>
-        <div class="hero-sub">59,763.79 units · NTA RM 1.0245</div>
-        <div class="hero-row">
-          <div class="hero-stat"><div class="hero-stat-l">Unrealised P&L</div><div class="hero-stat-v">+RM 5,004</div></div>
-          <div class="hero-stat"><div class="hero-stat-l">Annualised IRR</div><div class="hero-stat-v">+14.8%</div></div>
+      <!-- ── GREY VALUE BOX ── -->
+      <div style="background:var(--gray-100);margin:12px 8px 0;border-radius:12px;padding:10px 12px 12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-size:1rem;font-weight:400;color:#000000;white-space:nowrap;">Total Value <span style="font-weight:400;">· MYR</span></div>
+            <button onclick="togglePortfolioValue()" id="eyeBtn" style="background:none;border:none;padding:0;cursor:pointer;color:var(--fg-3);display:flex;align-items:center;">
+              <svg id="eyeIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <span style="font-size:.7rem;font-weight:600;color:var(--blue);cursor:pointer;white-space:nowrap;margin-left:8px;" onclick="switchTab('assetdetails')"><span style="font-weight:normal;">Asset Details ›</span></span>
         </div>
-        <div class="hero-actions">
-          <button class="hero-btn hero-btn-sub" onclick="openSheet('subscribe')">Subscribe</button>
-          <button class="hero-btn hero-btn-red" onclick="openSheet('redeem')">Redeem</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div id="portfolioValue" style="font-size:1.4rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);flex:1;min-width:0">58,000.00</div>
+          <svg width="30%" height="44" viewBox="0 0 100 44" preserveAspectRatio="none" style="flex-shrink:0;" xmlns="http://www.w3.org/2000/svg">
+            <line x1="2" y1="17" x2="98" y2="17" stroke="rgba(0,0,0,.15)" stroke-width="1" stroke-dasharray="3,3"/>
+            <defs>
+              <linearGradient id="spkGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1565C0" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#1565C0" stop-opacity="0.02"/>
+              </linearGradient>
+            </defs>
+            <path d="M2,40 L10.7,26.5 L19.5,14.3 L28.2,4.2 L36.9,10 L45.6,19.3 L54.4,28.7 L63.1,22.2 L71.8,11.4 L80.5,15.7 L89.3,7.1 L98,4 L98,40 L2,40 Z" fill="url(#spkGrad)"/>
+            <polyline points="2,40 10.7,26.5 19.5,14.3 28.2,4.2 36.9,10 45.6,19.3 54.4,28.7 63.1,22.2 71.8,11.4 80.5,15.7 89.3,7.1 98,4" fill="none" stroke="#1565C0" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle cx="98" cy="4" r="3" fill="#1565C0"/>
+          </svg>
         </div>
       </div>
 
-      <!-- NTA Chart -->
-      <div class="chart-panel">
-        <div class="chart-head">
-          <span class="chart-title">NTA per Unit</span>
-          <div class="seg-sm">
-            <button class="on" onclick="switchMPeriod('1d',this)">1D</button>
-            <button onclick="switchMPeriod('1y',this)">1Y</button>
-            <button onclick="switchMPeriod('3y',this)">3Y</button>
-            <button onclick="switchMPeriod('max',this)">Max</button>
+      <!-- ── QUICK ACTION ICONS ── -->
+      <div style="display:flex;justify-content:space-around;padding:16px 10px 8px;">
+        <!-- Deposit -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;" onclick="openSheet('subscribe')">
+          <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:1.5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="16" x2="12" y2="8"/><polyline points="9 11 12 8 15 11"/></svg>
           </div>
+          <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);">Deposit</span>
         </div>
-        <canvas id="mChart"></canvas>
-        <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--fg-3);margin-top:4px">
-          <span id="mChartL0"></span><span id="mChartL1"></span><span id="mChartL2"></span>
+        <!-- Withdrawal -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;" onclick="openSheet('redeem')">
+          <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:1.5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="15 13 12 16 9 13"/></svg>
+          </div>
+          <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);">Withdrawal</span>
+        </div>
+        <!-- Account -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;" onclick="switchTab('profile')">
+          <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:1.5px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);">Me</span>
+        </div>
+        <!-- All -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;" onclick="switchTab('all')">
+          <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:1.5px"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          </div>
+          <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);">All</span>
         </div>
       </div>
 
-      <!-- Metrics -->
-      <div class="metric-row">
-        <div class="metric"><div class="metric-l">Units Held</div><div class="metric-v b">59,763.79</div><div class="metric-s">Total cost RM 56,224</div></div>
-        <div class="metric"><div class="metric-l">Current NTA</div><div class="metric-v">RM 1.0245</div><div class="metric-s">Avg cost RM 0.9408</div></div>
-        <div class="metric"><div class="metric-l">Total Return</div><div class="metric-v g">+8.90%</div><div class="metric-s">Since inception</div></div>
-        <div class="metric"><div class="metric-l">Distributions</div><div class="metric-v">RM 867.20</div><div class="metric-s">6 payments</div></div>
+      <!-- ── SPACER ── -->
+      <div style="height:40px;"></div>
+
+      <!-- ── ACCOUNT SUMMARY ── -->
+      <div style="padding:0 8px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:1rem;font-weight:700;color:var(--fg-1);padding-left:4px;position:static">Account Summary</div>
+        <span id="acctExpandBtn" onclick="toggleAcctExpand()" style="font-size:1.1rem;color:var(--fg-3);padding-right:8px;cursor:pointer;transition:transform .25s;display:flex;align-items:center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:0 8px;margin-bottom:16px;">
+        <div style="background:var(--gray-100);border-radius:12px;padding:14px 12px 16px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
+            <div style="font-size:1rem;font-weight:400;color:#000000;display:flex;align-items:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--blue)" stroke="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 5H5a3 3 0 00-3 3v8a3 3 0 003 3h14a3 3 0 003-3v-1h-5a3 3 0 010-6h5V8a3 3 0 00-3-3z"/><path d="M21 11h-5a1 1 0 000 2h5v-2z"/></svg>Personal Account <span style="font-weight:400;">· MYR</span></div>
+            <span id="personalExpandBtn" onclick="togglePersonalExpand()" style="color:var(--fg-3);display:flex;align-items:center;cursor:pointer;transition:transform .25s;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--fg-3);margin-bottom:6px;">
+            <span>59,763.79 units held</span>
+            <span>Total P/L</span>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;">
+            <div style="font-size:1.4rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);"><span style="font-weight:normal;">58,000.00</span></div>
+            <div style="font-size:.88rem;font-weight:600;color:var(--green)">+3,228.00</div>
+          </div>
+        </div>
+
+        <!-- ── PERSONAL ACCOUNT EXPAND PANEL ── -->
+        <div id="acctExpandPanel" style="display:none;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 12px;">
+          <!-- Holding Units / Stake labels -->
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <span style="font-size:.72rem;color:var(--fg-3);">Holding Units</span>
+            <span style="font-size:.72rem;color:var(--fg-3);text-align:right;">Stake</span>
+          </div>
+          <!-- Units value / Stake rows -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="font-size:1.15rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);">59,763.79</div>
+            <div style="text-align:right;">
+              <div style="font-size:.9rem;font-weight:600;color:var(--fg-3);">0.08%</div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div style="height:.2em;"></div>
+          <div style="border-top:1px solid var(--border);"></div>
+          <div style="height:.2em;"></div>
+
+          <!-- Holdings table -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px 6px;align-items:start;">
+            <!-- Header -->
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;">Latest Update</div>
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">Price/<br>VWAP</div>
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">MV/<br>Cost</div>
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">Unrealized<br>Return</div>
+            <!-- Row 1 -->
+            <div style="font-size:.72rem;color:var(--fg-2);">01 Jan 25</div>
+            <div style="text-align:right;">
+              <div style="font-size:.72rem;color:var(--fg-1);font-weight:500;">1.0246</div>
+              <div style="font-size:.68rem;color:var(--fg-3);">0.9705</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:.72rem;color:var(--fg-1);font-weight:500;">61,228.00</div>
+              <div style="font-size:.68rem;color:var(--fg-3);">58,000.00</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:.72rem;color:var(--green);font-weight:600;">+3,228.00</div>
+              <div style="font-size:.68rem;color:var(--green);font-weight:600;">+5.57%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── JOINT ACCOUNT ── -->
+        <div style="background:var(--gray-100);border-radius:12px;padding:14px 12px 16px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
+            <div style="font-size:1rem;font-weight:400;color:#000000;display:flex;align-items:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--blue)" stroke="none"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Joint Account <span style="font-weight:400;">· MYR</span></div>
+            <span id="jointExpandBtn" onclick="toggleJointExpand()" style="color:var(--fg-3);display:flex;align-items:center;cursor:pointer;transition:transform .25s;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--fg-3);margin-bottom:6px;">
+            <span>32,500.00 units held</span>
+            <span>Total P/L</span>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;">
+            <div style="font-size:1.4rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);"><span style="font-weight:normal;">30,000.00</span></div>
+            <div style="font-size:.88rem;font-weight:600;color:var(--green)">+1,842.50</div>
+          </div>
+        </div>
+
+        <!-- ── JOINT ACCOUNT EXPAND PANEL ── -->
+        <div id="jointExpandPanel" style="display:none;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 12px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <span style="font-size:.72rem;color:var(--fg-3);">Holding Units</span>
+            <span style="font-size:.72rem;color:var(--fg-3);text-align:right;">Stake</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="font-size:1.15rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);">32,500.00</div>
+            <div style="text-align:right;">
+              <div style="font-size:.9rem;font-weight:600;color:var(--fg-3);">0.04%</div>
+            </div>
+          </div>
+          <div style="height:.2em;"></div>
+          <div style="border-top:1px solid var(--border);"></div>
+          <div style="height:.2em;"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px 6px;align-items:start;">
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;">Latest Update</div>
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">Price/<br>VWAP</div>
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">MV/<br>Cost</div>
+            <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">Unrealized<br>Return</div>
+            <div style="font-size:.72rem;color:var(--fg-2);">01 Jan 25</div>
+            <div style="text-align:right;">
+              <div style="font-size:.72rem;color:var(--fg-1);font-weight:500;">1.0246</div>
+              <div style="font-size:.68rem;color:var(--fg-3);">0.9228</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:.72rem;color:var(--fg-1);font-weight:500;">33,299.00</div>
+              <div style="font-size:.68rem;color:var(--fg-3);">30,000.00</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:.72rem;color:var(--green);font-weight:600;">+1,842.50</div>
+              <div style="font-size:.68rem;color:var(--green);font-weight:600;">+6.14%</div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Holdings -->
-      <div class="section">
-        <div class="section-head">
-          <span class="section-title">Your Holdings</span>
-          <span class="section-link" onclick="switchTab('fund')">View all →</span>
-        </div>
-        <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:0 16px;">
-          <div class="holding-item"><div class="holding-dot" style="background:#1565C0"></div><div class="holding-info"><div class="holding-name">Hartalega Holdings</div><div class="holding-sec">Healthcare</div></div><div class="holding-alloc">14.2%</div></div>
-          <div class="holding-item"><div class="holding-dot" style="background:#2E7D32"></div><div class="holding-info"><div class="holding-name">Public Bank</div><div class="holding-sec">Financials</div></div><div class="holding-alloc">12.8%</div></div>
-          <div class="holding-item"><div class="holding-dot" style="background:#1565C0"></div><div class="holding-info"><div class="holding-name">IHH Healthcare</div><div class="holding-sec">Healthcare</div></div><div class="holding-alloc">11.4%</div></div>
-          <div class="holding-item"><div class="holding-dot" style="background:#7C3AED"></div><div class="holding-info"><div class="holding-name">DiGi.Com</div><div class="holding-sec">Telcos</div></div><div class="holding-alloc">9.1%</div></div>
-          <div class="holding-item"><div class="holding-dot" style="background:#E65100"></div><div class="holding-info"><div class="holding-name">+ 8 more positions</div><div class="holding-sec">Various sectors</div></div><div class="holding-alloc" style="color:var(--blue)">View →</div></div>
-        </div>
-      </div>
 
-      <!-- Recent Activity -->
-      <div class="section">
-        <div class="section-head">
-          <span class="section-title">Recent Activity</span>
-          <span class="section-link" onclick="switchTab('fund')">All →</span>
-        </div>
-        <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:0 16px;">
-          <div class="tx-item">
-            <div class="tx-icon" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7-7 7 7"/></svg></div>
-            <div class="tx-info"><div class="tx-type">Subscription</div><div class="tx-date">15 Mar 2026 · SUB-20260315</div></div>
-            <div class="tx-amt" style="color:var(--green)">+RM 5,000</div>
-          </div>
-          <div class="tx-item">
-            <div class="tx-icon" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/></svg></div>
-            <div class="tx-info"><div class="tx-type">Distribution · Interim</div><div class="tx-date">15 Jan 2026 · FY25</div></div>
-            <div class="tx-amt" style="color:var(--green)">+RM 524</div>
-          </div>
-          <div class="tx-item">
-            <div class="tx-icon" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7-7 7 7"/></svg></div>
-            <div class="tx-info"><div class="tx-type">Subscription</div><div class="tx-date">15 Mar 2024 · SUB-20240315</div></div>
-            <div class="tx-amt" style="color:var(--green)">+RM 50,000</div>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- ── FUND PAGE ── -->
-    <div class="page" id="pg-fund">
-      <div style="height:16px"></div>
+    <!-- ── ALL MENU PAGE ── -->
+        <div id="pages-mount"></div>
 
-      <!-- Fund hero -->
-      <div class="fund-card">
-        <div class="fund-card-label">ZY-Invest Fund</div>
-        <div class="fund-card-val">RM 24.6 M AUM</div>
-        <div class="fund-stats">
-          <div class="fund-stat"><div class="fund-stat-l">NTA</div><div class="fund-stat-v">1.0245</div></div>
-          <div class="fund-stat"><div class="fund-stat-l">Return</div><div class="fund-stat-v">+8.90%</div></div>
-          <div class="fund-stat"><div class="fund-stat-l">IRR</div><div class="fund-stat-v">+14.8%</div></div>
-        </div>
-      </div>
-
-      <!-- Fund Info -->
-      <div class="section"><div class="section-title" style="margin-bottom:10px">Fund Details</div></div>
-      <div class="info-list">
-        <div class="info-row"><span class="info-label">Fund Manager</span><span class="info-value">ZY Capital Sdn Bhd</span></div>
-        <div class="info-row"><span class="info-label">Inception Date</span><span class="info-value">15 Mar 2022</span></div>
-        <div class="info-row"><span class="info-label">Benchmark</span><span class="info-value">FBM KLCI + 3%</span></div>
-        <div class="info-row"><span class="info-label">Min. Investment</span><span class="info-value">RM 10,000</span></div>
-        <div class="info-row"><span class="info-label">Management Fee</span><span class="info-value">1.50% p.a.</span></div>
-        <div class="info-row"><span class="info-label">FYE</span><span class="info-value">31 August</span></div>
-      </div>
-
-      <!-- Distributions -->
-      <div class="section" style="margin-top:16px">
-        <div class="section-head">
-          <span class="section-title">Distributions</span>
-          <span style="font-size:.78rem;color:var(--fg-3)">Total: RM 867.20</span>
-        </div>
-      </div>
-      <div class="info-list" style="margin:0 16px 16px">
-        <div class="dist-item"><span class="dist-fy">FY25</span><span class="dist-type">Interim · 2.28 sen</span><span class="dist-amt">+RM 524.00</span></div>
-        <div class="dist-item"><span class="dist-fy">FY25</span><span class="dist-type">Final · 1.56 sen</span><span class="dist-amt">+RM 135.70</span></div>
-        <div class="dist-item"><span class="dist-fy">FY25</span><span class="dist-type">Special · 0.27 sen</span><span class="dist-amt">+RM 92.50</span></div>
-        <div class="dist-item"><span class="dist-fy">FY24</span><span class="dist-type">Interim · 0.92 sen</span><span class="dist-amt">+RM 62.40</span></div>
-        <div class="dist-item"><span class="dist-fy">FY24</span><span class="dist-type">Final · 0.85 sen</span><span class="dist-amt">+RM 35.80</span></div>
-        <div class="dist-item"><span class="dist-fy">FY23</span><span class="dist-type">Final · 0.23 sen</span><span class="dist-amt">+RM 16.80</span></div>
-      </div>
-    </div>
-
-    <!-- ── PROFILE PAGE ── -->
-    <div class="page" id="pg-profile">
-      <div class="prof-header">
-        <div class="prof-av-lg">HM</div>
-        <div class="prof-name">Tan Hui Mei</div>
-        <div class="prof-email">huimei.tan@gmail.com</div>
-        <span class="prof-badge">Verified Investor · ZYI-2024-0014</span>
-      </div>
-
-      <div style="height:16px"></div>
-      <div class="menu-group">
-        <div class="menu-group-label">Account</div>
-        <div class="menu-list">
-          <div class="menu-item" onclick="switchTab('profile-detail')">
-            <div class="menu-ic" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
-            <div class="menu-text"><b>Personal Profile</b><span>Name, contact &amp; bank account</span></div>
-            <span class="menu-arr">›</span>
-          </div>
-          <div class="menu-item" onclick="switchTab('password')">
-            <div class="menu-ic" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
-            <div class="menu-text"><b>Password &amp; Security</b><span>Update password &amp; 2FA</span></div>
-            <span class="menu-arr">›</span>
-          </div>
-          <div class="menu-item" onclick="switchTab('nominee')">
-            <div class="menu-ic" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3 2.5-4.6 5.5-4.6S14.5 17 14.5 20"/><circle cx="17" cy="9" r="2.6"/><path d="M16 15.6c2.6.2 4.5 1.7 4.5 4.4"/></svg></div>
-            <div class="menu-text"><b>Nominee</b><span>Beneficiary designation</span></div>
-            <span class="menu-arr">›</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="menu-group" style="margin-top:14px">
-        <div class="menu-group-label">Portfolio</div>
-        <div class="menu-list">
-          <div class="menu-item" onclick="switchTab('portfolio')">
-            <div class="menu-ic" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
-            <div class="menu-text"><b>Account Summary</b><span>Portfolio value &amp; NTA chart</span></div>
-            <span class="menu-arr">›</span>
-          </div>
-          <div class="menu-item" onclick="switchTab('fund')">
-            <div class="menu-ic" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></div>
-            <div class="menu-text"><b>Fund &amp; Distributions</b><span>Fund overview &amp; payments</span></div>
-            <span class="menu-arr">›</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="menu-group" style="margin-top:14px">
-        <div class="menu-group-label">Actions</div>
-        <div class="menu-list">
-          <div class="menu-item" onclick="openSheet('subscribe')">
-            <div class="menu-ic" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7-7 7 7"/></svg></div>
-            <div class="menu-text"><b>Subscribe</b><span>Add funds to your account</span></div>
-            <span class="menu-arr">›</span>
-          </div>
-          <div class="menu-item" onclick="openSheet('redeem')">
-            <div class="menu-ic" style="background:var(--orange-bg);color:var(--orange)"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7 7 7-7"/></svg></div>
-            <div class="menu-text"><b>Redeem</b><span>Withdraw from your account</span></div>
-            <span class="menu-arr">›</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="menu-group" style="margin-top:14px;margin-bottom:8px">
-        <div class="menu-list">
-          <div class="menu-item danger" onclick="doLogout()">
-            <div class="menu-ic" style="background:var(--red-bg);color:var(--red)"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></div>
-            <div class="menu-text"><b>Sign Out</b></div>
-            <span class="menu-arr">›</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  
-    <!-- ── DISCOVER PAGE ── -->
-    <div class="page" id="pg-discover">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:32px 24px;text-align:center;">
-        <div style="width:72px;height:72px;border-radius:20px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
-          <svg width="32" height="32" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        </div>
-        <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:1.5rem;color:var(--fg-1);margin-bottom:10px;">Coming Soon</div>
-        <div style="font-size:.88rem;color:var(--fg-3);line-height:1.7;max-width:260px;">Discover new investment opportunities, fund insights, market research and curated content — launching soon.</div>
-        <div style="margin-top:28px;padding:14px 20px;background:var(--blue-bg);border-radius:12px;text-align:left;max-width:300px;width:100%;">
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:10px;">What's coming</div>
-          <div style="display:flex;flex-direction:column;gap:9px;">
-            <div style="display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--fg-2)"><span style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></span>Fund research &amp; news</div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--fg-2)"><span style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></span>Market insights &amp; commentary</div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--fg-2)"><span style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></span>Investment education</div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--fg-2)"><span style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></span>Bursa watchlist &amp; screener</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── MARKET PAGE ── -->
-    <div class="page" id="pg-market">
-      <div style="padding:16px 16px 8px;">
-        <div style="font-size:1rem;font-weight:700;color:var(--fg-1);margin-bottom:2px;">Global Markets</div>
-        <div style="font-size:.75rem;color:var(--fg-3)">Last updated <span id="mktTime"></span></div>
-      </div>
-
-      <!-- Bursa FBMKLCI (featured) -->
-      <div style="margin:8px 16px 16px;background:linear-gradient(135deg,var(--blue-dark),var(--blue));border-radius:16px;padding:18px 18px 16px;color:#fff;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div>
-            <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:3px;">Bursa Malaysia</div>
-            <div style="font-size:1.05rem;font-weight:700;">FBM KLCI</div>
-          </div>
-          <div style="background:rgba(255,255,255,.12);padding:4px 10px;border-radius:99px;font-size:.68rem;font-weight:700;opacity:.8;">MY · MYR</div>
-        </div>
-        <div style="font-size:2rem;font-weight:700;letter-spacing:-.02em;margin-bottom:4px;" id="klciVal">1,524.38</div>
-        <div style="display:flex;align-items:center;gap:16px;">
-          <span id="klciChg" style="font-size:.88rem;font-weight:700;color:#A5F3A0">+8.72 (+0.57%)</span>
-          <canvas id="klciSparkline" width="120" height="36" style="opacity:.7"></canvas>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;">
-          <div style="background:rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;"><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;opacity:.65;margin-bottom:3px;">Open</div><div style="font-size:.82rem;font-weight:700;">1,518.42</div></div>
-          <div style="background:rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;"><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;opacity:.65;margin-bottom:3px;">High</div><div style="font-size:.82rem;font-weight:700;">1,527.61</div></div>
-          <div style="background:rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;"><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;opacity:.65;margin-bottom:3px;">Low</div><div style="font-size:.82rem;font-weight:700;">1,516.09</div></div>
-        </div>
-      </div>
-
-      <!-- Region tabs -->
-      <div style="padding:0 16px;margin-bottom:10px;">
-        <div class="seg-sm" style="display:inline-flex;">
-          <button class="on" id="mkt-tab-asia" onclick="mktTab('asia',this)">Asia</button>
-          <button id="mkt-tab-us" onclick="mktTab('us',this)">Americas</button>
-          <button id="mkt-tab-eu" onclick="mktTab('eu',this)">Europe</button>
-          <button id="mkt-tab-crypto" onclick="mktTab('crypto',this)">Crypto</button>
-        </div>
-      </div>
-
-      <!-- Index list -->
-      <div style="background:#fff;border:1px solid var(--border);border-radius:14px;margin:0 16px 16px;overflow:hidden;" id="mktList"></div>
-    </div>
-
-
-    <!-- ── PERSONAL PROFILE PAGE ── -->
-    <div class="page" id="pg-profile-detail">
-      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px 10px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:5;">
-        <button onclick="switchTab('profile')" style="background:none;border:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg-2);">
-          <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <span style="font-size:.97rem;font-weight:700;color:var(--fg-1);">Personal Profile</span>
-      </div>
-
-      <!-- Avatar section -->
-      <div style="display:flex;flex-direction:column;align-items:center;padding:24px 16px 20px;border-bottom:1px solid var(--border);">
-        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(145deg,var(--blue),var(--blue-light));color:#fff;font-size:1.4rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">HM</div>
-        <div style="font-size:.97rem;font-weight:700;color:var(--fg-1);">Tan Hui Mei</div>
-        <div style="font-size:.78rem;color:var(--fg-3);margin-top:2px;">ZYI-2024-0014 · Active</div>
-        <button onclick="showToastM('Photo upload coming soon')" style="margin-top:10px;font:inherit;font-size:.78rem;font-weight:600;color:var(--blue);background:var(--blue-bg);border:none;padding:6px 16px;border-radius:99px;cursor:pointer;">Change Photo</button>
-      </div>
-
-      <!-- Personal details -->
-      <div style="padding:16px 16px 6px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Personal Details</div>
-      <div style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
-        <div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Full Name</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">Tan Hui Mei</div></div><div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">NRIC/Passport</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">901215-07-5678</div></div><div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Date of Birth</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">15 Dec 1990</div></div><div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Nationality</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">Malaysian</div></div><div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Gender</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">Female</div></div>
-      </div>
-
-      <div style="padding:16px 16px 6px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Contact</div>
-      <div style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
-        <div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Email</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">huimei.tan@gmail.com</div></div><div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Mobile</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">+60 11-234 5678</div></div><div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Address</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">12 Jalan Bukit Bintang, 55100 KL</div></div>
-      </div>
-
-      <div style="padding:16px 16px 6px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Bank Account</div>
-      <div style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
-        <div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Bank</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">Maybank Berhad</div></div><div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Account Name</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">Tan Hui Mei</div></div><div style="padding:13px 16px;border-bottom:1px solid var(--border);"><div style="font-size:.72rem;color:var(--fg-3);margin-bottom:4px;">Account Number</div><div style="font-size:.9rem;font-weight:600;color:var(--fg-1);">1122 3344 2048</div></div>
-      </div>
-
-      <div style="padding:16px;">
-        <button onclick="showToastM('Changes saved')" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.92rem;font-weight:700;cursor:pointer;">Save Changes</button>
-      </div>
-    </div>
-
-    <!-- ── PASSWORD & SECURITY PAGE ── -->
-    <div class="page" id="pg-password">
-      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px 10px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:5;">
-        <button onclick="switchTab('profile')" style="background:none;border:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg-2);">
-          <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <span style="font-size:.97rem;font-weight:700;color:var(--fg-1);">Password &amp; Security</span>
-      </div>
-
-      <div style="padding:20px 16px 8px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Change Password</div>
-      <div style="padding:0 16px;display:flex;flex-direction:column;gap:12px;">
-        <div>
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:5px;">New Password</div>
-          <div style="position:relative;">
-            <input id="mPwd1" type="password" placeholder="Enter new password" style="width:100%;font:inherit;font-size:.92rem;color:var(--fg-1);background:var(--gray-50);border:1.5px solid var(--border);border-radius:11px;padding:12px 44px 12px 13px;outline:none;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
-            <button onclick="toggleMPwd('mPwd1')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94A3B8;display:flex;"><svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-          </div>
-        </div>
-        <div>
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:5px;">Confirm New Password</div>
-          <input id="mPwd2" type="password" placeholder="Re-enter new password" style="width:100%;font:inherit;font-size:.92rem;color:var(--fg-1);background:var(--gray-50);border:1.5px solid var(--border);border-radius:11px;padding:12px 13px;outline:none;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
-        </div>
-        <div style="background:var(--gray-50);border-radius:10px;padding:11px 13px;font-size:.76rem;color:var(--fg-3);line-height:1.6;">
-          <b style="color:var(--fg-2);">Password requirements:</b> min 8 characters, one uppercase, one number, one symbol.
-        </div>
-        <button onclick="saveMPwd()" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.92rem;font-weight:700;cursor:pointer;">Update Password</button>
-      </div>
-
-      <div style="padding:20px 16px 8px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Security</div>
-      <div style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);">
-          <div><div style="font-size:.88rem;font-weight:600;color:var(--fg-1);">Biometric Login</div><div style="font-size:.72rem;color:var(--fg-3);margin-top:2px;">Face ID / Fingerprint</div></div>
-          <div id="bioToggle" onclick="toggleBio()" style="width:44px;height:26px;border-radius:13px;background:var(--blue);position:relative;cursor:pointer;transition:.2s;"><div style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;"></div></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;">
-          <div><div style="font-size:.88rem;font-weight:600;color:var(--fg-1);">Login Notifications</div><div style="font-size:.72rem;color:var(--fg-3);margin-top:2px;">Alert on new sign-in</div></div>
-          <div id="notifToggle" onclick="toggleNotif()" style="width:44px;height:26px;border-radius:13px;background:var(--green);position:relative;cursor:pointer;transition:.2s;"><div style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;"></div></div>
-        </div>
-      </div>
-      <div style="padding:16px;font-size:.76rem;color:var(--fg-3);text-align:center;">Last login: 30 Jun 2026 · 09:41 AM · Chrome / Windows</div>
-    </div>
-
-    <!-- ── NOMINEE PAGE ── -->
-    <div class="page" id="pg-nominee">
-      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px 10px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:5;">
-        <button onclick="switchTab('profile')" style="background:none;border:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--fg-2);">
-          <svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        </button>
-        <span style="font-size:.97rem;font-weight:700;color:var(--fg-1);">Nominees</span>
-        <button id="addNomBtn" onclick="addMNom()" style="margin-left:auto;font:inherit;font-size:.78rem;font-weight:700;color:#fff;background:var(--blue);border:none;padding:6px 14px;border-radius:99px;cursor:pointer;">+ Add</button>
-      </div>
-
-      <!-- Allocation bar -->
-      <div style="padding:14px 16px 10px;">
-        <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:8px;">Allocation</div>
-        <div style="display:flex;height:8px;border-radius:99px;overflow:hidden;gap:1px;" id="nomBarM"></div>
-        <div style="display:flex;justify-content:flex-end;margin-top:6px;font-size:.72rem;font-weight:700;" id="nomTotalM"></div>
-      </div>
-
-      <!-- Nominee list -->
-      <div id="nomListM" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"></div>
-
-      <!-- Editor sheet trigger -->
-      <div style="padding:16px;">
-        <div id="nomEditorM" style="background:var(--gray-50);border:1.5px solid var(--border);border-radius:14px;padding:16px;display:none;">
-          <div style="font-size:.82rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;" id="nomEditorTitle">Edit Nominee</div>
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div><div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-3);margin-bottom:4px;">Full Name</div><input id="mNomName" type="text" placeholder="e.g. Tan Ah Kow" style="width:100%;font:inherit;font-size:.88rem;color:var(--fg-1);background:#fff;border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;outline:none;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"></div>
-            <div><div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-3);margin-bottom:4px;">Relationship</div>
-            <select id="mNomRel" style="width:100%;font:inherit;font-size:.88rem;color:var(--fg-1);background:#fff;border:1.5px solid var(--border);border-radius:9px;padding:10px 12px;outline:none;"><option>Spouse</option><option>Parent</option><option>Child</option><option>Sibling</option><option>Other</option></select></div>
-            <div><div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-3);margin-bottom:4px;">Allocation: <span id="mNomAllocLbl">100</span>%</div>
-            <input id="mNomAlloc" type="range" min="0" max="100" step="5" value="100" oninput="mNomSlide(this)" style="width:100%;accent-color:var(--blue);"></div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:14px;">
-            <button onclick="saveMNom()" style="flex:1;padding:12px;border-radius:10px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.86rem;font-weight:700;cursor:pointer;">Save</button>
-            <button onclick="deleteMNom()" style="padding:12px 16px;border-radius:10px;border:1.5px solid var(--red);background:#fff;color:var(--red);font:inherit;font-size:.86rem;font-weight:700;cursor:pointer;">Remove</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ── WATCHLIST PAGE ── -->
-    <div class="page" id="pg-watchlist">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;">
-        <div>
-          <div style="font-size:1rem;font-weight:700;color:var(--fg-1);">Watchlist</div>
-          <div style="font-size:.72rem;color:var(--fg-3);margin-top:1px;" id="wlTime"></div>
-        </div>
-        <button onclick="openWlSearch()" style="display:flex;align-items:center;gap:6px;font:inherit;font-size:.8rem;font-weight:700;color:#fff;background:var(--blue);border:none;padding:8px 14px;border-radius:99px;cursor:pointer;">
-          <svg width="14" height="14" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add
-        </button>
-      </div>
-
-      <!-- Summary strip -->
-      <div style="display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
-        <div style="flex-shrink:0;background:#fff;border:1px solid var(--border);border-radius:11px;padding:10px 14px;min-width:110px;">
-          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3);margin-bottom:4px;">Watching</div>
-          <div style="font-size:1.1rem;font-weight:700;color:var(--fg-1);" id="wlCount">0</div>
-        </div>
-        <div style="flex-shrink:0;background:#fff;border:1px solid var(--border);border-radius:11px;padding:10px 14px;min-width:110px;">
-          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3);margin-bottom:4px;">Gainers</div>
-          <div style="font-size:1.1rem;font-weight:700;color:var(--green);" id="wlGainers">0</div>
-        </div>
-        <div style="flex-shrink:0;background:#fff;border:1px solid var(--border);border-radius:11px;padding:10px 14px;min-width:110px;">
-          <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-3);margin-bottom:4px;">Losers</div>
-          <div style="font-size:1.1rem;font-weight:700;color:var(--red);" id="wlLosers">0</div>
-        </div>
-      </div>
-
-      <!-- Watchlist items -->
-      <div id="wlList" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"></div>
-
-      <!-- Empty state -->
-      <div id="wlEmpty" style="display:none;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;">
-        <div style="width:60px;height:60px;border-radius:16px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-          <svg width="26" height="26" viewBox="0 0 24 24" stroke="var(--fg-3)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        </div>
-        <div style="font-size:.97rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;">No stocks yet</div>
-        <div style="font-size:.82rem;color:var(--fg-3);line-height:1.6;">Tap <b>+ Add</b> to start watching stocks and indices.</div>
-      </div>
-    </div>
 
     <!-- Add-to-watchlist search sheet -->
     <div class="sheet" id="wlSearchSheet">
@@ -654,7 +501,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
             onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
           <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;" width="16" height="16" viewBox="0 0 24 24" stroke="var(--fg-3)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         </div>
-        <div id="wlSearchResults" style="display:flex;flex-direction:column;gap:0;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;max-height:320px;overflow-y:auto;"></div>
+        <div id="wlSearchResults" style="display:flex;flex-direction:column;gap:0;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;max-height:320px;overflow-y:auto;scrollbar-width:none;"></div>
         <div id="wlSearchEmpty" style="display:none;text-align:center;padding:28px;font-size:.84rem;color:var(--fg-3);">No results found</div>
       </div>
     </div>
@@ -663,9 +510,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
   <!-- BOTTOM TAB BAR -->
   <div class="tabbar">
-    <button class="tab" id="tab-discover" onclick="switchTab('discover')">
-      <div class="tab-ic"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
-      <span class="tab-lbl">Discover</span>
+    <button class="tab" id="tab-fund" onclick="switchTab('fund')">
+      <div class="tab-ic"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <span class="tab-lbl">Fund</span>
     </button>
     <button class="tab" id="tab-market" onclick="switchTab('market')">
       <div class="tab-ic"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
@@ -675,13 +522,17 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
       <div class="tab-ic"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
       <span class="tab-lbl">Watchlist</span>
     </button>
-    <button class="tab" id="tab-fund" onclick="switchTab('fund')">
-      <div class="tab-ic"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-      <span class="tab-lbl">Fund</span>
+    <button class="tab" id="tab-discover" onclick="switchTab('discover')">
+      <div class="tab-ic"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+      <span class="tab-lbl">Discover</span>
     </button>
     <button class="tab active" id="tab-portfolio" onclick="switchTab('portfolio')">
-      <div class="tab-ic"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
-      <span class="tab-lbl">Portfolio</span>
+      <div class="tab-ic"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5H5a3 3 0 00-3 3v8a3 3 0 003 3h14a3 3 0 003-3V8a3 3 0 00-3-3z"/><path d="M3 10h18"/><circle cx="7" cy="15" r="1" fill="currentColor"/><path d="M11 15h6"/></svg></div>
+      <span class="tab-lbl">Accounts</span>
+    </button>
+    <button class="tab" id="tab-profile" onclick="switchTab('profile')">
+      <div class="tab-ic"><svg viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg></div>
+      <span class="tab-lbl">Me</span>
     </button>
   </div>
 
@@ -699,7 +550,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
     <button onclick="closeSearch()" style="font:inherit;font-size:.88rem;font-weight:600;color:var(--blue);background:none;border:none;cursor:pointer;padding:4px 2px;white-space:nowrap;">Cancel</button>
   </div>
   <!-- Recent / Results -->
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
     <div id="searchRecent">
       <div style="padding:14px 16px 8px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Recent</div>
       <div id="searchRecentList" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"></div>
@@ -712,8 +563,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
   </div>
 </div>
 
+
 <!-- ── STOCK DETAIL SHEET ── -->
-<div class="sheet" id="stockSheet" style="max-height:92vh;overflow-y:auto;">
+<div class="sheet" id="stockSheet" style="max-height:92vh;overflow-y:auto;scrollbar-width:none;">
   <div class="sheet-handle"></div>
   <div id="stockSheetContent" style="padding:0 0 32px;"></div>
 </div>
@@ -731,6 +583,13 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
     <button class="sheet-x" onclick="closeSheet()">✕</button>
   </div>
   <div class="sheet-body">
+    <div class="sheet-field">
+      <label>Account</label>
+      <div style="display:flex;gap:2px;background:var(--gray-100);border-radius:10px;padding:3px;">
+        <button id="subAcct-pa" onclick="selectAcct('sub','pa')" style="flex:1;font:inherit;font-size:.8rem;font-weight:700;padding:8px;border:none;border-radius:8px;background:#fff;color:var(--blue);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);">Personal Account</button>
+        <button id="subAcct-ja" onclick="selectAcct('sub','ja')" style="flex:1;font:inherit;font-size:.8rem;font-weight:700;padding:8px;border:none;border-radius:8px;background:none;color:var(--fg-3);cursor:pointer;">Joint Account</button>
+      </div>
+    </div>
     <div style="background:var(--gray-50);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.8rem;color:var(--fg-2)">
       <b style="color:var(--blue)">Fund Bank Account</b><br>
       Maybank · ZY-Invest Fund Sdn Bhd<br>
@@ -741,9 +600,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
       <label>Subscription Amount (RM)</label>
       <input class="sheet-inp" type="number" id="mSubAmt" placeholder="e.g. 10,000.00" oninput="calcSubUnits()">
       <div class="sheet-chips">
-        <button onclick="setSubAmt(10000)">RM 10k</button>
-        <button onclick="setSubAmt(20000)">RM 20k</button>
-        <button onclick="setSubAmt(50000)">RM 50k</button>
+        <button onclick="setSubAmt(10000)">MYR 10k</button>
+        <button onclick="setSubAmt(20000)">MYR 20k</button>
+        <button onclick="setSubAmt(50000)">MYR 50k</button>
       </div>
     </div>
     <div class="sheet-field">
@@ -762,9 +621,16 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
     <button class="sheet-x" onclick="closeSheet()">✕</button>
   </div>
   <div class="sheet-body">
+    <div class="sheet-field">
+      <label>Account</label>
+      <div style="display:flex;gap:2px;background:var(--gray-100);border-radius:10px;padding:3px;">
+        <button id="redAcct-pa" onclick="selectAcct('red','pa')" style="flex:1;font:inherit;font-size:.8rem;font-weight:700;padding:8px;border:none;border-radius:8px;background:#fff;color:var(--blue);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);">Personal Account</button>
+        <button id="redAcct-ja" onclick="selectAcct('red','ja')" style="flex:1;font:inherit;font-size:.8rem;font-weight:700;padding:8px;border:none;border-radius:8px;background:none;color:var(--fg-3);cursor:pointer;">Joint Account</button>
+      </div>
+    </div>
     <div style="background:var(--gray-50);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.8rem;color:var(--fg-2)">
       <b>Payout to:</b> Maybank ···· 2048 · Tan Hui Mei<br>
-      <b>Units held:</b> 59,763.79 · Value: RM 61,228
+      <b>Units held:</b> <span id="redHeldUnits">59,763.79</span> · Value: MYR <span id="redHeldValue">61,228</span>
     </div>
     <div class="sheet-field">
       <label>Withdrawal Amount (RM)</label>
@@ -783,8 +649,6 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../../assets/js/supabase-auth.js"></script>
 <script>
 // ── STATUS BAR CLOCK ─────────────────────────────────────────────────────────
 function updateClock(){
@@ -795,16 +659,124 @@ updateClock();setInterval(updateClock,60000);
 
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 var activeTab='portfolio';
+var DRILL_PAGES={
+  password:{title:'Password & Security',back:'profile'},
+  transaction:{title:'Transaction',back:'all'},
+  distribution:{title:'Distribution',back:'all'},
+  assetdetails:{title:'Asset Details',back:'portfolio'}
+};
+function topbarBackClick(){
+  var d=DRILL_PAGES[activeTab];
+  switchTab(d?d.back:'portfolio');
+}
+function updateTopbarChrome(tab){
+  var d=DRILL_PAGES[tab];
+  var logo=document.getElementById('topbarLogo');
+  var back=document.getElementById('topbarBack');
+  if(d){
+    if(logo)logo.style.display='none';
+    if(back){back.style.display='flex';document.getElementById('topbarBackTitle').textContent=d.title;}
+  } else {
+    if(logo)logo.style.display='flex';
+    if(back)back.style.display='none';
+  }
+}
+function switchFundTab(tab){
+  document.querySelectorAll('.ftab').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('ftab-'+tab).classList.add('active');
+  ['overview','financial','compare','historical','shareholders'].forEach(function(t){
+    document.getElementById('ftab-'+t+'-body').style.display=(t===tab?'block':'none');
+  });
+  if(tab==='overview'){setTimeout(function(){drawMChart(mPeriod);},50);}
+  document.getElementById('mainScroll').scrollTop=0;
+}
+
+var standalonePages={};
+var pendingTab=null;
 function switchTab(tab){
+  if(standalonePages[tab]){location.href=standalonePages[tab];return;}
+  updateTopbarChrome(tab);
+  var pgEl=document.getElementById('pg-'+tab);
+  var tabEl=document.getElementById('tab-'+tab);
+  if(!pgEl){
+    // Target page hasn't finished loading yet (async fetch) — highlight the
+    // tab now and finish the switch once loadPages() injects it, instead of
+    // clearing the current page and leaving nothing to show.
+    pendingTab=tab;
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+    if(tabEl) tabEl.classList.add('active');
+    return;
+  }
+  pendingTab=null;
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
-  var tabEl=document.getElementById('tab-'+tab);
   if(tabEl) tabEl.classList.add('active');
-  document.getElementById('pg-'+tab).classList.add('active');
+  pgEl.classList.add('active');
   document.getElementById('mainScroll').scrollTop=0;
   activeTab=tab;
   if(tab==='market'){renderMktList();drawKlciSparkline();updateMktTime();}
   if(tab==='watchlist'){renderWatchlist();}
+  if(tab==='transaction'){renderTxList();}
+  if(tab==='distribution'){renderDxList();}
+  if(tab==='assetdetails'){setTimeout(function(){drawAdDonut();drawAdTrend(adPeriod);},50);}
+  if(tab==='portfolio'){setTimeout(drawSparkline,50);}
+  if(tab==='profile')setTimeout(function(){adjustProfileSpacer();},50);
+  if(tab==='fund'){
+    function tryInitFundCharts(n){
+      var c=document.getElementById('candleChart');
+      if(c && c.parentElement && c.parentElement.clientWidth>0){
+        drawCandleChart('ytd',null,null);
+        attachCandleListeners();
+        renderCorrMatrix();
+        drawRVChart();
+      } else if(n>0){setTimeout(function(){tryInitFundCharts(n-1);},120);}
+    }
+    setTimeout(function(){tryInitFundCharts(10);},80);
+  }
+}
+
+// ── PASSWORD MODAL ──────────────────────────────────────────────────────────
+function openPwModal(){
+  document.getElementById('pwStep1').style.display='block';
+  document.getElementById('pwStep2').style.display='none';
+  document.getElementById('pwCurrent').value='';
+  document.getElementById('pwCurrent').style.borderColor='var(--border)';
+  document.getElementById('pwCurrentErr').style.display='none';
+  document.getElementById('pwNew').value='';
+  document.getElementById('pwConfirm').value='';
+  document.getElementById('pwMatchErr').style.display='none';
+  document.getElementById('pwScrim').style.display='block';
+  document.getElementById('pwModal').style.display='block';
+  setTimeout(function(){document.getElementById('pwCurrent').focus();},100);
+}
+function closePwModal(){
+  document.getElementById('pwScrim').style.display='none';
+  document.getElementById('pwModal').style.display='none';
+}
+function toggleVis(id){
+  var f=document.getElementById(id);
+  f.type=f.type==='password'?'text':'password';
+}
+function verifyPw(){
+  var v=document.getElementById('pwCurrent').value;
+  if(!v){document.getElementById('pwCurrent').focus();return;}
+  if(v!=='password123'){
+    document.getElementById('pwCurrentErr').style.display='block';
+    document.getElementById('pwCurrent').style.borderColor='var(--red)';
+    return;
+  }
+  document.getElementById('pwCurrentErr').style.display='none';
+  document.getElementById('pwStep1').style.display='none';
+  document.getElementById('pwStep2').style.display='block';
+  setTimeout(function(){document.getElementById('pwNew').focus();},100);
+}
+function savePw(){
+  var n=document.getElementById('pwNew').value;
+  var c=document.getElementById('pwConfirm').value;
+  if(n.length<8){document.getElementById('pwNew').style.borderColor='var(--red)';return;}
+  if(n!==c){document.getElementById('pwMatchErr').style.display='block';document.getElementById('pwConfirm').style.borderColor='var(--red)';return;}
+  closePwModal();
+  showToastM('Password updated successfully');
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
@@ -826,6 +798,7 @@ var MNTA={
 var mPeriod='1d';
 function drawMChart(period){
   var canvas=document.getElementById('mChart');
+  if(!canvas)return;
   var ctx=canvas.getContext('2d');
   var data=MNTA[period];
   var dpr=window.devicePixelRatio||1;
@@ -868,33 +841,255 @@ function switchMPeriod(p,btn){
   btn.classList.add('on');
   drawMChart(p);
 }
-window.addEventListener('load',function(){drawMChart('1d');renderMktList();drawKlciSparkline();updateMktTime();renderWatchlist();setInterval(updateMktTime,1000);});
-window.addEventListener('resize',function(){drawMChart(mPeriod);});
+window.addEventListener('resize',function(){drawMChart(mPeriod);drawSparkline();});
+
+// ── PORTFOLIO VALUE TOGGLE ────────────────────────────────────────────────────
+var portfolioVisible=true;
+function togglePortfolioValue(){
+  portfolioVisible=!portfolioVisible;
+  var el=document.getElementById('portfolioValue');
+  var icon=document.getElementById('eyeIcon');
+  if(el) el.textContent=portfolioVisible?'58,000.00':'*****';
+  if(icon) icon.innerHTML=portfolioVisible
+    ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    :'<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+}
+
+// ── PORTFOLIO SPARKLINE ───────────────────────────────────────────────────────
+function drawSparkline(){
+  var c=document.getElementById('sparkChart');
+  if(!c)return;
+  var w=100,h=44;
+  c.width=w; c.height=h;
+  var ctx=c.getContext('2d');
+  var pts=[56224,58100,59800,61200,60400,59100,57800,58700,60200,59600,60800,61228];
+  var min=Math.min.apply(null,pts),max=Math.max.apply(null,pts);
+  var pX=2,pY=6;
+  function sx(i){return pX+(i/(pts.length-1))*(w-pX*2);}
+  function sy(v){return h-pY-(v-min)/(max-min)*(h-pY*2);}
+  // dashed baseline
+  var avgY=sy(pts.reduce(function(a,b){return a+b;},0)/pts.length);
+  ctx.save();
+  ctx.setLineDash([3,3]);
+  ctx.beginPath();
+  ctx.moveTo(pX,avgY); ctx.lineTo(w-pX,avgY);
+  ctx.strokeStyle='rgba(0,0,0,.2)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.restore();
+  // fill
+  var grad=ctx.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,'rgba(21,101,192,0.25)');
+  grad.addColorStop(1,'rgba(21,101,192,0.02)');
+  ctx.beginPath();
+  ctx.moveTo(sx(0),sy(pts[0]));
+  for(var i=1;i<pts.length;i++) ctx.lineTo(sx(i),sy(pts[i]));
+  ctx.lineTo(sx(pts.length-1),h); ctx.lineTo(sx(0),h); ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
+  // line
+  ctx.beginPath();
+  ctx.moveTo(sx(0),sy(pts[0]));
+  for(var i=1;i<pts.length;i++) ctx.lineTo(sx(i),sy(pts[i]));
+  ctx.strokeStyle='#1565C0'; ctx.lineWidth=2;
+  ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
+  // dot
+  ctx.beginPath();
+  ctx.arc(sx(pts.length-1),sy(pts[pts.length-1]),3,0,Math.PI*2);
+  ctx.fillStyle='#1565C0'; ctx.fill();
+}
+
+// ── TRANSACTIONS ──────────────────────────────────────────────────────────────
+var TX_DATA=[
+  {date:'02 Jul 2026',type:'Subscription',acct:'pa',kind:'deposit',amt:10000.00,units:9760.86},
+  {date:'28 Jun 2026',type:'Redemption',acct:'ja',kind:'withdrawal',amt:5000.00,units:5416.67},
+  {date:'19 Jun 2026',type:'Subscription',acct:'ja',kind:'deposit',amt:15000.00,units:16250.00},
+  {date:'11 Jun 2026',type:'Redemption',acct:'pa',kind:'withdrawal',amt:3200.00,units:3123.48},
+  {date:'02 Jun 2026',type:'Subscription',acct:'pa',kind:'deposit',amt:20000.00,units:19521.72},
+  {date:'24 May 2026',type:'Subscription',acct:'ja',kind:'deposit',amt:10000.00,units:10833.33},
+  {date:'15 May 2026',type:'Redemption',acct:'pa',kind:'withdrawal',amt:8000.00,units:7808.69},
+  {date:'03 May 2026',type:'Subscription',acct:'pa',kind:'deposit',amt:50000.00,units:48804.29}
+];
+var txFilter='all';
+function setTxFilter(f){
+  txFilter=f;
+  ['all','deposit','withdrawal'].forEach(function(k){var b=document.getElementById('txf-'+k);if(b)b.classList.toggle('on',k===f);});
+  renderTxList();
+}
+function fmtTxRM(n){return n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function renderTxList(){
+  var sel=document.getElementById('txAcctSelect');
+  if(!sel)return;
+  var acct=sel.value;
+  var rows=TX_DATA.filter(function(t){
+    return (txFilter==='all'||t.kind===txFilter)&&(acct==='all'||t.acct===acct);
+  });
+  var list=document.getElementById('txList');
+  if(!list)return;
+  if(!rows.length){list.innerHTML='<div class="tx-empty">No transactions found</div>';return;}
+  list.innerHTML=rows.map(function(t){
+    return '<div class="tx-row">'
+      +'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.type+'</div></div>'
+      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+fmtTxRM(t.units)+' units</div></div>'
+      +'</div>';
+  }).join('');
+}
+
+// ── DISTRIBUTIONS ────────────────────────────────────────────────────────
+var DX_DATA=[
+  {date:'30 Jun 2026',type:'Cash Payout',acct:'pa',kind:'cash',amt:842.50,units:0},
+  {date:'30 Jun 2026',type:'Unit Reinvestment',acct:'ja',kind:'reinvest',amt:410.00,units:400.20},
+  {date:'31 Mar 2026',type:'Cash Payout',acct:'ja',kind:'cash',amt:388.00,units:0},
+  {date:'31 Mar 2026',type:'Unit Reinvestment',acct:'pa',kind:'reinvest',amt:761.20,units:743.06},
+  {date:'31 Dec 2025',type:'Cash Payout',acct:'pa',kind:'cash',amt:695.40,units:0},
+  {date:'30 Sep 2025',type:'Unit Reinvestment',acct:'ja',kind:'reinvest',amt:352.80,units:344.60}
+];
+var dxFilter='all';
+function setDxFilter(f){
+  dxFilter=f;
+  ['all','cash','reinvest'].forEach(function(k){var b=document.getElementById('dxf-'+k);if(b)b.classList.toggle('on',k===f);});
+  renderDxList();
+}
+function fmtDxRM(n){return n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function renderDxList(){
+  var sel=document.getElementById('dxAcctSelect');
+  if(!sel)return;
+  var acct=sel.value;
+  var rows=DX_DATA.filter(function(t){
+    return (dxFilter==='all'||t.kind===dxFilter)&&(acct==='all'||t.acct===acct);
+  });
+  var list=document.getElementById('dxList');
+  if(!list)return;
+  if(!rows.length){list.innerHTML='<div class="dx-empty">No distributions found</div>';return;}
+  list.innerHTML=rows.map(function(t){
+    return '<div class="dx-row">'
+      +'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+t.type+'</div></div>'
+      +'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+' units':'—')+'</div></div>'
+      +'</div>';
+  }).join('');
+}
+
+// ── ASSET DETAILS ─────────────────────────────────────────────────────────────
+function drawAdDonut(){
+  var c=document.getElementById('adDonut');
+  if(!c)return;
+  var dpr=window.devicePixelRatio||1;
+  var W=c.parentElement.parentElement.clientWidth-32;
+  var size=Math.min(W,260);
+  var H=size*0.58;
+  c.width=size*dpr;c.height=H*dpr;
+  c.style.width=size+'px';c.style.height=H+'px';
+  var ctx=c.getContext('2d');ctx.scale(dpr,dpr);
+  var cx=size/2,cy=H*0.96,r=size*0.42,lw=r*0.11;
+  var segs=[{v:65.9,c:'#64B5F6'},{v:34.1,c:'#B39DDB'}];
+  var start=Math.PI;
+  ctx.lineCap='butt';
+  segs.forEach(function(s){
+    var ang=(s.v/100)*Math.PI;
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,start,start+ang);
+    ctx.lineWidth=lw;ctx.strokeStyle=s.c;ctx.stroke();
+    start+=ang;
+  });
+  var txt=document.getElementById('adDonutText');
+  if(txt){txt.style.top=(cy-6)+'px';txt.style.transform='translateY(-100%)';}
+}
+var AD_TREND={
+  ytd:{v:[76200,78100,79850,81200,83400,85100,86300,88000],l:['Jan','Mar','May','Jul']},
+  '1m':{v:[85200,85900,86400,85800,86900,87500,87200,88000],l:['Wk1','Wk2','Wk3','Wk4']},
+  '3m':{v:[80800,82100,83400,84900,86000,87100,87600,88000],l:['May','Jun','Jul']},
+  '1y':{v:[68200,71400,73900,76200,79850,83400,86300,88000],l:["Jul '25",'Jan',"Jul '26"]},
+  all:{v:[42000,51200,58900,66700,73900,79850,84900,88000],l:['2022','2024','2026']}
+};
+var adPeriod='ytd';
+function drawAdTrend(period){
+  var canvas=document.getElementById('adTrendChart');
+  if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var data=AD_TREND[period];
+  var dpr=window.devicePixelRatio||1;
+  var W=canvas.parentElement.clientWidth-32,H=150;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+  var vals=data.v,n=vals.length;
+  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),rng=(mx-mn)||1;
+  var padX=4,padY=10;
+  function px(i){return padX+(i/(n-1))*(W-padX*2);}
+  function py(v){return H-padY-((v-mn)/rng)*(H-padY*2);}
+  var grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(21,101,192,.18)');
+  grad.addColorStop(1,'rgba(21,101,192,0)');
+  ctx.beginPath();
+  ctx.moveTo(px(0),py(vals[0]));
+  for(var i=1;i<n;i++) ctx.lineTo(px(i),py(vals[i]));
+  ctx.lineTo(px(n-1),H-padY);ctx.lineTo(px(0),H-padY);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();ctx.strokeStyle='#1565C0';ctx.lineWidth=2;ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.moveTo(px(0),py(vals[0]));
+  for(var i=1;i<n;i++) ctx.lineTo(px(i),py(vals[i]));
+  ctx.stroke();
+  ctx.beginPath();ctx.arc(px(n-1),py(vals[n-1]),3.5,0,Math.PI*2);
+  ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#1565C0';ctx.lineWidth=2;ctx.stroke();
+  var lbls=data.l;
+  var l0=document.getElementById('adTrendL0'),l1=document.getElementById('adTrendL1'),l2=document.getElementById('adTrendL2');
+  if(l0)l0.textContent=lbls[0]||'';
+  if(l1)l1.textContent=lbls[Math.floor(lbls.length/2)]||'';
+  if(l2)l2.textContent=lbls[lbls.length-1]||'';
+}
+function switchAdPeriod(p,btn){
+  adPeriod=p;
+  document.querySelectorAll('#adSeg button').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  drawAdTrend(p);
+}
 
 // ── SUBSCRIBE / REDEEM ────────────────────────────────────────────────────────
-var NTA_P=1.0245,HELD_U=59763.79,HELD_V=61228;
+var NTA_P=1.0245;
+var ACCOUNTS={
+  pa:{label:'Personal Account',units:59763.79,value:61228},
+  ja:{label:'Joint Account',units:32500.00,value:30000}
+};
+var subAcct='pa',redAcct='pa';
 function openSheet(type){
   document.getElementById('sheetScrim').classList.add('vis');
   document.getElementById(type==='subscribe'?'subSheet':'redSheet').classList.add('vis');
+  if(type==='subscribe')selectAcct('sub','pa');else selectAcct('red','pa');
 }
 function closeSheet(){
   document.querySelectorAll('.sheet').forEach(function(s){s.classList.remove('vis');});
   document.getElementById('sheetScrim').classList.remove('vis');
 }
+function selectAcct(sheet,acct){
+  if(sheet==='sub')subAcct=acct;else redAcct=acct;
+  ['pa','ja'].forEach(function(a){
+    var btn=document.getElementById(sheet+'Acct-'+a);
+    if(!btn)return;
+    var on=a===acct;
+    btn.style.background=on?'#fff':'none';
+    btn.style.color=on?'var(--blue)':'var(--fg-3)';
+    btn.style.boxShadow=on?'0 1px 4px rgba(0,0,0,.1)':'none';
+  });
+  if(sheet==='red'){
+    var acc=ACCOUNTS[acct];
+    document.getElementById('redHeldUnits').textContent=fmtRM(acc.units);
+    document.getElementById('redHeldValue').textContent=fmtRM(acc.value);
+    document.getElementById('mRedAmt').value='';
+    document.getElementById('mRedUnits').value='—';
+  }
+}
 function fmtRM(n){return n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function setSubAmt(v){document.getElementById('mSubAmt').value=v;document.getElementById('mSubUnits').value=fmtRM(v/NTA_P)+' units';}
 function calcSubUnits(){var a=parseFloat(document.getElementById('mSubAmt').value);document.getElementById('mSubUnits').value=a>0?fmtRM(a/NTA_P)+' units':'—';}
-function setRedPct(p){var a=HELD_V*p/100;document.getElementById('mRedAmt').value=a.toFixed(2);document.getElementById('mRedUnits').value=fmtRM(HELD_U*p/100)+' units';}
-function calcRedUnits(){var a=parseFloat(document.getElementById('mRedAmt').value);document.getElementById('mRedUnits').value=a>0?fmtRM(a/NTA_P)+' units':'—';}
+function setRedPct(p){var acc=ACCOUNTS[redAcct];var a=acc.value*p/100;document.getElementById('mRedAmt').value=a.toFixed(2);document.getElementById('mRedUnits').value=fmtRM(acc.units*p/100)+' units';}
+function calcRedUnits(){var acc=ACCOUNTS[redAcct];var a=parseFloat(document.getElementById('mRedAmt').value);document.getElementById('mRedUnits').value=a>0?fmtRM(a/NTA_P)+' units':'—';}
 function submitSubM(){
   var a=parseFloat(document.getElementById('mSubAmt').value);
   if(!a||a<=0){showToastM('Please enter an amount');return;}
-  closeSheet();setTimeout(function(){showToastM('Subscription of RM '+fmtRM(a)+' submitted');},200);
+  closeSheet();setTimeout(function(){showToastM('Subscription of RM '+fmtRM(a)+' submitted to '+ACCOUNTS[subAcct].label);},200);
 }
 function submitRedM(){
+  var acc=ACCOUNTS[redAcct];
   var a=parseFloat(document.getElementById('mRedAmt').value);
-  if(!a||a<=0||a>HELD_V){showToastM('Please enter a valid amount');return;}
-  closeSheet();setTimeout(function(){showToastM('Redemption of RM '+fmtRM(a)+' submitted');},200);
+  if(!a||a<=0||a>acc.value){showToastM('Please enter a valid amount');return;}
+  closeSheet();setTimeout(function(){showToastM('Redemption of RM '+fmtRM(a)+' submitted from '+acc.label);},200);
 }
 
 var MARKETS={
@@ -977,79 +1172,6 @@ function updateMktTime(){
   var d=new Date(),h=d.getHours(),m=d.getMinutes(),s=d.getSeconds();
   el.textContent=(h%12||12)+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+(h>=12?' PM':' AM');
 }
-// ── NOMINEE (mobile) ─────────────────────────────────────────────────────────
-var MNOM_DATA=[{name:'Tan Ah Kow',rel:'Parent',alloc:100}];
-var MNOM_SEL=0;
-var MNOM_COLORS=['#1565C0','#2E7D32','#E65100','#7C3AED'];
-function mNomClamp(v){return Math.max(0,Math.min(100,v));}
-function mNomRebalance(v){
-  v=mNomClamp(Math.round(v/5)*5);
-  var others=MNOM_DATA.map(function(_,i){return i;}).filter(function(i){return i!==MNOM_SEL;});
-  if(!others.length){MNOM_DATA[MNOM_SEL].alloc=100;return;}
-  var rem=100-v,tot=others.reduce(function(a,i){return a+MNOM_DATA[i].alloc;},0);
-  if(!tot){var each=Math.floor(rem/others.length);others.forEach(function(i){MNOM_DATA[i].alloc=each;});MNOM_DATA[others[0]].alloc+=rem-each*others.length;}
-  else others.forEach(function(i){MNOM_DATA[i].alloc=Math.round(MNOM_DATA[i].alloc/tot*rem);});
-  MNOM_DATA[MNOM_SEL].alloc=v;
-  var tot2=MNOM_DATA.reduce(function(a,n){return a+n.alloc;},0),diff=100-tot2;
-  if(diff){var mx=-1,mi=-1;MNOM_DATA.forEach(function(n,i){if(i!==MNOM_SEL&&n.alloc>mx){mx=n.alloc;mi=i;}});if(mi===-1)mi=MNOM_SEL;MNOM_DATA[mi].alloc=mNomClamp(MNOM_DATA[mi].alloc+diff);}
-}
-function refreshMNom(){
-  var bar=document.getElementById('nomBarM');
-  var list=document.getElementById('nomListM');
-  var tot=document.getElementById('nomTotalM');
-  var ok=MNOM_DATA.reduce(function(a,n){return a+n.alloc;},0)===100;
-  if(bar)bar.innerHTML=MNOM_DATA.map(function(n,i){return '<div style="flex:'+n.alloc+';background:'+MNOM_COLORS[i%4]+';transition:flex .25s"></div>';}).join('');
-  if(tot){var total=MNOM_DATA.reduce(function(a,n){return a+n.alloc;},0);tot.innerHTML='<span style="color:'+(ok?'var(--green)':'var(--red)')+'">Total: '+total+'%'+(ok?' ✓':' (must equal 100%)')+'</span>';}
-  if(list)list.innerHTML=MNOM_DATA.map(function(n,i){
-    return '<div onclick="mNomSelect('+i+')" style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);background:'+(i===MNOM_SEL?'var(--blue-bg)':'#fff')+';cursor:pointer;">'
-      +'<div style="width:10px;height:10px;border-radius:50%;background:'+MNOM_COLORS[i%4]+';flex-shrink:0"></div>'
-      +'<div style="flex:1;min-width:0"><div style="font-size:.88rem;font-weight:600;color:var(--fg-1)">'+(n.name||'New nominee')+'</div><div style="font-size:.72rem;color:var(--fg-3);margin-top:1px">'+n.rel+' · '+(i===0?'Primary':'Secondary')+'</div></div>'
-      +'<div style="font-size:.84rem;font-weight:700;color:'+MNOM_COLORS[i%4]+'">'+n.alloc+'%</div>'
-      +'</div>';
-  }).join('');
-  // Update editor
-  var alloc=document.getElementById('mNomAlloc');
-  if(alloc){alloc.value=MNOM_DATA[MNOM_SEL].alloc;document.getElementById('mNomAllocLbl').textContent=MNOM_DATA[MNOM_SEL].alloc;}
-}
-function mNomSelect(i){
-  MNOM_SEL=i;
-  var n=MNOM_DATA[i];
-  var name=document.getElementById('mNomName');if(name)name.value=n.name||'';
-  var rel=document.getElementById('mNomRel');if(rel){for(var k=0;k<rel.options.length;k++)if(rel.options[k].text===n.rel){rel.selectedIndex=k;break;}}
-  document.getElementById('nomEditorM').style.display='block';
-  document.getElementById('nomEditorTitle').textContent=(i===0?'Primary':'Secondary')+' Nominee';
-  refreshMNom();
-}
-function mNomSlide(el){mNomRebalance(parseInt(el.value,10));refreshMNom();}
-function addMNom(){
-  if(MNOM_DATA.length>=4){showToastM('Maximum 4 nominees');return;}
-  MNOM_DATA.push({name:'',rel:'Spouse',alloc:0});
-  MNOM_SEL=MNOM_DATA.length-1;
-  refreshMNom();mNomSelect(MNOM_SEL);
-}
-function saveMNom(){
-  var n=MNOM_DATA[MNOM_SEL];
-  n.name=document.getElementById('mNomName').value.trim();
-  var rel=document.getElementById('mNomRel');if(rel)n.rel=rel.value;
-  var total=MNOM_DATA.reduce(function(a,x){return a+x.alloc;},0);
-  if(total!==100){showToastM('Total must equal 100% (currently '+total+'%)');return;}
-  refreshMNom();showToastM((n.name||'Nominee')+' saved');
-}
-function deleteMNom(){
-  if(MNOM_DATA.length<=1){showToastM('At least one nominee required');return;}
-  MNOM_DATA.splice(MNOM_SEL,1);MNOM_SEL=0;
-  var tot=MNOM_DATA.reduce(function(a,n){return a+n.alloc;},0);
-  if(tot&&tot!==100){MNOM_DATA.forEach(function(n){n.alloc=Math.round(n.alloc/tot*100);});var r=100-MNOM_DATA.reduce(function(a,n){return a+n.alloc;},0);if(r)MNOM_DATA[0].alloc+=r;}
-  else if(!tot)MNOM_DATA[0].alloc=100;
-  refreshMNom();mNomSelect(0);showToastM('Nominee removed');
-}
-// Init nominee page when switching to it
-var origSwitch=switchTab;
-switchTab=function(tab){
-  origSwitch(tab);
-  if(tab==='nominee'){refreshMNom();mNomSelect(0);}
-};
-
 // ── PASSWORD (mobile) ─────────────────────────────────────────────────────────
 var bioOn=true,notifOn=true;
 function toggleMPwd(id){var f=document.getElementById(id);f.type=f.type==='password'?'text':'password';}
@@ -1344,6 +1466,739 @@ function closeWlSearch(){
   document.getElementById('sheetScrim').classList.remove('vis');
 }
 
+function switchFundTab2(tab){
+  ['chart','profile','results','portfolio','shareholder'].forEach(function(t){
+    document.getElementById('ftab-'+t+'-body').style.display=tab===t?'block':'none';
+    document.getElementById('ftab-'+t+'-btn').style.color=tab===t?'var(--blue)':'var(--fg-3)';
+    document.getElementById('ftab-'+t+'-btn').style.borderBottomColor=tab===t?'var(--blue)':'transparent';
+  });
+  if(tab==='chart'){
+    function tryFundChart(n){
+      var c=document.getElementById('candleChart');
+      if(c && c.parentElement && c.parentElement.clientWidth>0){
+        drawCandleChart('ytd',null,null);attachCandleListeners();renderCorrMatrix();drawRVChart();
+      } else if(n>0){setTimeout(function(){tryFundChart(n-1);},120);}
+    }
+    setTimeout(function(){tryFundChart(10);},80);
+  }
+  if(tab==='results') setTimeout(function(){drawISChart();drawBSChart();drawCFChart();drawRAChart();},50);
+  if(tab==='portfolio') setTimeout(function(){drawHoldingsChart();drawSectorChart();drawProductChart();},50);
+  if(tab==='shareholder'){
+    setTimeout(function(){drawShareholderChart();},50);
+    var btn=document.querySelector('.ownership-open-btn');
+    if(btn && !btn._wired){btn.addEventListener('click',function(){openOwnershipPanel();});btn._wired=true;}
+    var closeBtn=document.querySelector('.ownership-close-btn');
+    if(closeBtn && !closeBtn._wired){closeBtn.addEventListener('click',function(){closeOwnershipPanel();});closeBtn._wired=true;}
+  }
+}
+
+// ── CANDLE CHART ──
+function genCandles(n,startPrice){
+  var data=[];var p=startPrice;
+  for(var i=0;i<n;i++){
+    var o=p;
+    var hi=o+Math.random()*0.012;
+    var lo=o-Math.random()*0.012;
+    var cl=lo+(hi-lo)*Math.random();
+    data.push({o:+o.toFixed(4),h:+hi.toFixed(4),l:+lo.toFixed(4),c:+cl.toFixed(4)});
+    p=cl;
+  }
+  return data;
+}
+var candleData={
+  'ytd':genCandles(130,0.9700),
+  '1m':genCandles(22,1.0050),
+  '3m':genCandles(66,0.9850),
+  '6m':genCandles(130,0.9600),
+  '1y':genCandles(252,0.9300),
+  '3y':genCandles(756,0.8800),
+  'all':genCandles(900,0.8500)
+};
+var activeCPeriod='1m';
+var candleState={};
+
+function drawCandleChart(period,btn,hoverIdx){
+  activeCPeriod=period;
+  if(btn){
+    document.querySelectorAll('.cperiod').forEach(function(b){b.style.color='var(--fg-3)';b.style.fontWeight='600';});
+    btn.style.color='var(--blue)';
+  }
+  var canvas=document.getElementById('candleChart');
+  if(!canvas)return;
+  var dpr=window.devicePixelRatio||1;
+  var W=canvas.parentElement.clientWidth;
+  var H=Math.round(W*0.58);
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  var data=candleData[period];
+  var pad={t:8,r:4,b:20,l:4};
+  var cw=W-pad.l-pad.r;
+  var ch=H-pad.t-pad.b;
+  var hiV=Math.max.apply(null,data.map(function(d){return d.h;}));
+  var loV=Math.min.apply(null,data.map(function(d){return d.l;}));
+  var range=hiV-loV||0.001;
+  var yScale=function(v){return pad.t+ch-(v-loV)/range*ch;};
+  var gap=2;
+  var slotW=(cw-(data.length-1)*gap)/data.length;
+  var cw2=Math.max(1,slotW*0.5);
+  candleState={data:data,pad:pad,slotW:slotW,gap:gap,cw2:cw2,W:W,H:H,ch:ch,yScale:yScale,period:period};
+  // grid lines
+  ctx.strokeStyle='rgba(226,232,240,.7)';ctx.lineWidth=1;
+  for(var g=0;g<=4;g++){
+    var yy=pad.t+ch/4*g;
+    ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke();
+  }
+  // candles
+  data.forEach(function(d,i){
+    var cx=pad.l+i*(slotW+gap)+slotW/2;
+    var isUp=d.c>=d.o;
+    var color=(hoverIdx===i)?(isUp?'#1B5E20':'#B71C1C'):(isUp?'#2E7D32':'#DC2626');
+    var bodyTop=yScale(Math.max(d.o,d.c));
+    var bodyBot=yScale(Math.min(d.o,d.c));
+    var bodyH=Math.max(1,bodyBot-bodyTop);
+    ctx.strokeStyle=color;ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx,yScale(d.h));ctx.lineTo(cx,yScale(d.l));ctx.stroke();
+    ctx.fillStyle=color;
+    ctx.fillRect(cx-cw2/2,bodyTop,Math.max(1,cw2),bodyH);
+  });
+  // y-axis labels overlaid
+  ctx.font='bold 9px DM Sans,sans-serif';ctx.textAlign='left';
+  for(var g=0;g<=4;g++){
+    var yy=pad.t+ch/4*g;
+    var val=(hiV-(range/4*g)).toFixed(4);
+    ctx.fillStyle='rgba(255,255,255,.75)';ctx.fillRect(pad.l,yy-9,38,12);
+    ctx.fillStyle='#64748B';ctx.fillText(val,pad.l+2,yy+1);
+  }
+  // x-axis labels
+  var step=Math.ceil(data.length/5);
+  ctx.textAlign='center';ctx.fillStyle='#94A3B8';ctx.font='9px DM Sans,sans-serif';
+  data.forEach(function(d,i){
+    if(i%step===0||i===data.length-1){
+      var cx2=pad.l+i*(slotW+gap)+slotW/2;
+      var label=period==='all'||period==='3y'?'M'+(i%12+1):period==='1y'||period==='6m'?'M'+(Math.floor(i/21)+1):period==='ytd'?'W'+(Math.floor(i/5)+1):'D'+(i+1);
+      ctx.fillText(label,cx2,H-5);
+    }
+  });
+  // hover overlay
+  if(hoverIdx!=null && hoverIdx>=0 && hoverIdx<data.length){
+    var d=data[hoverIdx];
+    var cx=pad.l+hoverIdx*(slotW+gap)+slotW/2;
+    // dashed vertical line
+    ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle='rgba(100,116,139,.6)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(cx,pad.t);ctx.lineTo(cx,pad.t+ch);ctx.stroke();ctx.restore();
+  }
+}
+// ── CORRELATION MATRIX ──
+var corrLabels=['ZY-Invest','FBMKLCI','STI','MSCI'];
+var corrData=[
+  [1.00, 0.72, 0.45, 0.61],
+  [0.72, 1.00, 0.58, 0.74],
+  [0.45, 0.58, 1.00, 0.67],
+  [0.61, 0.74, 0.67, 1.00]
+];
+function corrColor(v){
+  if(v>=0){
+    var t=v;
+    // white → light green (e.g. #BBEBBB)
+    var r=Math.round(255-(255-187)*t);
+    var g=Math.round(255-(255-235)*t);
+    var b=Math.round(255-(255-187)*t);
+    return'rgb('+r+','+g+','+b+')';
+  } else {
+    var t=-v;
+    // white → light red (e.g. #FFBBBB)
+    var r=Math.round(255);
+    var g=Math.round(255-(255-187)*t);
+    var b=Math.round(255-(255-187)*t);
+    return'rgb('+r+','+g+','+b+')';
+  }
+}
+function corrTextColor(v){return Math.abs(v)>0.7?'#1a1a1a':'#374151';}
+function renderCorrMatrix(){
+  var wrap=document.getElementById('corrMatrixWrap');
+  if(!wrap)return;
+  var shortLabels=['ZY','KLCI','STI','MSCI'];
+  var html='<div style="display:flex;justify-content:center;"><div style="display:grid;grid-template-columns:36px repeat(4,48px);gap:2px;box-sizing:border-box;overflow:hidden;">';
+  // header row
+  html+='<div></div>';
+  shortLabels.forEach(function(l){
+    html+='<div style="font-size:.55rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--fg-3);text-align:center;padding-bottom:4px;">'+l+'</div>';
+  });
+  // data rows
+  corrData.forEach(function(row,ri){
+    html+='<div style="font-size:.6rem;font-weight:600;color:var(--fg-2);display:flex;align-items:center;justify-content:flex-end;padding-right:4px;">'+shortLabels[ri]+'</div>';
+    row.forEach(function(v){
+      var bg=corrColor(v);var tc=corrTextColor(v);
+      html+='<div style="width:48px;height:48px;background:'+bg+';display:flex;align-items:center;justify-content:center;">'
+        +'<span style="font-size:.6rem;font-weight:600;color:'+tc+';">'+v.toFixed(2)+'</span>'
+        +'</div>';
+    });
+  });
+  html+='</div></div>';
+  wrap.innerHTML=html;
+}
+function attachCandleListeners(){
+  var canvas=document.getElementById('candleChart');
+  if(!canvas||canvas._cl)return;canvas._cl=true;
+  canvas.addEventListener('mousemove',candleHover);
+  canvas.addEventListener('touchmove',function(e){e.preventDefault();candleHover(e);},{passive:false});
+  canvas.addEventListener('mouseleave',candleLeave);
+  canvas.addEventListener('touchend',candleLeave);
+}
+function candleHover(e){
+  var canvas=document.getElementById('candleChart');
+  if(!canvas||!candleState.data)return;
+  var rect=canvas.getBoundingClientRect();
+  var clientX=e.touches?e.touches[0].clientX:e.clientX;
+  var xRel=clientX-rect.left;
+  var s=candleState;
+  var idx=Math.round((xRel-s.pad.l-s.slotW/2)/(s.slotW+s.gap));
+  idx=Math.max(0,Math.min(s.data.length-1,idx));
+  drawCandleChart(activeCPeriod,null,idx);
+  // update HTML info box
+  var d=s.data[idx];
+  var chg=+(d.c-d.o).toFixed(4);var chgPct=+(chg/d.o*100).toFixed(2);
+  var isUp=chg>=0;var clr=isUp?'var(--green)':'var(--red)';
+  // date label
+  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var base=new Date(2025,6,7);base.setDate(base.getDate()-((s.data.length-1)-idx));
+  document.getElementById('ci-date').textContent=base.getDate()+' '+months[base.getMonth()]+' '+base.getFullYear();
+  document.getElementById('ci-ov').textContent=d.o.toFixed(4);
+  document.getElementById('ci-hv').textContent=d.h.toFixed(4);
+  document.getElementById('ci-cv').textContent=(chg>=0?'+':'')+chg;document.getElementById('ci-cv').style.color=clr;
+  document.getElementById('ci-clv').textContent=d.c.toFixed(4);
+  document.getElementById('ci-lv').textContent=d.l.toFixed(4);
+  document.getElementById('ci-pv').textContent=(chgPct>=0?'+':'')+chgPct+'%';document.getElementById('ci-pv').style.color=clr;
+  document.getElementById('candleInfoBox').style.display='block';
+}
+function candleLeave(){drawCandleChart(activeCPeriod,null,null);document.getElementById('candleInfoBox').style.display='none';}
+// ── RETURN VS VOLATILITY SCATTER ──
+var rvPoints=[
+  {label:'ZY-Invest',ret:12.4,vol:8.2,sharpe:1.51,color:'#1565C0',r:7},
+  {label:'KLCI',    ret:6.8, vol:9.1, sharpe:0.75,color:'#90A4AE',r:6},
+  {label:'STI',     ret:8.3, vol:10.2,sharpe:0.81,color:'#78909C',r:6},
+  {label:'MSCI',    ret:9.7, vol:11.8,sharpe:0.82,color:'#546E7A',r:6}
+];
+var rvState={};
+function drawRVChart(){
+  var canvas=document.getElementById('rvChart');
+  if(!canvas)return;
+  var dpr=window.devicePixelRatio||1;
+  var W=canvas.parentElement.clientWidth;
+  var H=300;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  // layout zones: chart | x-ticks | x-title | legend
+  var pad={t:26,r:16,b:90,l:36};
+  var cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  var chartBottom=pad.t+ch;           // bottom edge of plot area
+  var tickY=chartBottom+12;           // x-axis tick labels
+  var xTitleY=chartBottom+24;         // "Volatility" title
+  var legY=chartBottom+50;            // legend row
+  var minVol=4,maxVol=16,minRet=2,maxRet=18;
+  function xp(v){return pad.l+((v-minVol)/(maxVol-minVol))*cw;}
+  function yp(r){return pad.t+ch-((r-minRet)/(maxRet-minRet))*ch;}
+  rvState={xp:xp,yp:yp,pad:pad,W:W,H:H,chartBottom:chartBottom};
+  // grid
+  ctx.strokeStyle='rgba(150,160,170,.5)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
+  [4,8,12,16].forEach(function(v){ctx.beginPath();ctx.moveTo(xp(v),pad.t);ctx.lineTo(xp(v),chartBottom);ctx.stroke();});
+  [4,8,12,16].forEach(function(r){ctx.beginPath();ctx.moveTo(pad.l,yp(r));ctx.lineTo(pad.l+cw,yp(r));ctx.stroke();});
+  ctx.setLineDash([]);
+  // x-axis line
+  ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(pad.l,chartBottom); ctx.lineTo(pad.l+cw,chartBottom); ctx.stroke();
+  // y-axis line
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,chartBottom); ctx.stroke();
+  // x tick labels
+  ctx.fillStyle='#374151'; ctx.font='600 8px DM Sans,sans-serif'; ctx.textAlign='center';
+  [4,8,12,16].forEach(function(v){ctx.fillText(v+'%',xp(v),tickY);});
+  // y tick labels
+  ctx.textAlign='right';
+  [4,8,12,16].forEach(function(r){ctx.fillText(r+'%',pad.l-4,yp(r)+3);});
+  // axis titles
+  ctx.fillStyle='#374151'; ctx.font='700 10px DM Sans,sans-serif';
+  ctx.textAlign='center'; ctx.fillText('Volatility',W/2,xTitleY);
+  // Y-axis title at top of y-axis
+  ctx.textAlign='left'; ctx.fillText('Return',pad.l-10,pad.t-7);
+  // points
+  rvPoints.forEach(function(p){
+    var x=xp(p.vol),y=yp(p.ret);
+    ctx.beginPath(); ctx.arc(x,y,p.r,0,Math.PI*2);
+    ctx.fillStyle=p.color; ctx.fill();
+  });
+  // legend — centered with 2-char spacing
+  ctx.font='600 11px DM Sans,sans-serif';
+  var legSpacing=16; // 2-char approx gap
+  var legItems=rvPoints.map(function(p){return{p:p,w:10+ctx.measureText(p.label).width+legSpacing};});
+  var totalLegW=legItems.reduce(function(s,it){return s+it.w;},0)-legSpacing;
+  var lx=(W-totalLegW)/2;
+  legItems.forEach(function(it){
+    ctx.beginPath(); ctx.arc(lx+5,legY,4,0,Math.PI*2);
+    ctx.fillStyle=it.p.color; ctx.fill();
+    ctx.fillStyle='#374151'; ctx.font=(it.p.r===7?'700':'600')+' 11px DM Sans,sans-serif';
+    ctx.textAlign='left'; ctx.fillText(it.p.label,lx+13,legY+4);
+    lx+=it.w;
+  });
+  // attach listeners once
+  if(!canvas._rvCl){
+    canvas._rvCl=true;
+    function rvHover(e){
+      var rect=canvas.getBoundingClientRect();
+      var cx=e.touches?e.touches[0].clientX:e.clientX;
+      var cy=e.touches?e.touches[0].clientY:e.clientY;
+      var mx=cx-rect.left, my=cy-rect.top;
+      var tip=document.getElementById('rvTooltip');
+      var hit=null;
+      rvPoints.forEach(function(p){
+        var px=rvState.xp(p.vol), py=rvState.yp(p.ret);
+        var dist=Math.sqrt((mx-px)*(mx-px)+(my-py)*(my-py));
+        if(dist<=p.r+6)hit=p;
+      });
+      if(hit){
+        tip.innerHTML='<span style="color:#94A3B8;">'+hit.label+'</span><br>Return: <b>'+hit.ret+'%</b><br>Vol: <b>'+hit.vol+'%</b><br>Sharpe: <b>'+hit.sharpe+'</b>';
+        var tx=mx+12, ty=my-10;
+        if(tx+110>rvState.W)tx=mx-120;
+        if(ty<0)ty=my+14;
+        tip.style.left=tx+'px'; tip.style.top=ty+'px'; tip.style.display='block';
+      } else {
+        tip.style.display='none';
+      }
+    }
+    canvas.addEventListener('mousemove',rvHover);
+    canvas.addEventListener('touchmove',function(e){e.preventDefault();rvHover(e);},{passive:false});
+    canvas.addEventListener('mouseleave',function(){document.getElementById('rvTooltip').style.display='none';});
+    canvas.addEventListener('touchend',function(){document.getElementById('rvTooltip').style.display='none';});
+  }
+}
+// ── INCOME STATEMENT CHART ──
+var isData={
+  revenue: {label:'Revenue',color:'#1565C0',values:[312480,378920,421350,456780,487310],years:['FY20','FY21','FY22','FY23','FY24']},
+  gp:      {label:'Gross Profit',color:'#2E7D32',values:[198400,241100,275200,298500,321400],years:['FY20','FY21','FY22','FY23','FY24']},
+  ni:      {label:'Net Income',color:'#B45309',values:[87200,112400,134100,152300,168700],years:['FY20','FY21','FY22','FY23','FY24']}
+};
+var activeISTab='revenue';
+function switchISTab(tab){
+  activeISTab=tab;
+  ['revenue','gp','ni'].forEach(function(t){
+    var btn=document.getElementById('is-tab-'+t);
+    if(!btn)return;
+    btn.style.color=t===tab?'#0F172A':'#94A3B8';
+    btn.style.borderColor=t===tab?'#0F172A':'#E2E8F0';
+    btn.style.background='#fff';
+  });
+  drawISChart();
+}
+function drawISChart(){drawComboChart('isChart',isData[activeISTab]);}
+
+// ── GENERIC COMBO CHART RENDERER ──
+function drawComboChart(canvasId,d){
+  var canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  var dpr=window.devicePixelRatio||1;
+  var W=canvas.parentElement.clientWidth;
+  var H=230;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  var pad={t:16,r:8,b:100,l:8};
+  var cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  var chartBottom=pad.t+ch;
+  var yearY=chartBottom+14, valueY=chartBottom+28, yoyY=chartBottom+42, legY=chartBottom+68;
+  var n=d.values.length;
+  var maxV=Math.max.apply(null,d.values.map(Math.abs))*1.12;
+  var slot=cw/n, barW=slot*0.14;
+  ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(pad.l,chartBottom); ctx.lineTo(pad.l+cw,chartBottom); ctx.stroke();
+  var yoyVals=d.values.map(function(v,i){return i===0?null:((v-d.values[i-1])/d.values[i-1]*100);});
+  var yoyNonNull=yoyVals.filter(function(v){return v!==null;});
+  var minYoy=Math.min.apply(null,yoyNonNull)-2, maxYoy=Math.max.apply(null,yoyNonNull)+2;
+  function yoyYp(v){return pad.t+ch-((v-minYoy)/(maxYoy-minYoy))*ch;}
+  d.values.forEach(function(v,i){
+    var cx=pad.l+i*slot+slot/2, x=cx-barW/2;
+    var barH=ch*(Math.abs(v)/maxV), y=chartBottom-barH;
+    ctx.fillStyle='#226ad6';
+    var r=3;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.lineTo(x+barW-r,y);
+    ctx.arcTo(x+barW,y,x+barW,y+r,r);
+    ctx.lineTo(x+barW,chartBottom); ctx.lineTo(x,chartBottom);
+    ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#374151'; ctx.font='500 12px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(d.years[i],cx,yearY);
+    var disp=Math.abs(v)>=1000000?(v/1000000).toFixed(2)+'M':Math.abs(v)>=1000?(v/1000).toFixed(2)+'k':v.toFixed(2);
+    ctx.fillStyle='#226ad6'; ctx.font='600 11px DM Sans,sans-serif';
+    ctx.fillText(disp,cx,valueY);
+    if(i===0){ctx.fillStyle='#94A3B8';ctx.font='500 11px DM Sans,sans-serif';ctx.fillText('—',cx,yoyY);}
+    else{var yoy=yoyVals[i];ctx.fillStyle=yoy>=0?'#2E7D32':'#DC2626';ctx.font='600 11px DM Sans,sans-serif';ctx.fillText((yoy>=0?'+':'')+yoy.toFixed(1)+'%',cx,yoyY);}
+  });
+  ctx.strokeStyle='#F57C00'; ctx.lineWidth=1; ctx.setLineDash([]);
+  ctx.beginPath(); var started=false;
+  yoyVals.forEach(function(v,i){if(v===null)return;var cx=pad.l+i*slot+slot/2;var y=yoyYp(v);if(!started){ctx.moveTo(cx,y);started=true;}else{ctx.lineTo(cx,y);}});
+  ctx.stroke();
+  yoyVals.forEach(function(v,i){if(v===null)return;var cx=pad.l+i*slot+slot/2;ctx.beginPath();ctx.arc(cx,yoyYp(v),3.5,0,Math.PI*2);ctx.fillStyle='#F57C00';ctx.fill();});
+  var legItems=[{color:'#226ad6',label:d.label},{color:'#F57C00',label:'YoY Growth'}];
+  ctx.font='700 11px DM Sans,sans-serif';
+  var legSpacing=16, totalW=legItems.reduce(function(s,it){return s+10+ctx.measureText(it.label).width+legSpacing;},0)-legSpacing;
+  var lx=(W-totalW)/2;
+  legItems.forEach(function(it){ctx.beginPath();ctx.arc(lx+4,legY,5,0,Math.PI*2);ctx.fillStyle=it.color;ctx.fill();ctx.fillStyle='#374151';ctx.font='700 11px DM Sans,sans-serif';ctx.textAlign='left';ctx.fillText(it.label,lx+13,legY+4);lx+=10+ctx.measureText(it.label).width+legSpacing;});
+}
+
+// ── BALANCE SHEET ──
+var bsAssets=[612000,724000,831000,956000,1048000];
+var bsLiab=  [198000,241000,287000,312000,334000];
+var bsYears= ['FY20','FY21','FY22','FY23','FY24'];
+function drawBSChart(){
+  var canvas=document.getElementById('bsChart');
+  if(!canvas)return;
+  var dpr=window.devicePixelRatio||1;
+  var W=canvas.parentElement.clientWidth;
+  var H=260;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  var pad={t:16,r:8,b:120,l:8};
+  var cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  var chartBottom=pad.t+ch;
+  var yearY=chartBottom+14, legY=chartBottom+90;
+  var n=bsYears.length;
+  var maxV=Math.max.apply(null,bsAssets)*1.12;
+  var slot=cw/n, barW=slot*0.13, gap=3;
+  // x-axis
+  ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(pad.l,chartBottom); ctx.lineTo(pad.l+cw,chartBottom); ctx.stroke();
+  // ratio scale
+  var ratios=bsLiab.map(function(l,i){return l/bsAssets[i];});
+  var minR=Math.min.apply(null,ratios)-0.02, maxR=Math.max.apply(null,ratios)+0.02;
+  function ry(v){return pad.t+ch-((v-minR)/(maxR-minR))*ch;}
+  // draw bars
+  bsYears.forEach(function(yr,i){
+    var cx=pad.l+i*slot+slot/2;
+    var x0=cx-barW-gap/2, x1=cx+gap/2;
+    function drawBar(x,h,color){
+      var barH=ch*(h/maxV), y=chartBottom-barH, r=3;
+      ctx.fillStyle=color;
+      ctx.beginPath();
+      ctx.moveTo(x+r,y); ctx.lineTo(x+barW-r,y);
+      ctx.arcTo(x+barW,y,x+barW,y+r,r);
+      ctx.lineTo(x+barW,chartBottom); ctx.lineTo(x,chartBottom);
+      ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+      ctx.closePath(); ctx.fill();
+    }
+    drawBar(x0,bsAssets[i],'#226ad6');
+    drawBar(x1,bsLiab[i],'#90CAF9');
+    // year label
+    ctx.fillStyle='#374151'; ctx.font='500 12px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(yr,cx,yearY);
+    // asset value
+    var aDisp=bsAssets[i]>=1000000?(bsAssets[i]/1000000).toFixed(2)+'M':(bsAssets[i]/1000).toFixed(2)+'k';
+    ctx.fillStyle='#226ad6'; ctx.font='600 10px DM Sans,sans-serif';
+    ctx.fillText(aDisp,cx,yearY+14);
+    // liab value
+    var lDisp=bsLiab[i]>=1000000?(bsLiab[i]/1000000).toFixed(2)+'M':(bsLiab[i]/1000).toFixed(2)+'k';
+    ctx.fillStyle='#5aabf0'; ctx.font='600 10px DM Sans,sans-serif';
+    ctx.fillText(lDisp,cx,yearY+27);
+    // ratio value
+    ctx.fillStyle='#F57C00'; ctx.font='600 10px DM Sans,sans-serif';
+    ctx.fillText((ratios[i]*100).toFixed(1)+'%',cx,yearY+40);
+  });
+  // ratio line
+  ctx.strokeStyle='#F57C00'; ctx.lineWidth=1; ctx.setLineDash([]);
+  ctx.beginPath();
+  ratios.forEach(function(v,i){
+    var cx=pad.l+i*slot+slot/2;
+    if(i===0)ctx.moveTo(cx,ry(v)); else ctx.lineTo(cx,ry(v));
+  });
+  ctx.stroke();
+  ratios.forEach(function(v,i){
+    var cx=pad.l+i*slot+slot/2;
+    ctx.beginPath(); ctx.arc(cx,ry(v),3.5,0,Math.PI*2);
+    ctx.fillStyle='#F57C00'; ctx.fill();
+  });
+  // legend
+  var legItems=[{color:'#226ad6',label:'Assets'},{color:'#90CAF9',label:'Liabilities'},{color:'#F57C00',label:'Ratio'}];
+  ctx.font='700 11px DM Sans,sans-serif';
+  var legSpacing=14, totalW=legItems.reduce(function(s,it){return s+10+ctx.measureText(it.label).width+legSpacing;},0)-legSpacing;
+  var lx=(W-totalW)/2;
+  legItems.forEach(function(it){
+    ctx.beginPath(); ctx.arc(lx+4,legY,5,0,Math.PI*2);
+    ctx.fillStyle=it.color; ctx.fill();
+    ctx.fillStyle='#374151'; ctx.font='700 11px DM Sans,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(it.label,lx+13,legY+4);
+    lx+=10+ctx.measureText(it.label).width+legSpacing;
+  });
+}
+
+// ── CASH FLOWS ──
+var cfData={
+  op:  {label:'Operating CF', values:[124000,158000,187000,214000,238000],years:['FY20','FY21','FY22','FY23','FY24']},
+  inv: {label:'Investing CF', values:[-87000,-112000,-94000,-131000,-118000],years:['FY20','FY21','FY22','FY23','FY24']},
+  fin: {label:'Financing CF', values:[-34000,-41000,-52000,-48000,-56000],years:['FY20','FY21','FY22','FY23','FY24']}
+};
+var activeCFTab='op';
+function switchCFTab(tab){
+  activeCFTab=tab;
+  ['op','inv','fin'].forEach(function(t){var btn=document.getElementById('cf-tab-'+t);if(!btn)return;btn.style.color=t===tab?'#0F172A':'#94A3B8';btn.style.borderColor=t===tab?'#0F172A':'#E2E8F0';btn.style.background='#fff';});
+  drawComboChart('cfChart',cfData[activeCFTab]);
+}
+function drawCFChart(){drawComboChart('cfChart',cfData[activeCFTab]);}
+
+// ── RATIO ANALYSIS ──
+var raData={
+  gps:     {label:'GPS',         values:[0.0418,0.0509,0.0582,0.0630,0.0678],years:['FY20','FY21','FY22','FY23','FY24']},
+  eps:     {label:'EPS',         values:[0.0184,0.0237,0.0283,0.0321,0.0356],years:['FY20','FY21','FY22','FY23','FY24']},
+  dps:     {label:'DPS',         values:[0.0081,0.0104,0.0124,0.0138,0.0156],years:['FY20','FY21','FY22','FY23','FY24']},
+  yield:   {label:'Yield (%)',   values:[3.21,3.84,4.12,4.55,4.82],years:['FY20','FY21','FY22','FY23','FY24']},
+  gross:   {label:'Gross %',     values:[63.5,63.7,65.3,65.4,65.9],years:['FY20','FY21','FY22','FY23','FY24']},
+  roe:     {label:'ROE (%)',     values:[14.2,16.8,18.4,17.9,19.2],years:['FY20','FY21','FY22','FY23','FY24']},
+  shares:  {label:'Issued Share',values:[420000,438000,452000,463000,474200],years:['FY20','FY21','FY22','FY23','FY24']},
+  turnover:{label:'Turnover',    values:[312480,378920,421350,456780,487310],years:['FY20','FY21','FY22','FY23','FY24']}
+};
+var activeRATab='gps';
+var raTabs=['gps','eps','dps','yield','gross','roe','shares','turnover'];
+function switchRATab(tab){
+  activeRATab=tab;
+  raTabs.forEach(function(t){var btn=document.getElementById('ra-tab-'+t);if(!btn)return;btn.style.color=t===tab?'#0F172A':'#94A3B8';btn.style.borderColor=t===tab?'#0F172A':'#E2E8F0';btn.style.background='#fff';});
+  drawComboChart('raChart',raData[activeRATab]);
+}
+function drawRAChart(){drawComboChart('raChart',raData[activeRATab]);}
+// ── PORTFOLIO CHARTS ──
+var holdingsData=[
+  {label:'Maybank',     v:8.4},
+  {label:'Public Bank', v:7.2},
+  {label:'CIMB',        v:6.8},
+  {label:'IHH',         v:5.9},
+  {label:'Tenaga',      v:5.4},
+  {label:'Axiata',      v:4.8},
+  {label:'Petronas Gas',v:4.2},
+  {label:'Top Glove',   v:3.8}
+];
+function drawHoldingsChart(){
+  var canvas=document.getElementById('holdingsChart');
+  if(!canvas)return;
+  var dpr=window.devicePixelRatio||1;
+  var W=canvas.parentElement.clientWidth;
+  var n=holdingsData.length;
+  var rowH=40, pad={t:8,r:48,b:8,l:8};
+  var H=pad.t+n*rowH+pad.b;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  var maxV=Math.max.apply(null,holdingsData.map(function(d){return d.v;}))*1.05;
+  var barAreaW=W-pad.l-pad.r;
+  holdingsData.forEach(function(d,i){
+    var y=pad.t+i*rowH;
+    // name above bar
+    ctx.fillStyle='#374151'; ctx.font='500 12px DM Sans,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(d.label,pad.l,y+12);
+    // bar
+    var bw=barAreaW*(d.v/maxV);
+    var by=y+17, bh=8, r=3;
+    ctx.fillStyle='#226ad6';
+    ctx.beginPath();
+    ctx.moveTo(pad.l+r,by); ctx.lineTo(pad.l+bw-r,by);
+    ctx.arcTo(pad.l+bw,by,pad.l+bw,by+r,r);
+    ctx.lineTo(pad.l+bw,by+bh-r);
+    ctx.arcTo(pad.l+bw,by+bh,pad.l+bw-r,by+bh,r);
+    ctx.lineTo(pad.l+r,by+bh); ctx.arcTo(pad.l,by+bh,pad.l,by+bh-r,r);
+    ctx.lineTo(pad.l,by+r); ctx.arcTo(pad.l,by,pad.l+r,by,r);
+    ctx.closePath(); ctx.fill();
+    // value after bar
+    ctx.fillStyle='#374151'; ctx.font='600 11px DM Sans,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(d.v+'%',pad.l+bw+6,by+bh-1);
+  });
+}
+// ── SHAREHOLDER CHART ──
+var shareholderData=[
+  {label:'Ng Zhi Yao',              v:38.2,c:'#1565C0'},
+  {label:'Siah Lih Ling',           v:21.9,c:'#42A5F5'},
+  {label:'Siah Kim Teck',           v:10.6,c:'#90CAF9'},
+  {label:'The rest of shareholder',  v:29.3,c:'#B0BEC5'}
+];
+function drawShareholderChart(canvasId){
+  var canvas=document.getElementById(canvasId||'shareholderChart');
+  if(!canvas)return;
+  var isDetail=canvasId==='shareholderDetailChart';
+  var dpr=window.devicePixelRatio||1;
+  var scrollEl=document.getElementById('mainScroll');
+  var W=scrollEl?scrollEl.clientWidth-32:300;
+  var legGap=22;
+  var H=isDetail ? r*2+32+14+12+shareholderData.length*24+16 : 200;
+  var r=isDetail?70:74, inner=Math.round(r*0.72);
+  var cx=isDetail?W/2:r+16, cy=isDetail?r+16:H/2;
+  canvas.width=Math.round(W*dpr);
+  canvas.height=Math.round(H*dpr);
+  canvas.style.width=W+'px';
+  canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  var total=shareholderData.reduce(function(s,d){return s+d.v;},0);
+  var start=-Math.PI/2;
+  shareholderData.forEach(function(d){
+    var sweep=d.v/total*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,start+sweep);
+    ctx.arc(cx,cy,inner,start+sweep,start,true);
+    ctx.closePath();
+    ctx.fillStyle=d.c; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    start+=sweep;
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  if(isDetail){
+    // data label for top 1 shareholder (largest slice)
+    var top=shareholderData.reduce(function(a,b){return a.v>b.v?a:b;});
+    var topAngle=-Math.PI/2+top.v/total*Math.PI; // midpoint angle approx
+    var cumAngle=-Math.PI/2;
+    var topMid;
+    shareholderData.forEach(function(d){
+      var sweep=d.v/total*Math.PI*2;
+      if(d===top) topMid=cumAngle+sweep/2;
+      cumAngle+=sweep;
+    });
+    var labelR=(r+inner)/2;
+    var lbx=cx+Math.cos(topMid)*labelR, lby=cy+Math.sin(topMid)*labelR;
+    ctx.fillStyle='#fff'; ctx.font='bold 11px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText(top.v.toFixed(1)+'%',lbx,lby+4);
+    // table-format legend below chart
+    var legStartY=cy+r+28;
+    var rowH=24, pad=16;
+    var col1=pad, col2=pad+130, col3=W-pad;
+    // header
+    ctx.fillStyle='#94A3B8'; ctx.font='500 9px DM Sans,sans-serif'; ctx.textAlign='left';
+    ctx.fillText('NAME',col1+14,legStartY);
+    ctx.textAlign='right';
+    ctx.fillText('STAKE %',col3,legStartY);
+    legStartY+=14;
+    // divider
+    ctx.beginPath(); ctx.moveTo(pad,legStartY); ctx.lineTo(W-pad,legStartY);
+    ctx.strokeStyle='#E2E8F0'; ctx.lineWidth=1; ctx.stroke();
+    legStartY+=12;
+    shareholderData.forEach(function(d,i){
+      var ly=legStartY+i*rowH;
+      // dot
+      ctx.beginPath(); ctx.arc(col1+5,ly,4,0,Math.PI*2);
+      ctx.fillStyle=d.c; ctx.fill();
+      // name
+      ctx.fillStyle='#374151'; ctx.font='600 10px DM Sans,sans-serif'; ctx.textAlign='left';
+      ctx.fillText(d.label,col1+14,ly+4);
+      // stake
+      ctx.fillStyle='#374151'; ctx.font='500 10px DM Sans,sans-serif'; ctx.textAlign='right';
+      ctx.fillText(d.v.toFixed(1)+'%',col3,ly+4);
+      // row divider
+      if(i<shareholderData.length-1){
+        ctx.beginPath(); ctx.moveTo(pad,ly+rowH/2+4); ctx.lineTo(W-pad,ly+rowH/2+4);
+        ctx.strokeStyle='#F1F5F9'; ctx.lineWidth=1; ctx.stroke();
+      }
+    });
+  } else {
+    var legX=cx+r+20;
+    var legStartY=(H-shareholderData.length*legGap)/2+14;
+    shareholderData.forEach(function(d,i){
+      var lx=legX, ly=legStartY+i*legGap;
+      ctx.beginPath(); ctx.arc(lx+5,ly,5,0,Math.PI*2);
+      ctx.fillStyle=d.c; ctx.fill();
+      ctx.fillStyle='#374151'; ctx.font='600 10px DM Sans,sans-serif'; ctx.textAlign='left';
+      var nameW=ctx.measureText(d.label).width;
+      ctx.fillText(d.label,lx+14,ly+4);
+      ctx.fillStyle='#94A3B8'; ctx.font='500 10px DM Sans,sans-serif';
+      ctx.fillText('  '+d.v.toFixed(1)+'%',lx+14+nameW,ly+4);
+    });
+  }
+}
+// ── SECTOR & PRODUCT ALLOCATION ──
+function drawPortfolioDonut(canvasId,data){
+  var canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  var dpr=window.devicePixelRatio||1;
+  var W=canvas.parentElement.clientWidth;
+  var H=200;
+  canvas.width=Math.round(W*dpr); canvas.height=Math.round(H*dpr);
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  var ctx=canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  var total=data.reduce(function(s,d){return s+d.v;},0);
+  var r=74, inner=Math.round(r*0.72), cx=r+16, cy=H/2;
+  var start=-Math.PI/2;
+  data.forEach(function(d){
+    var sweep=d.v/total*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,start+sweep);
+    ctx.arc(cx,cy,inner,start+sweep,start,true);
+    ctx.closePath();
+    ctx.fillStyle=d.c; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    start+=sweep;
+  });
+  ctx.beginPath(); ctx.arc(cx,cy,inner,0,Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  var legX=cx+r+20, legGap=26;
+  var legStartY=(H-data.length*legGap)/2+14;
+  data.forEach(function(d,i){
+    var lx=legX, ly=legStartY+i*legGap;
+    ctx.beginPath(); ctx.arc(lx+5,ly,5,0,Math.PI*2);
+    ctx.fillStyle=d.c; ctx.fill();
+    ctx.fillStyle='#374151'; ctx.font='600 10px DM Sans,sans-serif'; ctx.textAlign='left';
+    var nameW=ctx.measureText(d.label).width;
+    ctx.fillText(d.label,lx+14,ly+4);
+    ctx.fillStyle='#94A3B8'; ctx.font='500 10px DM Sans,sans-serif';
+    ctx.fillText('  '+(d.v/total*100).toFixed(1)+'%',lx+14+nameW,ly+4);
+  });
+}
+var sectorData=[
+  {label:'Financial Svcs',v:28,c:'#1565C0'},
+  {label:'Technology',    v:22,c:'#1E88E5'},
+  {label:'Consumer',      v:18,c:'#42A5F5'},
+  {label:'Healthcare',    v:15,c:'#90CAF9'},
+  {label:'Industrial',    v:10,c:'#546E7A'},
+  {label:'Others',        v:7, c:'#B0BEC5'}
+];
+var productData=[
+  {label:'Equities',     v:72,c:'#1565C0'},
+  {label:'Fixed Income', v:15,c:'#42A5F5'},
+  {label:'Cash & Equiv', v:8, c:'#90CAF9'},
+  {label:'REITs',        v:5, c:'#B0BEC5'}
+];
+function drawSectorChart(){drawPortfolioDonut('sectorChart',sectorData);}
+function drawProductChart(){drawPortfolioDonut('productChart',productData);}
+(function(){})();
+
+function toggleAcctExpand(){
+  var p1=document.getElementById('acctExpandPanel');
+  var p2=document.getElementById('jointExpandPanel');
+  var btn=document.getElementById('acctExpandBtn');
+  var pBtn=document.getElementById('personalExpandBtn');
+  var jBtn=document.getElementById('jointExpandBtn');
+  var open=p1.style.display==='block';
+  p1.style.display=open?'none':'block';
+  p2.style.display=open?'none':'block';
+  btn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
+  if(pBtn)pBtn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
+  if(jBtn)jBtn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
+}
+function togglePersonalExpand(){
+  var panel=document.getElementById('acctExpandPanel');
+  var btn=document.getElementById('personalExpandBtn');
+  var open=panel.style.display==='block';
+  panel.style.display=open?'none':'block';
+  if(btn)btn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
+}
+function toggleJointExpand(){
+  var panel=document.getElementById('jointExpandPanel');
+  var btn=document.getElementById('jointExpandBtn');
+  var open=panel.style.display==='block';
+  panel.style.display=open?'none':'block';
+  if(btn)btn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
+}
+
 function wlSearch(q){
   var res=document.getElementById('wlSearchResults');
   var emp=document.getElementById('wlSearchEmpty');
@@ -1391,13 +2246,120 @@ document.addEventListener('click',function(e){
 });
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 function doLogout(){
-  try{['zy-page','zy_token','zy_role','zy_name','zy_investor_id','zy-session','zy-email'].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
-  if(typeof sb!=='undefined'&&sb){
-    sb.auth.signOut().then(function(){window.location.href='../../login.html';}).catch(function(){window.location.href='../../login.html';});
-  } else { window.location.href='../../login.html'; }
+  try{localStorage.removeItem('zy-session');localStorage.removeItem('zy_token');localStorage.removeItem('zy_role');localStorage.removeItem('zy_name');localStorage.removeItem('zy-page');}catch(e){}
+  window.location.href='login.html';
 }
 // ── AUTH GATE ────────────────────────────────────────────────────────────────
-(function(){if(!localStorage.getItem('zy-session')&&!localStorage.getItem('zy_token')){window.location.replace('../../login.html');}})();
+(function(){if(!localStorage.getItem('zy-session')&&!localStorage.getItem('zy_token')){window.location.replace('login.html');}})();
+
+function adjustProfileSpacer(){
+  var spacer=document.getElementById('profileSpacer');
+  var scroll=document.getElementById('mainScroll');
+  if(!spacer||!scroll)return;
+  spacer.style.height='0px';
+  var page=document.getElementById('pg-profile');
+  var contentH=page?page.scrollHeight:0;
+  var available=scroll.clientHeight;
+  var gap=available-contentH;
+  spacer.style.height=Math.max(gap+16,16)+'px';
+}
+function openOwnershipPanel(){
+  var main=document.getElementById('shareholderMain');
+  var detail=document.getElementById('shareholderDetail');
+  if(main) main.style.display='none';
+  if(detail) detail.style.display='block';
+  var scroll=document.getElementById('mainScroll');
+  if(scroll) scroll.scrollTop=0;
+  // Render SVG donut for detail view
+  var wrap=document.getElementById('shareholderDetailChartWrap');
+  if(!wrap)return;
+  var total=shareholderData.reduce(function(s,d){return s+d.v;},0);
+  var VW=192, cx=VW/2, cy=54, r=36, ir=24;
+  var angle=-Math.PI/2, paths='', labels='';
+  var top=shareholderData.reduce(function(a,b){return a.v>b.v?a:b;});
+  shareholderData.forEach(function(d){
+    var sweep=d.v/total*Math.PI*2;
+    var x1=cx+r*Math.cos(angle),y1=cy+r*Math.sin(angle);
+    var x2=cx+r*Math.cos(angle+sweep),y2=cy+r*Math.sin(angle+sweep);
+    var ix1=cx+ir*Math.cos(angle+sweep),iy1=cy+ir*Math.sin(angle+sweep);
+    var ix2=cx+ir*Math.cos(angle),iy2=cy+ir*Math.sin(angle);
+    var lg=sweep>Math.PI?1:0;
+    paths+='<path d="M'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+r+','+r+' 0 '+lg+',1 '+x2.toFixed(2)+','+y2.toFixed(2)+' L'+ix1.toFixed(2)+','+iy1.toFixed(2)+' A'+ir+','+ir+' 0 '+lg+',0 '+ix2.toFixed(2)+','+iy2.toFixed(2)+' Z" fill="'+d.c+'" stroke="#fff" stroke-width="1"/>';
+    // Outside label for top shareholder only
+    if(d===top){
+      var mid=angle+sweep/2;
+      var lx=cx+Math.cos(mid)*(r+14), ly=cy+Math.sin(mid)*(r+14);
+      var anchor=lx<cx?'end':'start';
+      labels+='<text x="'+lx.toFixed(1)+'" y="'+(ly-2).toFixed(1)+'" text-anchor="'+anchor+'" font-size="6" font-weight="600" fill="#374151" font-family="DM Sans,sans-serif">'+d.label+'</text>';
+      labels+='<text x="'+lx.toFixed(1)+'" y="'+(ly+5.5).toFixed(1)+'" text-anchor="'+anchor+'" font-size="5.5" fill="#64748B" font-family="DM Sans,sans-serif">'+d.v.toFixed(1)+'%</text>';
+      // Leader line
+      var lx0=cx+Math.cos(mid)*r, ly0=cy+Math.sin(mid)*r;
+      var lx1=cx+Math.cos(mid)*(r+9), ly1=cy+Math.sin(mid)*(r+9);
+      labels+='<line x1="'+lx0.toFixed(1)+'" y1="'+ly0.toFixed(1)+'" x2="'+lx1.toFixed(1)+'" y2="'+ly1.toFixed(1)+'" stroke="#94A3B8" stroke-width="0.8"/>';
+    }
+    angle+=sweep;
+  });
+  var rowH=9, legTop=cy+r+16;
+  var legRows='';
+  shareholderData.forEach(function(d,i){
+    var y=legTop+5+i*rowH;
+    legRows+='<circle cx="10" cy="'+y+'" r="2.5" fill="'+d.c+'"/>';
+    legRows+='<text x="17" y="'+(y+1.5).toFixed(1)+'" font-size="7.5" fill="#374151" font-weight="600" font-family="DM Sans,sans-serif">'+d.label+'</text>';
+    legRows+='<text x="'+(VW-4)+'" y="'+(y+1.5).toFixed(1)+'" font-size="7.5" fill="#374151" text-anchor="end" font-family="DM Sans,sans-serif">'+d.v.toFixed(1)+'%</text>';
+    if(i<shareholderData.length-1){}
+  });
+  var svgH=legTop+shareholderData.length*rowH+10;
+  wrap.innerHTML='<svg viewBox="0 0 '+VW+' '+svgH+'" width="100%" xmlns="http://www.w3.org/2000/svg">'+
+    paths+
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+ir+'" fill="#fff"/>'+
+    labels+legRows+'</svg>';
+}
+function closeOwnershipPanel(){
+  var main=document.getElementById('shareholderMain');
+  var detail=document.getElementById('shareholderDetail');
+  if(main) main.style.display='block';
+  if(detail) detail.style.display='none';
+}
+document.addEventListener('click',function(e){if(e.target.closest('.ownership-open-btn'))openOwnershipPanel();});
+// ── PAGE LOADER ──
+(function loadPages(){
+  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails"];
+  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html"};
+  var mount=document.getElementById('pages-mount');
+  Promise.all(pages.map(function(id){
+    return fetch(srcMap[id]).then(function(r){return r.text();}).then(function(html){
+      // Extract just the <div class="page"...>...</div> from standalone file
+      var tmp=document.createElement('div');
+      tmp.innerHTML=html;
+      var pg=tmp.querySelector('.page');
+      return pg?pg.outerHTML:html;
+    });
+  })).then(function(htmls){
+    mount.innerHTML=htmls.join('\n');
+    // Wire ownership detail buttons after injection
+    document.querySelectorAll('.ownership-open-btn').forEach(function(btn){
+      btn.addEventListener('click',function(){openOwnershipPanel();});
+    });
+    document.querySelectorAll('.ownership-close-btn').forEach(function(btn){
+      btn.addEventListener('click',function(){closeOwnershipPanel();});
+    });
+    if(pendingTab){
+      // User tapped a tab before its page finished loading — complete that
+      // switch now that it's in the DOM.
+      var t=pendingTab;
+      pendingTab=null;
+      switchTab(t);
+    } else {
+      var active=document.querySelector('.page.active');
+      if(!active){
+        var first=document.querySelector('.page');
+        if(first) first.classList.add('active');
+      }
+    }
+    // Init after pages are in DOM
+    drawMChart('1d');renderMktList();drawKlciSparkline();updateMktTime();renderWatchlist();setTimeout(drawSparkline,100);setInterval(updateMktTime,1000);
+  });
+})();
 </script>
 </body>
 </html>
