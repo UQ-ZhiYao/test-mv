@@ -2,7 +2,7 @@
   "name": "ZY-Invest",
   "short_name": "ZY-Invest",
   "description": "ZY-Invest private fund member portal — portfolio, NTA, distributions and more.",
-  "start_url": "index.html",
+  "start_url": "login.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

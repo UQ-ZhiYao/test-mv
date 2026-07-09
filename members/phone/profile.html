@@ -21,177 +21,116 @@
 html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--gray-50);color:var(--fg-1);}
 a,a:hover{color:var(--blue);text-decoration:none;}
 
-.app{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;background:#fff;box-shadow:0 0 40px rgba(0,0,0,.12);}
-
-/* Top bar */
-.topbar{height:52px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 8px;flex-shrink:0;}
-.tb-btn{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);font-size:1rem;font-weight:600;flex-shrink:0;}
-.tb-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-.tb-title{font-size:.92rem;font-weight:700;color:var(--fg-1);}
-.tb-btn-del{color:var(--red);}
-.tb-btn-del svg{stroke:var(--red);}
-.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
-.icon-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);}
-.icon-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-.notif-wrap{position:relative;}
-.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);border:1.5px solid #fff;}
-
-/* Scroll */
-.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none;}
-.scroll::-webkit-scrollbar{display:none;}
-
-/* Page header */
-.page-header{padding:24px 20px 20px;}
-.page-title{font-size:1.2rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;}
-.page-sub{font-size:.82rem;color:var(--fg-3);line-height:1.5;}
+/* Shell (standalone-view only) */
+.standalone-shell{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;background:#fff;box-shadow:0 0 40px rgba(0,0,0,.12);}
+.standalone-shell .back-bar{display:none;}
+.standalone-shell .page{padding:0 0 16px;}
+.page{display:block !important;}
 
 /* Section */
-.section{margin:0 16px 32px;}
+.section{margin:0 16px 28px;}
 .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
 .section-label{font-size:.84rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-1);}
-.edit-btn{font:inherit;font-size:.78rem;font-weight:600;color:var(--blue);background:none;border:none;padding:0;cursor:pointer;}
 .info-card{background:#fff;border:none;border-radius:0;overflow:hidden;}
-.info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:none;}
-.info-label{font-size:.8rem;color:var(--fg-3);}
-.info-value{font-size:.84rem;font-weight:600;color:var(--fg-1);text-align:right;max-width:58%;}
-.info-value.placeholder{color:var(--fg-3);font-weight:400;font-style:italic;}
+.pf-row{padding:9px 0;}
+.pf-row label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:5px;}
+.pf-row input,.pf-row select{width:100%;font:inherit;font-size:.9rem;color:var(--fg-1);background:var(--gray-50);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;outline:none;transition:.2s;}
+.pf-row input:focus,.pf-row select:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(21,101,192,.1);}
+.pf-row input:disabled{color:var(--fg-3);background:var(--gray-100);}
+.pf-hint{font-size:.72rem;color:var(--fg-3);margin-top:4px;}
 
-/* Bank badge */
-.bank-badge{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;font-weight:600;color:var(--fg-1);}
-.bank-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;}
+/* Back bar (embedded use) */
+.back-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 4px;}
+.back-btn{background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:inherit;font-size:.88rem;font-weight:600;color:var(--blue);padding:0;}
+.back-btn svg{stroke:var(--blue);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 
 .bottom-pad{height:32px;}
 </style>
 </head>
 <body>
-<div class="app">
+<div class="standalone-shell">
 
-  <!-- STATUS BAR -->
-  <!-- TOP BAR -->
-  <div class="topbar">
-    <button class="tb-btn" onclick="history.back()">
-      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  <!-- Topbar (standalone view only) -->
+  <div style="height:52px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 8px;flex-shrink:0;">
+    <button onclick="history.back()" style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <span class="tb-title">Personal Profile</span>
-    <div class="topbar-right">
-      <button class="icon-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      </button>
-      <button class="icon-btn notif-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-        <div class="notif-dot"></div>
-      </button>
-    </div>
+    <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">Personal Profile</span>
   </div>
 
-  <!-- SCROLL AREA -->
-  <div class="scroll">
+  <!-- Scroll -->
+  <div class="scroll" style="flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;">
 
-    <!-- Page header -->
-    <div class="page-header">
-      <div class="page-title">Update Personal Profile</div>
-      <div class="page-sub">Please verified your personal profile below. Tap Edit if you need to modify.</div>
-    </div>
+    <!-- PAGE DIV (extracted by page loader into index.html) -->
+    <div class="page" id="pg-profiledetail">
 
-    <!-- ── BASIC INFORMATION ── -->
-    <div class="section">
-      <div class="section-head">
-        <span class="section-label">Basic Information</span>
-        <button class="edit-btn">Edit</button>
+      <!-- Back bar (embedded use only) -->
+      <div class="back-bar">
+        <button class="back-btn" onclick="typeof switchTab!=='undefined'?switchTab('profile'):history.back()">
+          <svg width="18" height="18" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">ZY-Invest</span>
+        <div style="width:60px;"></div>
       </div>
-      <div class="info-card">
-        <div class="info-row">
-          <span class="info-label">Full Name</span>
-          <span class="info-value">Hamid Mohd Zaki</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">IC / Passport No.</span>
-          <span class="info-value">880412-14-5523</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Date of Birth</span>
-          <span class="info-value">12 Apr 1988</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Gender</span>
-          <span class="info-value">Male</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Nationality</span>
-          <span class="info-value">Malaysian</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Risk Profile</span>
-          <span class="info-value">Moderate</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- ── CONTACT ── -->
-    <div class="section">
-      <div class="section-head">
-        <span class="section-label">Contact</span>
-        <button class="edit-btn">Edit</button>
+      <!-- Page header -->
+      <div style="padding:12px 20px 20px;">
+        <div style="font-size:1.2rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;">Update Personal Profile</div>
+        <div style="font-size:.82rem;color:var(--fg-3);line-height:1.5;">Keep your details up to date. Changes are saved directly to your account.</div>
       </div>
-      <div class="info-card">
-        <div class="info-row">
-          <span class="info-label">Mobile No.</span>
-          <span class="info-value">+60 12-345 6789</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Email</span>
-          <span class="info-value">hamid@email.com</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Address</span>
-          <span class="info-value">No. 12, Jalan Maju 3, 47500 Subang Jaya, Selangor</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Postcode</span>
-          <span class="info-value">47500</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">City</span>
-          <span class="info-value">Subang Jaya</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">State</span>
-          <span class="info-value">Selangor</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- ── BANK ACCOUNT ── -->
-    <div class="section">
-      <div class="section-head">
-        <span class="section-label">Bank Account</span>
-        <button class="edit-btn">Edit</button>
-      </div>
-      <div class="info-card">
-        <div class="info-row">
-          <span class="info-label">Bank Name</span>
-          <span class="info-value">Maybank Berhad</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Account No.</span>
-          <span class="info-value">1234 5678 9012</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Account Name</span>
-          <span class="info-value">Hamid Mohd Zaki</span>
+      <!-- BASIC INFORMATION -->
+      <div class="section">
+        <div class="section-head"><span class="section-label">Basic Information</span></div>
+        <div class="info-card">
+          <div class="pf-row"><label>Full Name</label><input id="pfFullName" placeholder="As per NRIC / passport"></div>
+          <div class="pf-row"><label>Preferred Name</label><input id="pfPrefName" placeholder="Display name"></div>
+          <div class="pf-row"><label>IC / Passport No.</label><input id="pfNric" placeholder="e.g. 990512-14-5678">
+            <div class="pf-hint" id="pfNricHint"></div>
+          </div>
+          <div class="pf-row"><label>Date of Birth</label><input id="pfDob" type="date"></div>
+          <div class="pf-row"><label>Nationality</label>
+            <select id="pfNationality">
+              <option>Malaysian</option><option>Singaporean</option><option>Permanent Resident</option><option>Other</option>
+            </select>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="bottom-pad"></div>
-  </div>
+      <!-- CONTACT -->
+      <div class="section">
+        <div class="section-head"><span class="section-label">Contact</span></div>
+        <div class="info-card">
+          <div class="pf-row"><label>Mobile No.</label><input id="pfPhone" placeholder="+60 1X-XXX XXXX"></div>
+          <div class="pf-row"><label>Email</label><input id="pfEmail" disabled>
+            <div class="pf-hint">Email is used for login and can't be changed here.</div>
+          </div>
+          <div class="pf-row"><label>Address</label><input id="pfAddress" placeholder="Full residential address"></div>
+        </div>
+      </div>
+
+      <!-- BANK ACCOUNT -->
+      <div class="section">
+        <div class="section-head"><span class="section-label">Distribution Bank Account</span></div>
+        <div class="info-card">
+          <div class="pf-row"><label>Bank Name</label><input id="pfBankName" placeholder="e.g. Maybank"></div>
+          <div class="pf-row"><label>Account No.</label><input id="pfBankAcct" placeholder="Account number"></div>
+          <div class="pf-row"><label>Account Holder Name</label><input id="pfBankHolder" placeholder="Name as per bank account"></div>
+        </div>
+      </div>
+
+      <div id="pfSaveErr" style="display:none;margin:0 16px 16px;font-size:.78rem;color:var(--red);"></div>
+      <div class="bottom-pad"></div>
+    </div><!-- /pg-profiledetail -->
+
+  </div><!-- /scroll -->
 
   <!-- SAVE BUTTON -->
   <div style="padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--border);flex-shrink:0;">
-    <button style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;">Save Changes</button>
+    <button id="pfSaveBtn" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;" onclick="typeof saveProfileDetail!=='undefined'&&saveProfileDetail()">Save Changes</button>
   </div>
 
 </div>
-
 </body>
 </html>

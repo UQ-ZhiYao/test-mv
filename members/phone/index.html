@@ -223,6 +223,18 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 .badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:99px;}
 .badge-green{background:#F0FDF4;color:var(--green);}
 .badge-gray{background:var(--gray-100);color:var(--fg-3);}
+
+/* Personal Profile page */
+.section{margin:0 16px 28px;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.section-label{font-size:.84rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-1);}
+.info-card{background:#fff;border:none;border-radius:0;overflow:hidden;}
+.pf-row{padding:9px 0;}
+.pf-row label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:5px;}
+.pf-row input,.pf-row select{width:100%;font:inherit;font-size:.9rem;color:var(--fg-1);background:var(--gray-50);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;outline:none;transition:.2s;}
+.pf-row input:focus,.pf-row select:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(21,101,192,.1);}
+.pf-row input:disabled{color:var(--fg-3);background:var(--gray-100);}
+.pf-hint{font-size:.72rem;color:var(--fg-3);margin-top:4px;}
 .save-bar{position:sticky;bottom:0;padding:12px 16px;background:#fff;border-top:1px solid var(--border);}
 .save-btn{width:100%;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;}
 
@@ -642,11 +654,101 @@ input,textarea{-webkit-user-select:text;user-select:text;}
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-auth.js"></script>
+<script src="../../assets/js/member-api.js"></script>
 <script>
+// ── PROFILE DATA (real, from Supabase) ─────────────────────────────────────
+var PROFILE=null, AUTH_USER=null;
+function mpInitialsPhone(name){
+  if(!name) return '—';
+  var parts=String(name).trim().split(/\s+/);
+  return ((parts[0]||'')[0]||'').toUpperCase()+((parts[1]||'')[0]||'').toUpperCase();
+}
+async function loadProfileData(){
+  try{
+    if(typeof sb==='undefined'||!sb) return;
+    var sess=await sb.auth.getSession();
+    var user=sess.data&&sess.data.session&&sess.data.session.user;
+    if(!user) return;
+    AUTH_USER=user;
+    PROFILE=await mpLoadProfile(user.id);
+  }catch(e){ console.warn('Profile load failed:', e.message); PROFILE=PROFILE||{}; }
+  applyProfileToUI();
+}
+function applyProfileToUI(){
+  var P=PROFILE||{};
+  var name=P.full_name||P.preferred_name||(AUTH_USER&&AUTH_USER.email)||'Member';
+  var email=(AUTH_USER&&AUTH_USER.email)||'';
+  var initials=mpInitialsPhone(name);
+  document.querySelectorAll('.prof-name').forEach(function(el){el.textContent=name;});
+  document.querySelectorAll('.prof-email').forEach(function(el){el.textContent=email;});
+  document.querySelectorAll('.prof-av-lg,.avatar-sm').forEach(function(el){el.textContent=initials;});
+  document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent='Verified Investor · '+(P.investor_id||'—');});
+  fillProfileForm();
+}
+// Populates the Personal Profile edit form (profile.html, once injected)
+// from the real PROFILE record. Safe to call before the form exists — it
+// no-ops if the fields aren't in the DOM yet (fragment not loaded, or a
+// different tab is active), and gets called again once they are.
+function fillProfileForm(){
+  var el=document.getElementById('pfFullName');
+  if(!el) return; // form not in DOM yet
+  var P=PROFILE||{};
+  document.getElementById('pfFullName').value=P.full_name||'';
+  document.getElementById('pfPrefName').value=P.preferred_name||'';
+  var nricEl=document.getElementById('pfNric'), nricHint=document.getElementById('pfNricHint');
+  var nricLocked=!!P.nric_passport;
+  nricEl.value=nricLocked?P.nric_passport:'';
+  nricEl.disabled=nricLocked;
+  if(nricHint) nricHint.textContent=nricLocked?'Locked after first save':'';
+  document.getElementById('pfDob').value=P.date_of_birth||'';
+  if(P.nationality) document.getElementById('pfNationality').value=P.nationality;
+  document.getElementById('pfPhone').value=P.phone||'';
+  document.getElementById('pfEmail').value=(AUTH_USER&&AUTH_USER.email)||'';
+  document.getElementById('pfAddress').value=P.address||'';
+  document.getElementById('pfBankName').value=P.bank_name||'';
+  document.getElementById('pfBankAcct').value=P.bank_account_no||'';
+  document.getElementById('pfBankHolder').value=P.bank_account_holder||'';
+}
+async function saveProfileDetail(){
+  var btn=document.getElementById('pfSaveBtn'), errEl=document.getElementById('pfSaveErr');
+  if(!btn) return;
+  if(errEl){errEl.style.display='none';}
+  if(!AUTH_USER){ if(errEl){errEl.textContent='Not signed in.';errEl.style.display='block';} return; }
+  var updates={
+    full_name:document.getElementById('pfFullName').value.trim(),
+    preferred_name:document.getElementById('pfPrefName').value.trim(),
+    date_of_birth:document.getElementById('pfDob').value||null,
+    nationality:document.getElementById('pfNationality').value,
+    phone:document.getElementById('pfPhone').value.trim(),
+    address:document.getElementById('pfAddress').value.trim(),
+    bank_name:document.getElementById('pfBankName').value.trim(),
+    bank_account_no:document.getElementById('pfBankAcct').value.trim(),
+    bank_account_holder:document.getElementById('pfBankHolder').value.trim()
+  };
+  // NRIC/Passport is locked once set (matches desktop) — only send it while
+  // the field is still editable (i.e. not yet on file).
+  var nricEl=document.getElementById('pfNric');
+  if(nricEl && !nricEl.disabled && nricEl.value.trim()) updates.nric_passport=nricEl.value.trim();
+  var origTxt=btn.textContent;
+  btn.disabled=true; btn.textContent='Saving…';
+  try{
+    await mpSaveProfile(AUTH_USER.id, updates);
+    PROFILE=Object.assign({}, PROFILE||{}, updates);
+    showToastM('Profile updated successfully');
+    fillProfileForm();
+  }catch(e){
+    if(errEl){ errEl.textContent='Save failed: '+(e&&e.message||'Unknown error'); errEl.style.display='block'; }
+  }finally{
+    btn.disabled=false; btn.textContent=origTxt;
+  }
+}
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 var activeTab='portfolio';
 var DRILL_PAGES={
   password:{title:'Password & Security',back:'profile'},
+  profiledetail:{title:'Personal Profile',back:'profile'},
   transaction:{title:'Transaction',back:'all'},
   distribution:{title:'Distribution',back:'all'},
   assetdetails:{title:'Asset Details',back:'portfolio'}
@@ -707,6 +809,7 @@ function switchTab(tab){
   if(tab==='assetdetails'){setTimeout(function(){drawAdDonut();drawAdTrend(adPeriod);},50);}
   if(tab==='portfolio'){setTimeout(drawSparkline,50);}
   if(tab==='profile')setTimeout(function(){adjustProfileSpacer();},50);
+  if(tab==='profiledetail')setTimeout(fillProfileForm,50);
   if(tab==='fund'){
     function tryInitFundCharts(n){
       var c=document.getElementById('candleChart');
@@ -743,26 +846,55 @@ function toggleVis(id){
   var f=document.getElementById(id);
   f.type=f.type==='password'?'text':'password';
 }
-function verifyPw(){
+async function verifyPw(){
   var v=document.getElementById('pwCurrent').value;
+  var btn=event&&event.target;
   if(!v){document.getElementById('pwCurrent').focus();return;}
-  if(v!=='password123'){
+  if(typeof sb==='undefined'||!sb||!AUTH_USER||!AUTH_USER.email){
+    document.getElementById('pwCurrentErr').textContent='Unable to verify — please try again later.';
     document.getElementById('pwCurrentErr').style.display='block';
-    document.getElementById('pwCurrent').style.borderColor='var(--red)';
     return;
   }
-  document.getElementById('pwCurrentErr').style.display='none';
-  document.getElementById('pwStep1').style.display='none';
-  document.getElementById('pwStep2').style.display='block';
-  setTimeout(function(){document.getElementById('pwNew').focus();},100);
+  var origTxt=btn&&btn.textContent;
+  if(btn){btn.disabled=true;btn.textContent='Verifying…';}
+  try{
+    // Re-authenticating with the entered password is how we confirm it's
+    // correct — Supabase has no separate "check password" call. This does
+    // not disturb the existing session.
+    var res=await sb.auth.signInWithPassword({email:AUTH_USER.email,password:v});
+    if(res.error) throw res.error;
+    document.getElementById('pwCurrentErr').style.display='none';
+    document.getElementById('pwCurrent').style.borderColor='var(--border)';
+    document.getElementById('pwStep1').style.display='none';
+    document.getElementById('pwStep2').style.display='block';
+    setTimeout(function(){document.getElementById('pwNew').focus();},100);
+  }catch(e){
+    document.getElementById('pwCurrentErr').textContent='Incorrect password. Please try again.';
+    document.getElementById('pwCurrentErr').style.display='block';
+    document.getElementById('pwCurrent').style.borderColor='var(--red)';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=origTxt;}
+  }
 }
-function savePw(){
+async function savePw(){
   var n=document.getElementById('pwNew').value;
   var c=document.getElementById('pwConfirm').value;
+  var btn=event&&event.target;
   if(n.length<8){document.getElementById('pwNew').style.borderColor='var(--red)';return;}
   if(n!==c){document.getElementById('pwMatchErr').style.display='block';document.getElementById('pwConfirm').style.borderColor='var(--red)';return;}
-  closePwModal();
-  showToastM('Password updated successfully');
+  if(typeof mpUpdatePassword!=='function'){showToastM('Password service unavailable');return;}
+  var origTxt=btn&&btn.textContent;
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    await mpUpdatePassword(n);
+    closePwModal();
+    showToastM('Password updated successfully');
+  }catch(e){
+    document.getElementById('pwMatchErr').textContent='Update failed: '+(e&&e.message||'Unknown error');
+    document.getElementById('pwMatchErr').style.display='block';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=origTxt;}
+  }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
@@ -2348,8 +2480,8 @@ function closeOwnershipPanel(){
 document.addEventListener('click',function(e){if(e.target.closest('.ownership-open-btn'))openOwnershipPanel();});
 // ── PAGE LOADER ──
 (function loadPages(){
-  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails"];
-  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html"};
+  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-profiledetail","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails"];
+  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-profiledetail":"profile.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html"};
   var mount=document.getElementById('pages-mount');
   Promise.all(pages.map(function(id){
     return fetch(srcMap[id]).then(function(r){return r.text();}).then(function(html){
@@ -2383,6 +2515,7 @@ document.addEventListener('click',function(e){if(e.target.closest('.ownership-op
     }
     // Init after pages are in DOM
     drawMChart('1d');renderMktList();drawKlciSparkline();updateMktTime();renderWatchlist();setTimeout(drawSparkline,100);setInterval(updateMktTime,1000);
+    loadProfileData();
   });
 })();
 </script>
