@@ -368,12 +368,12 @@ input,textarea{-webkit-user-select:text;user-select:text;}
             <span id="personalExpandBtn" onclick="togglePersonalExpand()" style="color:var(--fg-3);display:flex;align-items:center;cursor:pointer;transition:transform .25s;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--fg-3);margin-bottom:6px;">
-            <span>59,763.79 units held</span>
+            <span id="paUnitsHeldLbl">59,763.79 units held</span>
             <span>Total P/L</span>
           </div>
           <div style="display:flex;align-items:baseline;justify-content:space-between;">
-            <div style="font-size:1.4rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);"><span style="font-weight:normal;">58,000.00</span></div>
-            <div style="font-size:.88rem;font-weight:600;color:var(--green)">+3,228.00</div>
+            <div style="font-size:1.4rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);"><span id="paValue" style="font-weight:normal;">58,000.00</span></div>
+            <div id="paPL" style="font-size:.88rem;font-weight:600;color:var(--green)">+3,228.00</div>
           </div>
         </div>
 
@@ -386,9 +386,9 @@ input,textarea{-webkit-user-select:text;user-select:text;}
           </div>
           <!-- Units value / Stake rows -->
           <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div style="font-size:1.15rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);">59,763.79</div>
+            <div id="paUnits" style="font-size:1.15rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);">59,763.79</div>
             <div style="text-align:right;">
-              <div style="font-size:.9rem;font-weight:600;color:var(--fg-3);">0.08%</div>
+              <div id="paStake" style="font-size:.9rem;font-weight:600;color:var(--fg-3);">0.08%</div>
             </div>
           </div>
 
@@ -405,35 +405,35 @@ input,textarea{-webkit-user-select:text;user-select:text;}
             <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">MV/<br>Cost</div>
             <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">Unrealized<br>Return</div>
             <!-- Row 1 -->
-            <div style="font-size:.72rem;color:var(--fg-2);">01 Jan 25</div>
+            <div id="paLatestDate" style="font-size:.72rem;color:var(--fg-2);">01 Jan 25</div>
             <div style="text-align:right;">
-              <div style="font-size:.72rem;color:var(--fg-1);font-weight:500;">1.0246</div>
-              <div style="font-size:.68rem;color:var(--fg-3);">0.9705</div>
+              <div id="paPrice" style="font-size:.72rem;color:var(--fg-1);font-weight:500;">1.0246</div>
+              <div id="paVwap" style="font-size:.68rem;color:var(--fg-3);">0.9705</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:.72rem;color:var(--fg-1);font-weight:500;">61,228.00</div>
-              <div style="font-size:.68rem;color:var(--fg-3);">58,000.00</div>
+              <div id="paMv" style="font-size:.72rem;color:var(--fg-1);font-weight:500;">61,228.00</div>
+              <div id="paCost" style="font-size:.68rem;color:var(--fg-3);">58,000.00</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:.72rem;color:var(--green);font-weight:600;">+3,228.00</div>
-              <div style="font-size:.68rem;color:var(--green);font-weight:600;">+5.57%</div>
+              <div id="paRealized" style="font-size:.72rem;color:var(--green);font-weight:600;">+3,228.00</div>
+              <div id="paReturnPct" style="font-size:.68rem;color:var(--green);font-weight:600;">+5.57%</div>
             </div>
           </div>
         </div>
 
         <!-- ── JOINT ACCOUNT ── -->
-        <div style="background:var(--gray-100);border-radius:12px;padding:14px 12px 16px;">
+        <div id="jaCardWrap" style="background:var(--gray-100);border-radius:12px;padding:14px 12px 16px;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
             <div style="font-size:1rem;font-weight:400;color:#000000;display:flex;align-items:center;gap:6px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="var(--blue)" stroke="none"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Joint Account <span style="font-weight:400;">· MYR</span></div>
             <span id="jointExpandBtn" onclick="toggleJointExpand()" style="color:var(--fg-3);display:flex;align-items:center;cursor:pointer;transition:transform .25s;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--fg-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--fg-3);margin-bottom:6px;">
-            <span>32,500.00 units held</span>
+            <span id="jaUnitsHeldLbl">32,500.00 units held</span>
             <span>Total P/L</span>
           </div>
           <div style="display:flex;align-items:baseline;justify-content:space-between;">
-            <div style="font-size:1.4rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);"><span style="font-weight:normal;">30,000.00</span></div>
-            <div style="font-size:.88rem;font-weight:600;color:var(--green)">+1,842.50</div>
+            <div style="font-size:1.4rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);"><span id="jaValue" style="font-weight:normal;">30,000.00</span></div>
+            <div id="jaPL" style="font-size:.88rem;font-weight:600;color:var(--green)">+1,842.50</div>
           </div>
         </div>
 
@@ -444,9 +444,9 @@ input,textarea{-webkit-user-select:text;user-select:text;}
             <span style="font-size:.72rem;color:var(--fg-3);text-align:right;">Stake</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div style="font-size:1.15rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);">32,500.00</div>
+            <div id="jaUnits" style="font-size:1.15rem;font-weight:700;letter-spacing:-.02em;color:var(--fg-1);">32,500.00</div>
             <div style="text-align:right;">
-              <div style="font-size:.9rem;font-weight:600;color:var(--fg-3);">0.04%</div>
+              <div id="jaStake" style="font-size:.9rem;font-weight:600;color:var(--fg-3);">0.04%</div>
             </div>
           </div>
           <div style="height:.2em;"></div>
@@ -457,18 +457,18 @@ input,textarea{-webkit-user-select:text;user-select:text;}
             <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">Price/<br>VWAP</div>
             <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">MV/<br>Cost</div>
             <div style="font-size:.6rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);padding-bottom:4px;text-align:right;line-height:1.4;">Unrealized<br>Return</div>
-            <div style="font-size:.72rem;color:var(--fg-2);">01 Jan 25</div>
+            <div id="jaLatestDate" style="font-size:.72rem;color:var(--fg-2);">01 Jan 25</div>
             <div style="text-align:right;">
-              <div style="font-size:.72rem;color:var(--fg-1);font-weight:500;">1.0246</div>
-              <div style="font-size:.68rem;color:var(--fg-3);">0.9228</div>
+              <div id="jaPrice" style="font-size:.72rem;color:var(--fg-1);font-weight:500;">1.0246</div>
+              <div id="jaVwap" style="font-size:.68rem;color:var(--fg-3);">0.9228</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:.72rem;color:var(--fg-1);font-weight:500;">33,299.00</div>
-              <div style="font-size:.68rem;color:var(--fg-3);">30,000.00</div>
+              <div id="jaMv" style="font-size:.72rem;color:var(--fg-1);font-weight:500;">33,299.00</div>
+              <div id="jaCost" style="font-size:.68rem;color:var(--fg-3);">30,000.00</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:.72rem;color:var(--green);font-weight:600;">+1,842.50</div>
-              <div style="font-size:.68rem;color:var(--green);font-weight:600;">+6.14%</div>
+              <div id="jaRealized" style="font-size:.72rem;color:var(--green);font-weight:600;">+1,842.50</div>
+              <div id="jaReturnPct" style="font-size:.68rem;color:var(--green);font-weight:600;">+6.14%</div>
             </div>
           </div>
         </div>
@@ -674,6 +674,108 @@ function applyProfileToUI(){
   document.querySelectorAll('.prof-email').forEach(function(el){el.textContent=email;});
   document.querySelectorAll('.prof-av-lg,.avatar-sm').forEach(function(el){el.textContent=initials;});
   document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent='Verified Investor · '+(P.investor_id||'—');});
+}
+
+// ── ACCOUNT SUMMARY (real data) ─────────────────────────────────────────────
+// PA: capital_injection rows where uid = profiles.id (the logged-in user's
+// own account). JA: same computation, but keyed on profiles.ja_account_id
+// instead — a joint account has no login of its own, so its capital_injection
+// rows are filed under that shared id rather than a person's id.
+var PA_ACCT=null, JA_ACCT=null, LATEST_NTA=0, LATEST_NTA_DATE=null;
+
+function fmtMoney(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtUnits(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtNta(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4}); }
+function fmtDateShort(d){
+  if(!d) return '—';
+  var dt=new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'2-digit'});
+}
+
+// Computes units/VWAP/MV/Cost/Realized/Return for one account id (either a
+// profile's own id for PA, or a joint account id for JA) from capital_injection.
+async function computeAccountFromCapitalInjection(acctId, latestNta){
+  if(!acctId) return null;
+  var { data, error } = await sb.from('capital_injection').select('units, amount').eq('uid', acctId);
+  if(error){ console.warn('capital_injection load failed:', error.message); return null; }
+  var rows=data||[];
+  var units=0, buyUnits=0, buyAmount=0;
+  rows.forEach(function(r){
+    var u=parseFloat(r.units)||0;
+    var a=parseFloat(r.amount)||0;
+    units+=u;
+    if(u>0){ buyUnits+=u; buyAmount+=a; } // VWAP uses subscriptions (buys) only
+  });
+  var vwap=buyUnits?(buyAmount/buyUnits):0;
+  var mv=units*(latestNta||0);
+  var cost=vwap*units;
+  var realized=mv-cost;
+  var returnPct=cost?(realized/cost*100):0;
+  return {units:units, vwap:vwap, mv:mv, cost:cost, realized:realized, returnPct:returnPct};
+}
+
+async function loadAccountSummary(){
+  try{
+    if(typeof sb==='undefined'||!sb) return;
+    if(!AUTH_USER){
+      var sess=await sb.auth.getSession();
+      AUTH_USER=sess.data&&sess.data.session&&sess.data.session.user;
+    }
+    if(!AUTH_USER) return;
+    if(!PROFILE) PROFILE=await mpLoadProfile(AUTH_USER.id);
+    var P=PROFILE||{};
+
+    var ntaRes=await sb.from('nta_daily').select('date,nta').order('date',{ascending:false}).limit(1);
+    var latestRow=(ntaRes.data&&ntaRes.data[0])||null;
+    LATEST_NTA=latestRow?parseFloat(latestRow.nta):0;
+    LATEST_NTA_DATE=latestRow?latestRow.date:null;
+
+    PA_ACCT=await computeAccountFromCapitalInjection(P.id, LATEST_NTA);
+    JA_ACCT=P.ja_account_id ? await computeAccountFromCapitalInjection(P.ja_account_id, LATEST_NTA) : null;
+
+    renderAccountSummary();
+  }catch(e){ console.warn('Account summary load failed:', e.message); }
+}
+
+function renderAccountSummary(){
+  var pa=PA_ACCT, ja=JA_ACCT;
+  var totalValue=(pa?pa.mv:0)+(ja?ja.mv:0);
+  var totalPortfolioEl=document.getElementById('portfolioValue');
+  if(totalPortfolioEl) totalPortfolioEl.setAttribute('data-real', fmtMoney(totalValue));
+
+  function fill(prefix,acct){
+    var up=acct&&acct.realized>=0;
+    setText(prefix+'Value', acct?fmtMoney(acct.mv):'0.00');
+    setText(prefix+'PL', acct?((up?'+':'')+fmtMoney(acct.realized)):'0.00', up?'var(--green)':'var(--red)');
+    setText(prefix+'UnitsHeldLbl', acct?(fmtUnits(acct.units)+' units held'):'0.00 units held');
+    setText(prefix+'Units', acct?fmtUnits(acct.units):'0.00');
+    setText(prefix+'LatestDate', fmtDateShort(LATEST_NTA_DATE));
+    setText(prefix+'Price', fmtNta(LATEST_NTA));
+    setText(prefix+'Vwap', acct?fmtNta(acct.vwap):'0.0000');
+    setText(prefix+'Mv', acct?fmtMoney(acct.mv):'0.00');
+    setText(prefix+'Cost', acct?fmtMoney(acct.cost):'0.00');
+    setText(prefix+'Realized', acct?((up?'+':'')+fmtMoney(acct.realized)):'0.00', up?'var(--green)':'var(--red)');
+    setText(prefix+'ReturnPct', acct?((up?'+':'')+acct.returnPct.toFixed(2)+'%'):'0.00%', up?'var(--green)':'var(--red)');
+  }
+  function setText(id,txt,color){
+    var el=document.getElementById(id);
+    if(!el) return;
+    el.setAttribute('data-real', txt);
+    if(color) el.style.color=color;
+    if(portfolioVisible) el.textContent=txt;
+  }
+  fill('pa', pa);
+  fill('ja', ja);
+
+  // Joint Account card only shows if the profile actually has a joint account.
+  var jaWrap=document.getElementById('jaCardWrap'), jaExpand=document.getElementById('jointExpandPanel'), jaBtn=document.getElementById('jointExpandBtn');
+  var hasJa=!!ja;
+  if(jaWrap) jaWrap.style.display=hasJa?'':'none';
+  if(!hasJa && jaExpand) jaExpand.style.display='none';
+  if(jaBtn) jaBtn.style.display=hasJa?'':'none';
+
+  if(totalPortfolioEl && portfolioVisible) totalPortfolioEl.textContent=fmtMoney(totalValue);
+  applyEyeVisibility();
 }
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 var activeTab='portfolio';
@@ -892,14 +994,32 @@ window.addEventListener('resize',function(){drawMChart(mPeriod);drawSparkline();
 
 // ── PORTFOLIO VALUE TOGGLE ────────────────────────────────────────────────────
 var portfolioVisible=true;
+// Ids of every maskable figure on the Account page (card totals + both
+// expansion panels). Total Value uses its own element directly since it's
+// computed separately (sum of PA+JA) rather than per-account.
+var EYE_MASK_IDS=['paValue','paPL','paUnits','paStake','paPrice','paVwap','paMv','paCost','paRealized','paReturnPct',
+                   'jaValue','jaPL','jaUnits','jaStake','jaPrice','jaVwap','jaMv','jaCost','jaRealized','jaReturnPct'];
+function applyEyeVisibility(){
+  var mask='••••••';
+  var totalEl=document.getElementById('portfolioValue');
+  if(totalEl){
+    var real=totalEl.getAttribute('data-real');
+    totalEl.textContent=portfolioVisible?(real||totalEl.textContent):mask;
+  }
+  EYE_MASK_IDS.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    var real=el.getAttribute('data-real');
+    el.textContent=portfolioVisible?(real!=null?real:el.textContent):mask;
+  });
+}
 function togglePortfolioValue(){
   portfolioVisible=!portfolioVisible;
-  var el=document.getElementById('portfolioValue');
   var icon=document.getElementById('eyeIcon');
-  if(el) el.textContent=portfolioVisible?'58,000.00':'*****';
   if(icon) icon.innerHTML=portfolioVisible
     ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
     :'<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  applyEyeVisibility();
 }
 
 // ── PORTFOLIO SPARKLINE ───────────────────────────────────────────────────────
@@ -2445,6 +2565,7 @@ document.addEventListener('click',function(e){if(e.target.closest('.ownership-op
     // Init after pages are in DOM
     drawMChart('1d');renderMktList();drawKlciSparkline();updateMktTime();renderWatchlist();setTimeout(drawSparkline,100);setInterval(updateMktTime,1000);
     loadProfileData();
+    loadAccountSummary();
   });
 })();
 </script>
