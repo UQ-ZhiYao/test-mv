@@ -4181,13 +4181,19 @@ function showToast(msg,type){
 // ── LOGIN ────────────────────────────────────────────────────────────────────
 function doLogout(){
   document.getElementById('userMenu').classList.remove('open');
-  try{['zy-page','zy_token','zy_role','zy_name','zy_investor_id','zy-session','zy-email'].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
-  if(typeof sb!=='undefined'&&sb){
-    var done=false;
-    var finish=function(){ if(done)return; done=true; window.location.href='../../login.html'; };
-    sb.auth.signOut().then(finish).catch(finish);
-    setTimeout(finish,3000); // hard backstop — never leave the user stuck if signOut() hangs
-  } else { window.location.href='../../login.html'; }
+  // Wipe the real Supabase session token directly and synchronously — do
+  // NOT depend on sb.auth.signOut() completing or succeeding to decide
+  // we're "logged out" locally (a failed/erroring signOut() call can leave
+  // the real session token behind, which login.html would then see as
+  // still valid). signOut() still fires as best-effort server-side cleanup.
+  try{
+    Object.keys(localStorage).forEach(function(k){
+      if(k.indexOf('sb-')===0 && k.indexOf('-auth-token')!==-1) localStorage.removeItem(k);
+    });
+    ['zy-page','zy_token','zy_role','zy_name','zy_investor_id','zy-session','zy-email'].forEach(function(k){localStorage.removeItem(k);});
+  }catch(e){}
+  try{ if(typeof sb!=='undefined'&&sb) sb.auth.signOut().catch(function(){}); }catch(e){}
+  window.location.href='../../login.html';
 }
 function doLogin(){
   var e=document.getElementById('lemail').value, p=document.getElementById('lpwd').value;

@@ -34,11 +34,17 @@ function authSave(data) {
 }
 
 async function authLogout() {
+  // Wipe the real Supabase session token directly and synchronously — do
+  // NOT depend on sb.auth.signOut() completing or succeeding to decide
+  // we're "logged out" locally. signOut() still fires as best-effort
+  // server-side cleanup, but its outcome can no longer strand the user.
   try {
-    if (typeof sb !== 'undefined' && sb) {
-      // Hard backstop — never let a hung signOut() leave the user stuck.
-      await Promise.race([sb.auth.signOut(), new Promise(function(r){ setTimeout(r, 3000); })]);
-    }
+    Object.keys(localStorage).forEach(function(k){
+      if (k.indexOf('sb-') === 0 && k.indexOf('-auth-token') !== -1) localStorage.removeItem(k);
+    });
+  } catch(e) {}
+  try {
+    if (typeof sb !== 'undefined' && sb) sb.auth.signOut().catch(function(){});
   } catch(e) {}
   ['zy_token','zy_role','zy_name','zy_investor_id'].forEach(k => localStorage.removeItem(k));
   window.location.href = '/login.html';
