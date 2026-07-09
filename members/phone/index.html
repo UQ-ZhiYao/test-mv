@@ -678,7 +678,7 @@ function applyProfileToUI(){
 
 // ── ACCOUNT SUMMARY (real data) ─────────────────────────────────────────────
 // PA: capital_injection rows where uid = profiles.id (the logged-in user's
-// own account). JA: same computation, but keyed on profiles.ja_account_id
+// own account). JA: same computation, but keyed on profiles.joint_account_id
 // instead — a joint account has no login of its own, so its capital_injection
 // rows are filed under that shared id rather than a person's id.
 var PA_ACCT=null, JA_ACCT=null, LATEST_NTA=0, LATEST_NTA_DATE=null;
@@ -701,7 +701,7 @@ async function computeAccountFromCapitalInjection(acctId, latestNta){
   if(error){ console.warn('[Account Summary] capital_injection load failed for', acctId, ':', error.message); return {rows:[],result:null}; }
   var rows=data||[];
   console.log('[Account Summary] capital_injection rows for uid='+acctId+':', rows.length);
-  if(!rows.length) console.warn('[Account Summary] No rows returned for uid='+acctId+'. If this account should have transactions, check the capital_injection RLS policy allows reading rows where uid matches profiles.ja_account_id (not just auth.uid()).');
+  if(!rows.length) console.warn('[Account Summary] No rows returned for uid='+acctId+'. If this account should have transactions, check the capital_injection RLS policy allows reading rows where uid matches profiles.joint_account_id (not just auth.uid()).');
   var units=0, buyUnits=0, buyAmount=0;
   rows.forEach(function(r){
     var u=parseFloat(r.units)||0;
@@ -736,9 +736,9 @@ async function loadAccountSummary(){
     PA_ACCT=null; JA_ACCT=null;
     var paLoad=await computeAccountFromCapitalInjection(P.id, LATEST_NTA);
     PA_ACCT=paLoad.result; PA_CI_ROWS=paLoad.rows;
-    console.log('[Account Summary] profile.ja_account_id =', P.ja_account_id);
-    if(P.ja_account_id){
-      var jaLoad=await computeAccountFromCapitalInjection(P.ja_account_id, LATEST_NTA);
+    console.log('[Account Summary] profile.joint_account_id =', P.joint_account_id);
+    if(P.joint_account_id){
+      var jaLoad=await computeAccountFromCapitalInjection(P.joint_account_id, LATEST_NTA);
       JA_ACCT=jaLoad.result; JA_CI_ROWS=jaLoad.rows;
     } else {
       JA_CI_ROWS=[];
