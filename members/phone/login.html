@@ -199,7 +199,11 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:#0
   try{
     if(typeof sb!=='undefined'&&sb){
       var s=await sb.auth.getSession();
-      if(s.data.session){window.location.replace('index.html');return;}
+      if(s.data.session){
+        try{ localStorage.setItem('zy-session','1'); }catch(e){}
+        window.location.replace('index.html');
+        return;
+      }
     }
     if(localStorage.getItem('zy-session')||localStorage.getItem('zy_token')){window.location.replace('index.html');}
   }catch(e){}
