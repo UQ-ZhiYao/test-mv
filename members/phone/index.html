@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ZY-Invest">
 <meta name="theme-color" content="#1565C0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../../assets/img/apple-touch-icon.png">
 <title>ZY-Invest</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
@@ -20,6 +22,7 @@
   --fg-1:#0F172A;--fg-2:#374151;--fg-3:#64748B;
   --border:#E2E8F0;--gray-50:#F8FAFC;--gray-100:#F1F5F9;
   --font-body:'DM Sans',sans-serif;--font-display:'DM Serif Display',serif;
+  --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --tab-h:60px;
 }
@@ -29,7 +32,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .app{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;background:#fff;position:relative;box-shadow:0 0 40px rgba(0,0,0,.12);}
 
 /* ── TOP BAR ── */
-.topbar{height:52px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 18px;flex-shrink:0;}
+.topbar{height:calc(52px + var(--safe-top));padding:var(--safe-top) 18px 0;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .topbar-logo{display:flex;align-items:center;gap:8px;}
 .topbar-logo img{height:24px;}
 .topbar-logo-txt{font-size:.88rem;font-weight:700;color:var(--fg-1);}
@@ -525,7 +528,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
 <!-- ── GLOBAL SEARCH OVERLAY ── -->
 <div id="searchOverlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:200;flex-direction:column;overflow:hidden;">
-  <div style="display:flex;align-items:center;gap:10px;padding:52px 16px 12px;border-bottom:1px solid var(--border);">
+  <div style="display:flex;align-items:center;gap:10px;padding:calc(var(--safe-top) + 12px) 16px 12px;border-bottom:1px solid var(--border);">
     <div style="flex:1;position:relative;">
       <input id="globalSearchInput" type="text" placeholder="Search stocks, indices, crypto…" oninput="globalSearch(this.value)"
         style="width:100%;font:inherit;font-size:.95rem;color:var(--fg-1);background:var(--gray-50);border:1.5px solid var(--border);border-radius:12px;padding:11px 11px 11px 40px;outline:none;"
