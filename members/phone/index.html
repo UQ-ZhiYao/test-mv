@@ -264,7 +264,7 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 
   <!-- STATUS BAR -->
   <!-- TOP BAR -->
-  <div class="topbar">
+  <div class="topbar" id="mainTopbar">
     <div class="topbar-logo" id="topbarLogo">
       <img src="assets/img/logo.png" alt="ZY">
       <span class="topbar-logo-txt">ZY-Invest</span>
@@ -682,6 +682,7 @@ function applyProfileToUI(){
 // instead — a joint account has no login of its own, so its capital_injection
 // rows are filed under that shared id rather than a person's id.
 var PA_ACCT=null, JA_ACCT=null, LATEST_NTA=0, LATEST_NTA_DATE=null;
+var PA_CI_ROWS=[], JA_CI_ROWS=[];
 
 function fmtMoney(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtUnits(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -695,10 +696,12 @@ function fmtDateShort(d){
 // Computes units/VWAP/MV/Cost/Realized/Return for one account id (either a
 // profile's own id for PA, or a joint account id for JA) from capital_injection.
 async function computeAccountFromCapitalInjection(acctId, latestNta){
-  if(!acctId) return null;
-  var { data, error } = await sb.from('capital_injection').select('units, amount').eq('uid', acctId);
-  if(error){ console.warn('capital_injection load failed:', error.message); return null; }
+  if(!acctId) return {rows:[],result:null};
+  var { data, error } = await sb.from('capital_injection').select('units, amount, date').eq('uid', acctId);
+  if(error){ console.warn('[Account Summary] capital_injection load failed for', acctId, ':', error.message); return {rows:[],result:null}; }
   var rows=data||[];
+  console.log('[Account Summary] capital_injection rows for uid='+acctId+':', rows.length);
+  if(!rows.length) console.warn('[Account Summary] No rows returned for uid='+acctId+'. If this account should have transactions, check the capital_injection RLS policy allows reading rows where uid matches profiles.ja_account_id (not just auth.uid()).');
   var units=0, buyUnits=0, buyAmount=0;
   rows.forEach(function(r){
     var u=parseFloat(r.units)||0;
@@ -711,7 +714,7 @@ async function computeAccountFromCapitalInjection(acctId, latestNta){
   var cost=vwap*units;
   var realized=mv-cost;
   var returnPct=cost?(realized/cost*100):0;
-  return {units:units, vwap:vwap, mv:mv, cost:cost, realized:realized, returnPct:returnPct};
+  return {rows:rows, result:{units:units, vwap:vwap, mv:mv, cost:cost, realized:realized, returnPct:returnPct}};
 }
 
 async function loadAccountSummary(){
@@ -730,8 +733,16 @@ async function loadAccountSummary(){
     LATEST_NTA=latestRow?parseFloat(latestRow.nta):0;
     LATEST_NTA_DATE=latestRow?latestRow.date:null;
 
-    PA_ACCT=await computeAccountFromCapitalInjection(P.id, LATEST_NTA);
-    JA_ACCT=P.ja_account_id ? await computeAccountFromCapitalInjection(P.ja_account_id, LATEST_NTA) : null;
+    PA_ACCT=null; JA_ACCT=null;
+    var paLoad=await computeAccountFromCapitalInjection(P.id, LATEST_NTA);
+    PA_ACCT=paLoad.result; PA_CI_ROWS=paLoad.rows;
+    console.log('[Account Summary] profile.ja_account_id =', P.ja_account_id);
+    if(P.ja_account_id){
+      var jaLoad=await computeAccountFromCapitalInjection(P.ja_account_id, LATEST_NTA);
+      JA_ACCT=jaLoad.result; JA_CI_ROWS=jaLoad.rows;
+    } else {
+      JA_CI_ROWS=[];
+    }
 
     renderAccountSummary();
   }catch(e){ console.warn('Account summary load failed:', e.message); }
@@ -776,6 +787,7 @@ function renderAccountSummary(){
 
   if(totalPortfolioEl && portfolioVisible) totalPortfolioEl.textContent=fmtMoney(totalValue);
   applyEyeVisibility();
+  if(typeof drawAdDonut==='function') drawAdDonut();
 }
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 var activeTab='portfolio';
@@ -793,6 +805,7 @@ function updateTopbarChrome(tab){
   var d=DRILL_PAGES[tab];
   var logo=document.getElementById('topbarLogo');
   var back=document.getElementById('topbarBack');
+  var bar=document.getElementById('mainTopbar');
   if(d){
     if(logo)logo.style.display='none';
     if(back){back.style.display='flex';document.getElementById('topbarBackTitle').textContent=d.title;}
@@ -800,6 +813,9 @@ function updateTopbarChrome(tab){
     if(logo)logo.style.display='flex';
     if(back)back.style.display='none';
   }
+  // No divider line under the topbar on the Accounts page or its Asset
+  // Details drill-in — every other page keeps the usual border.
+  if(bar) bar.style.borderBottom=(tab==='portfolio'||tab==='assetdetails')?'none':'1px solid var(--border)';
 }
 function switchFundTab(tab){
   document.querySelectorAll('.ftab').forEach(function(b){b.classList.remove('active');});
@@ -998,7 +1014,8 @@ var portfolioVisible=true;
 // expansion panels). Total Value uses its own element directly since it's
 // computed separately (sum of PA+JA) rather than per-account.
 var EYE_MASK_IDS=['paValue','paPL','paUnits','paStake','paPrice','paVwap','paMv','paCost','paRealized','paReturnPct',
-                   'jaValue','jaPL','jaUnits','jaStake','jaPrice','jaVwap','jaMv','jaCost','jaRealized','jaReturnPct'];
+                   'jaValue','jaPL','jaUnits','jaStake','jaPrice','jaVwap','jaMv','jaCost','jaRealized','jaReturnPct',
+                   'adDonutTotal'];
 function applyEyeVisibility(){
   var mask='••••••';
   var totalEl=document.getElementById('portfolioValue');
@@ -1137,6 +1154,15 @@ function renderDxList(){
 function drawAdDonut(){
   var c=document.getElementById('adDonut');
   if(!c)return;
+  var paMv=PA_ACCT?PA_ACCT.mv:0, jaMv=JA_ACCT?JA_ACCT.mv:0;
+  var total=paMv+jaMv;
+  var paPct=total?(paMv/total*100):0, jaPct=total?(jaMv/total*100):0;
+  var totalEl=document.getElementById('adDonutTotal');
+  if(totalEl){ totalEl.setAttribute('data-real', fmtMoney(total)); totalEl.textContent=portfolioVisible?fmtMoney(total):'••••••'; }
+  var pEl=document.getElementById('adLegendPersonal'); if(pEl) pEl.textContent=paPct.toFixed(1)+'%';
+  var jEl=document.getElementById('adLegendJoint'); if(jEl) jEl.textContent=jaPct.toFixed(1)+'%';
+  var jWrap=document.getElementById('adLegendJointWrap');
+  if(jWrap) jWrap.style.display=JA_ACCT?'':'none';
   var dpr=window.devicePixelRatio||1;
   var W=c.parentElement.parentElement.clientWidth-32;
   var size=Math.min(W,260);
@@ -1145,7 +1171,7 @@ function drawAdDonut(){
   c.style.width=size+'px';c.style.height=H+'px';
   var ctx=c.getContext('2d');ctx.scale(dpr,dpr);
   var cx=size/2,cy=H*0.96,r=size*0.42,lw=r*0.11;
-  var segs=[{v:65.9,c:'#64B5F6'},{v:34.1,c:'#B39DDB'}];
+  var segs=JA_ACCT?[{v:paPct,c:'#64B5F6'},{v:jaPct,c:'#B39DDB'}]:[{v:paPct||100,c:'#64B5F6'}];
   var start=Math.PI;
   ctx.lineCap='butt';
   segs.forEach(function(s){
@@ -1158,25 +1184,55 @@ function drawAdDonut(){
   var txt=document.getElementById('adDonutText');
   if(txt){txt.style.top=(cy-6)+'px';txt.style.transform='translateY(-100%)';}
 }
-var AD_TREND={
-  ytd:{v:[76200,78100,79850,81200,83400,85100,86300,88000],l:['Jan','Mar','May','Jul']},
-  '1m':{v:[85200,85900,86400,85800,86900,87500,87200,88000],l:['Wk1','Wk2','Wk3','Wk4']},
-  '3m':{v:[80800,82100,83400,84900,86000,87100,87600,88000],l:['May','Jun','Jul']},
-  '1y':{v:[68200,71400,73900,76200,79850,83400,86300,88000],l:["Jul '25",'Jan',"Jul '26"]},
-  all:{v:[42000,51200,58900,66700,73900,79850,84900,88000],l:['2022','2024','2026']}
-};
 var adPeriod='ytd';
-function drawAdTrend(period){
+// Asset Trends — for each nta_daily date in the selected period, value =
+// that date's NTA × cumulative units held as of that date (PA + JA
+// combined). Cumulative units use a running total over capital_injection
+// rows sorted ascending, walked alongside the NTA dates (two-pointer,
+// avoids re-scanning all transactions for every date).
+async function loadAdTrendData(period){
+  var today=new Date();
+  var cutoff=null;
+  if(period==='1m'){ cutoff=new Date(today); cutoff.setMonth(cutoff.getMonth()-1); }
+  else if(period==='3m'){ cutoff=new Date(today); cutoff.setMonth(cutoff.getMonth()-3); }
+  else if(period==='1y'){ cutoff=new Date(today); cutoff.setFullYear(cutoff.getFullYear()-1); }
+  else if(period==='ytd'){ cutoff=new Date(today.getFullYear(),0,1); }
+  var cutoffStr=cutoff?cutoff.toISOString().slice(0,10):'0000-00-00';
+  var q=sb.from('nta_daily').select('date,nta').order('date',{ascending:true});
+  if(cutoff) q=q.gte('date',cutoffStr);
+  var res=await q;
+  var ntaRows=res.data||[];
+  var allCi=(PA_CI_ROWS||[]).concat(JA_CI_ROWS||[]).slice().sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0);});
+  var idx=0, cum=0, vals=[], lbls=[];
+  ntaRows.forEach(function(r){
+    while(idx<allCi.length && allCi[idx].date<=r.date){ cum+=parseFloat(allCi[idx].units)||0; idx++; }
+    vals.push(cum*(parseFloat(r.nta)||0));
+    lbls.push(r.date);
+  });
+  return {v:vals, l:lbls};
+}
+function sampleAdLabels(dates){
+  if(!dates.length) return [];
+  var fmt=function(d){ return new Date(d+'T00:00:00').toLocaleDateString('en-MY',{month:'short',year:'2-digit'}); };
+  return [fmt(dates[0]), fmt(dates[Math.floor(dates.length/2)]), fmt(dates[dates.length-1])];
+}
+async function drawAdTrend(period){
   var canvas=document.getElementById('adTrendChart');
   if(!canvas)return;
+  var data=await loadAdTrendData(period);
   var ctx=canvas.getContext('2d');
-  var data=AD_TREND[period];
   var dpr=window.devicePixelRatio||1;
   var W=canvas.parentElement.clientWidth-32,H=150;
   canvas.width=W*dpr;canvas.height=H*dpr;
   canvas.style.width=W+'px';canvas.style.height=H+'px';
   ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
   var vals=data.v,n=vals.length;
+  if(n<2){
+    var l0e=document.getElementById('adTrendL0'),l1e=document.getElementById('adTrendL1'),l2e=document.getElementById('adTrendL2');
+    if(l0e)l0e.textContent=''; if(l1e)l1e.textContent='No data'; if(l2e)l2e.textContent='';
+    return;
+  }
   var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),rng=(mx-mn)||1;
   var padX=4,padY=10;
   function px(i){return padX+(i/(n-1))*(W-padX*2);}
@@ -1195,11 +1251,11 @@ function drawAdTrend(period){
   ctx.stroke();
   ctx.beginPath();ctx.arc(px(n-1),py(vals[n-1]),3.5,0,Math.PI*2);
   ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#1565C0';ctx.lineWidth=2;ctx.stroke();
-  var lbls=data.l;
+  var lbls=sampleAdLabels(data.l);
   var l0=document.getElementById('adTrendL0'),l1=document.getElementById('adTrendL1'),l2=document.getElementById('adTrendL2');
   if(l0)l0.textContent=lbls[0]||'';
-  if(l1)l1.textContent=lbls[Math.floor(lbls.length/2)]||'';
-  if(l2)l2.textContent=lbls[lbls.length-1]||'';
+  if(l1)l1.textContent=lbls[1]||'';
+  if(l2)l2.textContent=lbls[2]||'';
 }
 function switchAdPeriod(p,btn){
   adPeriod=p;
@@ -2346,10 +2402,16 @@ function toggleAcctExpand(){
   var jBtn=document.getElementById('jointExpandBtn');
   var open=p1.style.display==='block';
   p1.style.display=open?'none':'block';
-  p2.style.display=open?'none':'block';
-  btn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
   if(pBtn)pBtn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
-  if(jBtn)jBtn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
+  // Only expand the Joint Account panel if this profile actually has a
+  // joint account — otherwise there's nothing to show there.
+  if(JA_ACCT){
+    if(p2) p2.style.display=open?'none':'block';
+    if(jBtn)jBtn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
+  } else if(p2){
+    p2.style.display='none';
+  }
+  btn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
 }
 function togglePersonalExpand(){
   var panel=document.getElementById('acctExpandPanel');

@@ -82,19 +82,19 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
             <canvas id="adDonut" style="display:block;"></canvas>
             <div id="adDonutText" style="position:absolute;left:0;right:0;text-align:center;">
               <div class="ad-donut-total-l">Total · MYR</div>
-              <div class="ad-donut-total-v">88,000.00</div>
+              <div class="ad-donut-total-v" id="adDonutTotal">88,000.00</div>
             </div>
           </div>
           <div class="ad-legend">
-            <div class="ad-legend-item">
+            <div class="ad-legend-item" id="adLegendPersonalWrap">
               <span class="ad-legend-dot" style="background:#64B5F6;"></span>
               <span class="ad-legend-label">Personal</span>
-              <span class="ad-legend-value">65.9%</span>
+              <span class="ad-legend-value" id="adLegendPersonal">65.9%</span>
             </div>
-            <div class="ad-legend-item">
+            <div class="ad-legend-item" id="adLegendJointWrap">
               <span class="ad-legend-dot" style="background:#B39DDB;"></span>
               <span class="ad-legend-label">Joint</span>
-              <span class="ad-legend-value">34.1%</span>
+              <span class="ad-legend-value" id="adLegendJoint">34.1%</span>
             </div>
           </div>
         </div>
