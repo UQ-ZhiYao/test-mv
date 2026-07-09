@@ -2224,8 +2224,28 @@ document.addEventListener('click',function(e){
 });
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 function doLogout(){
-  try{localStorage.removeItem('zy-session');localStorage.removeItem('zy_token');localStorage.removeItem('zy_role');localStorage.removeItem('zy_name');localStorage.removeItem('zy-page');}catch(e){}
-  window.location.href='login.html';
+  var proceed=function(){
+    try{
+      ['zy-session','zy_token','zy_role','zy_name','zy-page','zy_investor_id','zy_joint_account_id','zy_joint_account_name'].forEach(function(k){localStorage.removeItem(k);});
+    }catch(e){}
+    window.location.href='login.html';
+  };
+  // Must actually end the real Supabase session — clearing only the local
+  // zy_* flags left a still-valid session behind, so login.html's own
+  // "already logged in?" check (which looks at the real session) sent the
+  // user straight back to index.html, whose guard (which only looks at the
+  // now-cleared flags) sent them straight back to login.html — an infinite
+  // redirect loop that looked exactly like the page had crashed.
+  // The timeout is a hard backstop: even if signOut() itself hangs (e.g. a
+  // Navigator Locks deadlock), we still redirect instead of freezing.
+  if(typeof sb!=='undefined'&&sb){
+    var done=false;
+    var finish=function(){ if(done)return; done=true; proceed(); };
+    sb.auth.signOut().then(finish).catch(finish);
+    setTimeout(finish,3000);
+  } else {
+    proceed();
+  }
 }
 // ── AUTH GATE ────────────────────────────────────────────────────────────────
 (function(){if(!localStorage.getItem('zy-session')&&!localStorage.getItem('zy_token')){window.location.replace('login.html');}})();

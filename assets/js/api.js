@@ -35,7 +35,10 @@ function authSave(data) {
 
 async function authLogout() {
   try {
-    if (typeof sb !== 'undefined' && sb) await sb.auth.signOut();
+    if (typeof sb !== 'undefined' && sb) {
+      // Hard backstop — never let a hung signOut() leave the user stuck.
+      await Promise.race([sb.auth.signOut(), new Promise(function(r){ setTimeout(r, 3000); })]);
+    }
   } catch(e) {}
   ['zy_token','zy_role','zy_name','zy_investor_id'].forEach(k => localStorage.removeItem(k));
   window.location.href = '/login.html';

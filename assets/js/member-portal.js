@@ -4183,7 +4183,10 @@ function doLogout(){
   document.getElementById('userMenu').classList.remove('open');
   try{['zy-page','zy_token','zy_role','zy_name','zy_investor_id','zy-session','zy-email'].forEach(function(k){localStorage.removeItem(k);});}catch(e){}
   if(typeof sb!=='undefined'&&sb){
-    sb.auth.signOut().then(function(){window.location.href='../../login.html';}).catch(function(){window.location.href='../../login.html';});
+    var done=false;
+    var finish=function(){ if(done)return; done=true; window.location.href='../../login.html'; };
+    sb.auth.signOut().then(finish).catch(finish);
+    setTimeout(finish,3000); // hard backstop — never leave the user stuck if signOut() hangs
   } else { window.location.href='../../login.html'; }
 }
 function doLogin(){
