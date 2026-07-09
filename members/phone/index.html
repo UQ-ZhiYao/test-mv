@@ -224,17 +224,6 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 .badge-green{background:#F0FDF4;color:var(--green);}
 .badge-gray{background:var(--gray-100);color:var(--fg-3);}
 
-/* Personal Profile page */
-.section{margin:0 16px 28px;}
-.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.section-label{font-size:.84rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-1);}
-.info-card{background:#fff;border:none;border-radius:0;overflow:hidden;}
-.pf-row{padding:9px 0;}
-.pf-row label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:5px;}
-.pf-row input,.pf-row select{width:100%;font:inherit;font-size:.9rem;color:var(--fg-1);background:var(--gray-50);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;outline:none;transition:.2s;}
-.pf-row input:focus,.pf-row select:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(21,101,192,.1);}
-.pf-row input:disabled{color:var(--fg-3);background:var(--gray-100);}
-.pf-hint{font-size:.72rem;color:var(--fg-3);margin-top:4px;}
 .save-bar{position:sticky;bottom:0;padding:12px 16px;background:#fff;border-top:1px solid var(--border);}
 .save-btn{width:100%;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;}
 
@@ -685,70 +674,11 @@ function applyProfileToUI(){
   document.querySelectorAll('.prof-email').forEach(function(el){el.textContent=email;});
   document.querySelectorAll('.prof-av-lg,.avatar-sm').forEach(function(el){el.textContent=initials;});
   document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent='Verified Investor · '+(P.investor_id||'—');});
-  fillProfileForm();
-}
-// Populates the Personal Profile edit form (profile.html, once injected)
-// from the real PROFILE record. Safe to call before the form exists — it
-// no-ops if the fields aren't in the DOM yet (fragment not loaded, or a
-// different tab is active), and gets called again once they are.
-function fillProfileForm(){
-  var el=document.getElementById('pfFullName');
-  if(!el) return; // form not in DOM yet
-  var P=PROFILE||{};
-  document.getElementById('pfFullName').value=P.full_name||'';
-  document.getElementById('pfPrefName').value=P.preferred_name||'';
-  var nricEl=document.getElementById('pfNric'), nricHint=document.getElementById('pfNricHint');
-  var nricLocked=!!P.nric_passport;
-  nricEl.value=nricLocked?P.nric_passport:'';
-  nricEl.disabled=nricLocked;
-  if(nricHint) nricHint.textContent=nricLocked?'Locked after first save':'';
-  document.getElementById('pfDob').value=P.date_of_birth||'';
-  if(P.nationality) document.getElementById('pfNationality').value=P.nationality;
-  document.getElementById('pfPhone').value=P.phone||'';
-  document.getElementById('pfEmail').value=(AUTH_USER&&AUTH_USER.email)||'';
-  document.getElementById('pfAddress').value=P.address||'';
-  document.getElementById('pfBankName').value=P.bank_name||'';
-  document.getElementById('pfBankAcct').value=P.bank_account_no||'';
-  document.getElementById('pfBankHolder').value=P.bank_account_holder||'';
-}
-async function saveProfileDetail(){
-  var btn=document.getElementById('pfSaveBtn'), errEl=document.getElementById('pfSaveErr');
-  if(!btn) return;
-  if(errEl){errEl.style.display='none';}
-  if(!AUTH_USER){ if(errEl){errEl.textContent='Not signed in.';errEl.style.display='block';} return; }
-  var updates={
-    full_name:document.getElementById('pfFullName').value.trim(),
-    preferred_name:document.getElementById('pfPrefName').value.trim(),
-    date_of_birth:document.getElementById('pfDob').value||null,
-    nationality:document.getElementById('pfNationality').value,
-    phone:document.getElementById('pfPhone').value.trim(),
-    address:document.getElementById('pfAddress').value.trim(),
-    bank_name:document.getElementById('pfBankName').value.trim(),
-    bank_account_no:document.getElementById('pfBankAcct').value.trim(),
-    bank_account_holder:document.getElementById('pfBankHolder').value.trim()
-  };
-  // NRIC/Passport is locked once set (matches desktop) — only send it while
-  // the field is still editable (i.e. not yet on file).
-  var nricEl=document.getElementById('pfNric');
-  if(nricEl && !nricEl.disabled && nricEl.value.trim()) updates.nric_passport=nricEl.value.trim();
-  var origTxt=btn.textContent;
-  btn.disabled=true; btn.textContent='Saving…';
-  try{
-    await mpSaveProfile(AUTH_USER.id, updates);
-    PROFILE=Object.assign({}, PROFILE||{}, updates);
-    showToastM('Profile updated successfully');
-    fillProfileForm();
-  }catch(e){
-    if(errEl){ errEl.textContent='Save failed: '+(e&&e.message||'Unknown error'); errEl.style.display='block'; }
-  }finally{
-    btn.disabled=false; btn.textContent=origTxt;
-  }
 }
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 var activeTab='portfolio';
 var DRILL_PAGES={
   password:{title:'Password & Security',back:'profile'},
-  profiledetail:{title:'Personal Profile',back:'profile'},
   transaction:{title:'Transaction',back:'all'},
   distribution:{title:'Distribution',back:'all'},
   assetdetails:{title:'Asset Details',back:'portfolio'}
@@ -809,7 +739,6 @@ function switchTab(tab){
   if(tab==='assetdetails'){setTimeout(function(){drawAdDonut();drawAdTrend(adPeriod);},50);}
   if(tab==='portfolio'){setTimeout(drawSparkline,50);}
   if(tab==='profile')setTimeout(function(){adjustProfileSpacer();},50);
-  if(tab==='profiledetail')setTimeout(fillProfileForm,50);
   if(tab==='fund'){
     function tryInitFundCharts(n){
       var c=document.getElementById('candleChart');
@@ -2480,8 +2409,8 @@ function closeOwnershipPanel(){
 document.addEventListener('click',function(e){if(e.target.closest('.ownership-open-btn'))openOwnershipPanel();});
 // ── PAGE LOADER ──
 (function loadPages(){
-  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-profiledetail","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails"];
-  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-profiledetail":"profile.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html"};
+  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails"];
+  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html"};
   var mount=document.getElementById('pages-mount');
   Promise.all(pages.map(function(id){
     return fetch(srcMap[id]).then(function(r){return r.text();}).then(function(html){
