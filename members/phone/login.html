@@ -227,15 +227,36 @@ async function doLogin(){
   var spin=document.getElementById('loginSpinner');
   err.classList.remove('show');
   if(!email||!pwd){err.textContent='Please enter your email and password.';err.classList.add('show');return;}
+  btn.disabled=true;txt.textContent='Signing in…';spin.style.display='inline-block';
   try{
     if(typeof sb==='undefined'||!sb) throw new Error('Auth service not configured.');
     var res=await sb.auth.signInWithPassword({email:email,password:pwd});
     if(res.error) throw res.error;
+    var uid=res.data.user.id;
+
+    // Resolve PA (own profile) + JA (joint account, if any) per the
+    // profiles.joint_account_id -> joint_accounts schema. A profile with
+    // no joint_account_id is PA-only; the Accounts screen shows both
+    // cards when a joint_account_id is present.
+    var prof=null, jaInfo=null;
+    try{
+      var profRes=await sb.from('profiles').select('id, investor_id, full_name, joint_account_id').eq('id',uid).single();
+      if(!profRes.error) prof=profRes.data;
+    }catch(pe){}
+    if(prof && prof.joint_account_id){
+      try{
+        var jaRes=await sb.from('joint_accounts').select('id, display_name, controller_profile_id').eq('id',prof.joint_account_id).single();
+        if(!jaRes.error) jaInfo=jaRes.data;
+      }catch(je){}
+    }
+
     authSave({
-      access_token: res.data.session.access_token,
-      role:         res.data.user.user_metadata?.role||'member',
-      name:         res.data.user.user_metadata?.full_name||email,
-      investor_id:  res.data.user.user_metadata?.investor_id||''
+      access_token:       res.data.session.access_token,
+      role:               res.data.user.user_metadata?.role||'member',
+      name:               (prof&&prof.full_name)||res.data.user.user_metadata?.full_name||email,
+      investor_id:        (prof&&prof.investor_id)||res.data.user.user_metadata?.investor_id||uid,
+      joint_account_id:   (prof&&prof.joint_account_id)||'',
+      joint_account_name: (jaInfo&&jaInfo.display_name)||''
     });
     try{localStorage.setItem('zy-session','1');}catch(e){}
     window.location.href='index.html';
@@ -245,6 +266,7 @@ async function doLogin(){
     err.textContent=m;err.classList.add('show');
     btn.disabled=false;txt.textContent='Sign In';spin.style.display='none';
   }
+}
 
 // Biometric
 function showBioPrompt(){

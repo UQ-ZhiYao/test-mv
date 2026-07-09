@@ -27,27 +27,31 @@ const api = {
 
 /* ── Auth helpers ─────────────────────────────────────────── */
 function authSave(data) {
-  localStorage.setItem('zy_token',       data.access_token);
-  localStorage.setItem('zy_role',        data.role);
-  localStorage.setItem('zy_name',        data.name);
-  localStorage.setItem('zy_investor_id', data.investor_id || '');
+  localStorage.setItem('zy_token',              data.access_token);
+  localStorage.setItem('zy_role',                data.role);
+  localStorage.setItem('zy_name',                data.name);
+  localStorage.setItem('zy_investor_id',         data.investor_id || '');
+  localStorage.setItem('zy_joint_account_id',    data.joint_account_id || '');
+  localStorage.setItem('zy_joint_account_name',  data.joint_account_name || '');
 }
 
 async function authLogout() {
   try {
     if (typeof sb !== 'undefined' && sb) await sb.auth.signOut();
   } catch(e) {}
-  ['zy_token','zy_role','zy_name','zy_investor_id','zy-session'].forEach(k => localStorage.removeItem(k));
+  ['zy_token','zy_role','zy_name','zy_investor_id','zy_joint_account_id','zy_joint_account_name','zy-session'].forEach(k => localStorage.removeItem(k));
   var loginPath = location.pathname.indexOf('/members/') >= 0 ? '../../login.html' : 'login.html';
   window.location.href = loginPath;
 }
 
 function authUser() {
   return {
-    token:      localStorage.getItem('zy_token'),
-    role:       localStorage.getItem('zy_role'),
-    name:       localStorage.getItem('zy_name'),
-    investorId: localStorage.getItem('zy_investor_id'),
+    token:            localStorage.getItem('zy_token'),
+    role:             localStorage.getItem('zy_role'),
+    name:             localStorage.getItem('zy_name'),
+    investorId:       localStorage.getItem('zy_investor_id'),
+    jointAccountId:   localStorage.getItem('zy_joint_account_id') || '',
+    jointAccountName: localStorage.getItem('zy_joint_account_name') || '',
   };
 }
 
