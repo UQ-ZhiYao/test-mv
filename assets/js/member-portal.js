@@ -221,7 +221,7 @@ function chartHTML(period) {
   var area=r.d+' L'+pts[pts.length-1][0]+','+H+' L'+pts[0][0]+','+H+' Z';
   var li=[0, Math.floor(pts.length/3), Math.floor(2*pts.length/3), pts.length-1];
   return '<div style="position:relative">'
-    +'<svg id="ntaChart" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:180px;display:block;cursor:crosshair" preserveAspectRatio="none">'
+    +'<svg id="ntaChart" viewBox="0 0 '+W+' '+H+'" style="width:100%;height:180px;display:block;cursor:crosshair;touch-action:pan-y" preserveAspectRatio="none">'
     +'<defs><linearGradient id="ntaG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1565C0" stop-opacity=".18"/><stop offset="1" stop-color="#1565C0" stop-opacity="0"/></linearGradient></defs>'
     +'<line x1="'+px+'" y1="'+(py+(H-2*py)*0.25)+'" x2="'+(W-px)+'" y2="'+(py+(H-2*py)*0.25)+'" stroke="#F3F4F6" stroke-width="1"/>'
     +'<line x1="'+px+'" y1="'+(py+(H-2*py)*0.5)+'" x2="'+(W-px)+'" y2="'+(py+(H-2*py)*0.5)+'" stroke="#F3F4F6" stroke-width="1"/>'
@@ -1806,7 +1806,7 @@ function pgFundOverview(){
       var tip='FY:'+l+'|'+tipLines.join('|');
       var ox=Math.max(0,px(i)-segW/2).toFixed(1);
       var cx=(px(i)/W).toFixed(4);
-      return '<rect x="'+ox+'" y="0" width="'+segW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="0" width="'+segW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair;touch-action:pan-y"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+paths+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
@@ -1868,7 +1868,7 @@ function pgFundOverview(){
       var prev=i>0?months[i-1]:null;
       var tip=infoStr(m,prev);
       var ox=(padX+i*colW).toFixed(1);
-      return '<rect x="'+ox+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" data-tip="'+tip+'" onmouseenter="candleInfo(getTip(this),\''+infoId+'\')" onmousemove="candleInfo(getTip(this),\''+infoId+'\')" onmouseleave="candleInfo(\''+defaultTip+'\',\''+infoId+'\')" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" data-tip="'+tip+'" onmouseenter="candleInfo(getTip(this),\''+infoId+'\')" onmousemove="candleInfo(getTip(this),\''+infoId+'\')" onmouseleave="candleInfo(\''+defaultTip+'\',\''+infoId+'\')" style="cursor:crosshair;touch-action:pan-y"/>';
     }).join('');
     var infoLine='<div id="'+infoId+'" style="font-size:.82rem;color:#374151;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #F1F5F9;min-height:20px;display:flex;align-items:center;flex-wrap:wrap">'+candleInfoHtml(defaultTip)+'</div>';
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+candles+xL+overlays+'</svg></div>';
@@ -1914,7 +1914,7 @@ function pgFundOverview(){
       var tip='FY:'+g+'|'+barSeries.color+'::'+barSeries.label+': '+fmtTipNum(allBar[gi])+'|'+lineSeries.color+'::'+lineSeries.label+': '+fmtTipPct(allLine[gi]);
       var ox=(padX+gi*groupW).toFixed(1);
       var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
-      return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair;touch-action:pan-y"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+'<path d="'+ld+'" fill="none" stroke="'+lineSeries.color+'" stroke-width="2" stroke-linejoin="round"/>'+ldots+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:600;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
@@ -1954,7 +1954,7 @@ function pgFundOverview(){
       var tip='FY:'+l+'|'+(colors[i]||'#1565C0')+'::Value: '+fmtVTip(data[i]);
       var ox=(padX+i*gap).toFixed(1);
       var cx=((padX+i*gap+gap/2)/W).toFixed(4);
-      return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair;touch-action:pan-y"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+bPaths+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:400;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
@@ -2003,7 +2003,7 @@ function pgFundOverview(){
       var tip='FY:'+g+'|'+tipLines.join('|');
       var ox=(padX+gi*groupW).toFixed(1);
       var cx=((padX+gi*groupW+groupW/2)/W).toFixed(4);
-      return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="0" width="'+groupW.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair;touch-action:pan-y"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+zeroLine+bPaths+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:400;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
@@ -2044,7 +2044,7 @@ function pgFundOverview(){
       var tip='FY:'+l+'|'+tipLines.join('|');
       var ox=(padX+i*gap).toFixed(1);
       var cx=((padX+i*gap+gap/2)/W).toFixed(4);
-      return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair;touch-action:pan-y"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:400;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
@@ -2095,7 +2095,7 @@ function pgFundOverview(){
       var tip='FY:'+l+'|'+tipLines.join('|');
       var ox=(padX+i*gap).toFixed(1);
       var cx=((padX+i*gap+gap/2)/W).toFixed(4);
-      return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="0" width="'+gap.toFixed(1)+'" height="'+H+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'),\''+tipId+'\')" onmouseleave="frHide(\''+tipId+'\')" style="cursor:crosshair;touch-action:pan-y"/>';
     }).join('');
     var chartSvg='<div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column"><svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;flex:1;min-height:0;display:block">'+grid+rects+'<path d="'+ld+'" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round"/>'+ldots+xL+overlays+'</svg>'
       +'<div id="'+tipId+'" style="display:none;position:absolute;background:#fff;color:#0F172A;font-size:.74rem;font-weight:400;padding:8px 12px;border-radius:8px;pointer-events:none;z-index:10;top:4px;left:0;border:1px solid #E2E8F0;box-shadow:0 6px 20px rgba(0,0,0,.13)"></div></div>';
@@ -2751,7 +2751,7 @@ function buildNtaLineChart(rows){
   var colW=(W-padL-padR)/Math.max(1,n-1);
   var overlays=rows.map(function(r,i){
     var ox=Math.max(padL,px(i)-colW/2);
-    return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="nthHoverAt('+i+')" onmousemove="nthHoverAt('+i+')" onmouseleave="nthHoverReset()" style="cursor:crosshair"/>';
+    return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="nthHoverAt('+i+')" onmousemove="nthHoverAt('+i+')" onmouseleave="nthHoverReset()" style="cursor:crosshair;touch-action:pan-y"/>';
   }).join('');
   var hoverLine='<line id="nthHoverLine" x1="0" y1="'+padYT+'" x2="0" y2="'+(H-padYB)+'" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3,3" style="display:none;pointer-events:none"/>';
   window._nthRows=rows;
@@ -2801,7 +2801,7 @@ function buildNtaCandleChart(rows){
   }
   var overlays=rows.map(function(r,i){
     var ox=padL+i*colW;
-    return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="nthHoverAt('+i+')" onmousemove="nthHoverAt('+i+')" onmouseleave="nthHoverReset()" style="cursor:crosshair"/>';
+    return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="nthHoverAt('+i+')" onmousemove="nthHoverAt('+i+')" onmouseleave="nthHoverReset()" style="cursor:crosshair;touch-action:pan-y"/>';
   }).join('');
   var hoverLine='<line id="nthHoverLine" x1="0" y1="'+padYT+'" x2="0" y2="'+(H-padYB)+'" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3,3" style="display:none;pointer-events:none"/>';
   window._nthRows=rows;
@@ -3093,7 +3093,7 @@ function buildCmpChart(seriesArr, dates, priceInfo, hidden){
   var colW=(W-padL-padR)/Math.max(1,n-1);
   var overlays=dates.map(function(d,i){
     var ox=Math.max(padL,px(i)-colW/2);
-    return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="cmpHoverAt('+i+')" onmousemove="cmpHoverAt('+i+')" onmouseleave="cmpHoverReset()" style="cursor:crosshair"/>';
+    return '<rect x="'+ox.toFixed(1)+'" y="0" width="'+colW.toFixed(1)+'" height="'+H+'" fill="transparent" onmouseenter="cmpHoverAt('+i+')" onmousemove="cmpHoverAt('+i+')" onmouseleave="cmpHoverReset()" style="cursor:crosshair;touch-action:pan-y"/>';
   }).join('');
   var hoverLine='<line id="cmpHoverLine" x1="0" y1="'+padYT+'" x2="0" y2="'+(H-padYB)+'" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3,3" style="display:none;pointer-events:none"/>';
   // Expose raw (native-price) series + date axis + pixel positions for the
@@ -3613,7 +3613,7 @@ function pgFinancialResults(){
       var tip='FY:'+fy+'|'+tipLines.join('|');
       var ox=(padL+gi*SEG).toFixed(1);
       var cx=((padL+gi*SEG+SEG/2)/W).toFixed(4);
-      return '<rect x="'+ox+'" y="'+padYT+'" width="'+SEG+'" height="'+(H-padYT-padYB)+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'))" onmouseleave="frHide()" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="'+padYT+'" width="'+SEG+'" height="'+(H-padYT-padYB)+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'))" onmouseleave="frHide()" style="cursor:crosshair;touch-action:pan-y"/>';
     }).join('');
     var xL=fyLabels.map(function(l,i){
       return '<text x="'+(padL+i*SEG+SEG/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="7" fill="#374151">'+l+'</text>';
@@ -3664,7 +3664,7 @@ function pgFinancialResults(){
       var tip='FY:'+fy+'|'+tipLines.join('|');
       var ox=(padL+gi*SEG).toFixed(1);
       var cx=((padL+gi*SEG+SEG/2)/W).toFixed(4);
-      return '<rect x="'+ox+'" y="'+padYT+'" width="'+SEG+'" height="'+(H-padYT-padYB)+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'))" onmouseleave="frHide()" style="cursor:crosshair"/>';
+      return '<rect x="'+ox+'" y="'+padYT+'" width="'+SEG+'" height="'+(H-padYT-padYB)+'" fill="transparent" data-cx="'+cx+'" data-tip="'+tip+'" onmouseenter="frTip(event,getTip(this),this.getAttribute(\'data-cx\'))" onmouseleave="frHide()" style="cursor:crosshair;touch-action:pan-y"/>';
     }).join('');
     var xL=fyLabels.map(function(l,i){return '<text x="'+px(i).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle" font-size="7" fill="#374151">'+l+'</text>';}).join('');
     var leg='<div style="display:flex;gap:14px;margin-top:8px;justify-content:center">'+series.map(function(s){

@@ -66,11 +66,11 @@
           <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>
           <span><b>Profile</b><span>Personal &amp; account details</span></span>
         </a>
-        <a class="um-item" href="#" onclick="window.location.href='settings.html';toggleUserMenu();return false;">
+        <a class="um-item" href="#" onclick="window.location.href='settings.html?tab=security';toggleUserMenu();return false;">
           <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></span>
           <span><b>Password</b><span>Sign-in &amp; security</span></span>
         </a>
-        <a class="um-item" href="#" onclick="window.location.href='settings.html';toggleUserMenu();return false;">
+        <a class="um-item" href="#" onclick="window.location.href='settings.html?tab=nominee';toggleUserMenu();return false;">
           <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3 2.5-4.6 5.5-4.6S14.5 17 14.5 20"/><circle cx="17" cy="9" r="2.6"/><path d="M16 15.6c2.6.2 4.5 1.7 4.5 4.4"/></svg></span>
           <span><b>Nominee</b><span>Beneficiary nomination</span></span>
         </a>
@@ -292,10 +292,19 @@
 var S = { page:'profile', period:'ytd', txf:'all' };
 // [init removed for standalone page]
 
+// Deep-link support: ?tab=personal|security|nominee (used by the
+// Profile/Password/Nominee links in the user menu on every page).
+var _settingsTab='personal';
+(function(){
+  var qs=new URLSearchParams(window.location.search);
+  var tab=qs.get('tab');
+  if(tab && ['personal','security','nominee'].indexOf(tab)>=0){ _settingsTab=tab; }
+})();
+
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
-  document.getElementById('mainContent').innerHTML=pgProfile();renderNotifs();
+  document.getElementById('mainContent').innerHTML=pgSettings(_settingsTab);renderNotifs();
 });
 </script>
 </body>
