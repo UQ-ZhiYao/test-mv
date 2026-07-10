@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ZY-Invest">
+<meta name="theme-color" content="#0D47A1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../../assets/img/apple-touch-icon.png">
+<title>ZY-Invest — Create Account</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+button,a{touch-action:manipulation;}
+:root{
+  --blue:#1565C0;--blue-dark:#0D47A1;--blue-light:#1E88E5;
+  --fg-1:#0F172A;--fg-2:#374151;--fg-3:#64748B;
+  --border:#E2E8F0;--gray-50:#F8FAFC;
+  --font-body:'DM Sans',sans-serif;--font-display:'DM Serif Display',serif;
+  --safe-top:env(safe-area-inset-top,44px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--font-body);background:#0D47A1;
+  touch-action:pan-y;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+input,textarea{-webkit-user-select:text;user-select:text;}
+
+/* ── SHELL ── */
+.app{
+  display:flex;flex-direction:column;height:100%;height:100dvh;
+  max-width:430px;margin:0 auto;
+  position:relative;overflow:hidden;
+  background:linear-gradient(170deg,#0D47A1 0%,#1565C0 40%,#1E88E5 100%);
+}
+
+/* ── BG DECORATION ── */
+.bg-circle-1{position:absolute;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.06);top:-80px;right:-80px;pointer-events:none;}
+.bg-circle-2{position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.04);top:60px;left:-60px;pointer-events:none;}
+
+/* ── TOP SECTION (brand + hero) ── */
+.top-area{
+  flex:0 0 auto;
+  display:flex;flex-direction:column;align-items:center;
+  padding:calc(var(--safe-top) + 24px) 24px 24px;
+  position:relative;z-index:1;
+}
+.logo-wrap{display:flex;align-items:center;gap:10px;margin-bottom:20px;}
+.logo-wrap img{width:38px;height:38px;}
+.logo-txt{color:#fff;}
+.logo-txt b{display:block;font-size:1rem;font-weight:700;letter-spacing:-.01em;}
+.logo-txt span{display:block;font-size:.7rem;opacity:.7;margin-top:1px;}
+.hero-label{font-family:var(--font-display);font-style:italic;font-size:1.7rem;color:#fff;text-align:center;line-height:1.2;margin-bottom:6px;}
+.hero-sub{font-size:.8rem;color:rgba(255,255,255,.7);text-align:center;line-height:1.5;max-width:280px;}
+
+/* ── CARD ── */
+.card-wrap{
+  flex:1;display:flex;flex-direction:column;
+  position:relative;z-index:2;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+.card{
+  background:#fff;
+  border-radius:28px 28px 0 0;
+  padding:26px 24px calc(var(--safe-bottom) + 24px);
+  flex:1;min-height:100%;
+}
+.card-title{font-size:1.1rem;font-weight:700;color:var(--fg-1);margin-bottom:4px;}
+.card-sub{font-size:.82rem;color:var(--fg-3);margin-bottom:20px;}
+
+/* ── FORM ── */
+.field{margin-bottom:14px;}
+.field label{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-3);display:block;margin-bottom:6px;}
+.inp-wrap{position:relative;}
+.field input{
+  width:100%;font:inherit;font-size:.95rem;color:var(--fg-1);
+  background:var(--gray-50);border:1.5px solid var(--border);border-radius:12px;
+  padding:13px 48px 13px 14px;outline:none;transition:.2s;
+}
+.field input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(21,101,192,.1);}
+.field input::placeholder{color:#94A3B8;}
+.inp-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94A3B8;display:flex;align-items:center;}
+.inp-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+
+/* ── SUBMIT ── */
+.btn-login{
+  width:100%;padding:15px;border-radius:14px;border:none;
+  background:linear-gradient(135deg,var(--blue) 0%,var(--blue-light) 100%);
+  color:#fff;font:inherit;font-size:.95rem;font-weight:700;
+  cursor:pointer;transition:.2s;
+  box-shadow:0 6px 20px rgba(21,101,192,.35);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  text-decoration:none;margin-top:4px;
+}
+.btn-login:active{transform:scale(.98);}
+.btn-login .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── FOOTER ── */
+.card-footer{margin-top:20px;text-align:center;font-size:.78rem;color:var(--fg-3);}
+.card-footer a{color:var(--blue);font-weight:600;text-decoration:none;}
+
+/* ── ERROR ── */
+.error-msg{background:#FEF2F2;border:1px solid #FECACA;color:#DC2626;font-size:.78rem;font-weight:600;padding:10px 13px;border-radius:10px;margin-bottom:14px;display:none;}
+.error-msg.show{display:block;}
+
+/* ── SUCCESS STATE ── */
+.success-wrap{display:none;text-align:center;padding:8px 0 4px;}
+.success-icon{width:56px;height:56px;border-radius:50%;background:#EFF6FF;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.success-icon svg{width:26px;height:26px;stroke:var(--blue);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.success-wrap .card-title,.success-wrap .card-sub{text-align:center;}
+.success-wrap .card-sub{margin-bottom:22px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- BG decoration -->
+  <div class="bg-circle-1"></div>
+  <div class="bg-circle-2"></div>
+
+  <!-- TOP BRAND + HERO -->
+  <div class="top-area">
+    <div class="logo-wrap">
+      <img src="assets/img/logo.png" alt="ZY-Invest">
+      <div class="logo-txt"><b>ZY-Invest</b><span>Member Portal</span></div>
+    </div>
+    <div class="hero-label">Start Your<br>Investment Journey</div>
+    <div class="hero-sub">Create your account to access real-time portfolio tracking and fund updates.</div>
+  </div>
+
+  <!-- REGISTER CARD -->
+  <div class="card-wrap">
+    <div class="card">
+
+      <!-- Form state -->
+      <div id="formState">
+        <div class="card-title">Create Account</div>
+        <div class="card-sub">Register as a new investor member</div>
+
+        <div class="error-msg" id="errMsg"></div>
+
+        <div class="field">
+          <label>Full Name</label>
+          <div class="inp-wrap">
+            <input type="text" id="regName" placeholder="Your full name" autocomplete="name">
+            <span class="inp-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Email Address</label>
+          <div class="inp-wrap">
+            <input type="email" id="regEmail" placeholder="your@email.com" autocomplete="email">
+            <span class="inp-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Password</label>
+          <div class="inp-wrap">
+            <input type="password" id="regPwd" placeholder="At least 8 characters" autocomplete="new-password">
+            <button class="inp-icon" onclick="togglePwd('regPwd','eyeIcon1')" type="button"><svg id="eyeIcon1" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Confirm Password</label>
+          <div class="inp-wrap">
+            <input type="password" id="regConfirm" placeholder="Re-enter your password" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+            <button class="inp-icon" onclick="togglePwd('regConfirm','eyeIcon2')" type="button"><svg id="eyeIcon2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+        </div>
+
+        <button class="btn-login" id="regBtn" onclick="doRegister()">
+          <span id="regBtnTxt">Create Account</span>
+          <div class="spinner" id="regSpinner"></div>
+        </button>
+
+        <div class="card-footer">
+          Already have an account? <a href="login.html">Sign in</a>
+        </div>
+      </div>
+
+      <!-- Success state -->
+      <div class="success-wrap" id="successState">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <div class="card-title">Check Your Email</div>
+        <div class="card-sub">We've sent a verification link to <b id="successEmail" style="color:var(--fg-1);"></b>. Tap the link to activate your account.</div>
+        <a href="verify.html" class="btn-login">Go to Verification</a>
+        <div class="card-footer">
+          <a href="login.html">Back to Sign In</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+function togglePwd(inputId,iconId){
+  var f=document.getElementById(inputId);
+  var showing=f.type==='text';
+  f.type=showing?'password':'text';
+  document.getElementById(iconId).innerHTML=showing
+    ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    :'<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+}
+
+async function doRegister(){
+  var name=document.getElementById('regName').value.trim();
+  var email=document.getElementById('regEmail').value.trim();
+  var pwd=document.getElementById('regPwd').value;
+  var confirm=document.getElementById('regConfirm').value;
+  var err=document.getElementById('errMsg');
+  var btn=document.getElementById('regBtn');
+  var txt=document.getElementById('regBtnTxt');
+  var spin=document.getElementById('regSpinner');
+  err.classList.remove('show');
+
+  if(!name||!email||!pwd||!confirm){err.textContent='Please fill in all fields.';err.classList.add('show');return;}
+  if(pwd.length<8){err.textContent='Password must be at least 8 characters.';err.classList.add('show');return;}
+  if(pwd!==confirm){err.textContent='Passwords do not match.';err.classList.add('show');return;}
+
+  btn.disabled=true;txt.textContent='Creating account...';spin.style.display='block';
+  try{
+    if(typeof zySignUp==='undefined') throw new Error('Auth service not configured.');
+    var res=await zySignUp({name:name,email:email,password:pwd});
+    if(res.needsVerification){
+      document.getElementById('formState').style.display='none';
+      document.getElementById('successEmail').textContent=res.email;
+      document.getElementById('successState').style.display='block';
+    } else {
+      window.location.href='login.html';
+    }
+  }catch(ex){
+    var m=(ex&&ex.message)||'Registration failed. Please try again.';
+    if(/already registered|already exists/i.test(m)) m='An account with this email already exists.';
+    err.textContent=m;err.classList.add('show');
+    btn.disabled=false;txt.textContent='Create Account';spin.style.display='none';
+  }
+}
+</script>
+</body>
+</html>

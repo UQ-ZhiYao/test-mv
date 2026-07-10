@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ZY-Invest">
+<meta name="theme-color" content="#0D47A1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../../assets/img/apple-touch-icon.png">
+<title>ZY-Invest — Verify Email</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+button,a{touch-action:manipulation;}
+:root{
+  --blue:#1565C0;--blue-dark:#0D47A1;--blue-light:#1E88E5;
+  --fg-1:#0F172A;--fg-2:#374151;--fg-3:#64748B;
+  --border:#E2E8F0;--gray-50:#F8FAFC;
+  --font-body:'DM Sans',sans-serif;--font-display:'DM Serif Display',serif;
+  --safe-top:env(safe-area-inset-top,44px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--font-body);background:#0D47A1;
+  touch-action:pan-y;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+input,textarea{-webkit-user-select:text;user-select:text;}
+
+.app{
+  display:flex;flex-direction:column;height:100%;height:100dvh;
+  max-width:430px;margin:0 auto;
+  position:relative;overflow:hidden;
+  background:linear-gradient(170deg,#0D47A1 0%,#1565C0 40%,#1E88E5 100%);
+}
+.bg-circle-1{position:absolute;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.06);top:-80px;right:-80px;pointer-events:none;}
+.bg-circle-2{position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.05);bottom:-60px;left:-60px;pointer-events:none;}
+
+.top-bar{
+  flex:0 0 auto;
+  display:flex;align-items:center;gap:10px;
+  padding:calc(var(--safe-top) + 18px) 24px 0;
+  position:relative;z-index:1;
+}
+.logo-wrap{display:flex;align-items:center;gap:10px;}
+.logo-wrap img{width:30px;height:30px;}
+.logo-txt{color:#fff;}
+.logo-txt b{display:block;font-size:.88rem;font-weight:700;letter-spacing:-.01em;}
+.logo-txt span{display:block;font-size:.64rem;opacity:.7;margin-top:1px;}
+
+.content-wrap{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;z-index:2;
+  padding:24px 24px calc(var(--safe-bottom) + 24px);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+.card{
+  background:#fff;
+  border-radius:24px;
+  padding:32px 26px;
+  width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+
+.vf-state{display:none;text-align:center;}
+.vf-state.show{display:block;}
+.vf-icon{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
+.vf-icon.pending{background:#EFF6FF;}
+.vf-icon.success{background:#F0FDF4;}
+.vf-icon.error{background:#FEF2F2;}
+.vf-icon svg{width:32px;height:32px;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.vf-icon.pending svg{stroke:var(--blue);}
+.vf-icon.success svg{stroke:#2E7D32;}
+.vf-icon.error svg{stroke:#DC2626;}
+.vf-spinner{width:32px;height:32px;border:3px solid rgba(21,101,192,.2);border-top-color:var(--blue);border-radius:50%;animation:vfspin .7s linear infinite;}
+@keyframes vfspin{to{transform:rotate(360deg);}}
+
+.card-title{font-size:1.05rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;text-align:center;}
+.card-sub{font-size:.84rem;color:var(--fg-3);line-height:1.6;text-align:center;margin-bottom:22px;}
+
+.field{margin-bottom:14px;text-align:left;}
+.field label{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--fg-3);display:block;margin-bottom:6px;}
+.field input{
+  width:100%;font:inherit;font-size:.95rem;color:var(--fg-1);
+  background:var(--gray-50);border:1.5px solid var(--border);border-radius:12px;
+  padding:13px 14px;outline:none;transition:.2s;
+}
+.field input:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(21,101,192,.1);}
+.field input::placeholder{color:#94A3B8;}
+
+.btn-login{
+  width:100%;padding:15px;border-radius:14px;border:none;
+  background:linear-gradient(135deg,var(--blue) 0%,var(--blue-light) 100%);
+  color:#fff;font:inherit;font-size:.95rem;font-weight:700;
+  cursor:pointer;transition:.2s;
+  box-shadow:0 6px 20px rgba(21,101,192,.35);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  text-decoration:none;
+}
+.btn-login:active{transform:scale(.98);}
+.btn-login:disabled{opacity:.6;}
+
+.note-msg{font-size:.78rem;font-weight:600;padding:10px 13px;border-radius:10px;margin-top:14px;display:none;text-align:center;}
+.note-msg.show{display:block;}
+.note-msg.ok{background:#F0FDF4;color:#2E7D32;}
+.note-msg.err{background:#FEF2F2;color:#DC2626;}
+
+.card-footer{margin-top:22px;text-align:center;font-size:.78rem;}
+.card-footer a{color:rgba(255,255,255,.85);font-weight:600;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="bg-circle-1"></div>
+  <div class="bg-circle-2"></div>
+
+  <div class="top-bar">
+    <div class="logo-wrap">
+      <img src="assets/img/logo.png" alt="ZY-Invest">
+      <div class="logo-txt"><b>ZY-Invest</b><span>Member Portal</span></div>
+    </div>
+  </div>
+
+  <div class="content-wrap">
+    <div class="card">
+
+      <!-- Checking token from URL -->
+      <div class="vf-state show" id="vfChecking">
+        <div class="vf-icon pending"><div class="vf-spinner"></div></div>
+        <div class="card-title">Verifying Your Email</div>
+        <div class="card-sub">Please wait a moment…</div>
+      </div>
+
+      <!-- No token — waiting for user to tap the emailed link -->
+      <div class="vf-state" id="vfPending">
+        <div class="vf-icon pending">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <div class="card-title">Check Your Inbox</div>
+        <div class="card-sub">We've sent a verification link to <b id="vfPendingEmail" style="color:var(--fg-1);">your email</b>. Tap the link there to activate your account, then come back here.</div>
+        <button class="btn-login" id="vfResendBtn">Resend Verification Email</button>
+        <div class="note-msg" id="vfNote1"></div>
+      </div>
+
+      <!-- Success -->
+      <div class="vf-state" id="vfSuccess">
+        <div class="vf-icon success">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="card-title">Email Verified</div>
+        <div class="card-sub">Your account is now active. Sign in to access your investor portal.</div>
+        <a href="login.html" class="btn-login">Continue to Sign In</a>
+      </div>
+
+      <!-- Expired -->
+      <div class="vf-state" id="vfExpired">
+        <div class="vf-icon error">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="card-title">Link Expired</div>
+        <div class="card-sub">This verification link has expired. Request a new one below.</div>
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" id="vfEmailInput" placeholder="your@email.com">
+        </div>
+        <button class="btn-login" id="vfResendBtn2">Resend Verification Email</button>
+        <div class="note-msg" id="vfNote2"></div>
+      </div>
+
+      <!-- Error -->
+      <div class="vf-state" id="vfError">
+        <div class="vf-icon error">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div class="card-title">Verification Failed</div>
+        <div class="card-sub" id="vfErrorMsg">Something went wrong verifying this link.</div>
+        <a href="register.html" class="btn-login">Back to Registration</a>
+      </div>
+
+    </div>
+
+    <div class="card-footer">
+      <a href="login.html">← Back to Sign In</a>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/supabase-auth.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+(function(){
+  var states=['vfChecking','vfPending','vfSuccess','vfExpired','vfError'];
+  function show(id){
+    states.forEach(function(s){ document.getElementById(s).classList.toggle('show', s===id); });
+  }
+
+  var pendingEmail='';
+  try{ pendingEmail=localStorage.getItem('zy_pending_email')||''; }catch(e){}
+  if(pendingEmail) document.getElementById('vfPendingEmail').textContent=pendingEmail;
+
+  async function run(){
+    var q=new URLSearchParams(location.search);
+    var hasParams = q.get('token_hash') || location.hash.indexOf('access_token')!==-1 || q.get('demo');
+    if(!hasParams){ show('vfPending'); return; }
+    if(typeof zyVerifyFromUrl==='undefined'){ show('vfPending'); return; }
+    var res=await zyVerifyFromUrl();
+    if(res.status==='success'){
+      show('vfSuccess');
+    } else if(res.status==='expired'){
+      document.getElementById('vfEmailInput').value=pendingEmail;
+      show('vfExpired');
+    } else if(res.status==='error'){
+      document.getElementById('vfErrorMsg').textContent=res.message||'Something went wrong verifying this link.';
+      show('vfError');
+    } else {
+      show('vfPending');
+    }
+  }
+  run();
+
+  function note(id,msg,isErr){
+    var n=document.getElementById(id);
+    if(!msg){ n.classList.remove('show','ok','err'); return; }
+    n.textContent=msg; n.classList.add('show'); n.classList.toggle('ok',!isErr); n.classList.toggle('err',!!isErr);
+  }
+
+  async function resend(email,btn,noteId){
+    if(!email){ note(noteId,'Please enter your email address.',true); return; }
+    var orig=btn.textContent;
+    btn.disabled=true; btn.textContent='Sending…';
+    try{
+      if(typeof zyResend==='undefined') throw new Error('Auth service not configured.');
+      await zyResend(email);
+      note(noteId,'Verification email resent. Please check your inbox.',false);
+    }catch(err){
+      note(noteId,(err&&err.message)||'Could not resend email. Please try again.',true);
+    }
+    btn.disabled=false; btn.textContent=orig;
+  }
+
+  document.getElementById('vfResendBtn').addEventListener('click',function(){
+    resend(pendingEmail,this,'vfNote1');
+  });
+  document.getElementById('vfResendBtn2').addEventListener('click',function(){
+    var email=document.getElementById('vfEmailInput').value.trim();
+    resend(email,this,'vfNote2');
+  });
+})();
+</script>
+</body>
+</html>
