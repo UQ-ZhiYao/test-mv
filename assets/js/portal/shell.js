@@ -7,7 +7,32 @@
    page-specific render dispatch (see bottom of each *.html file)
    in its own inline <script> tag after this file loads.
    ============================================================ */
-if(!localStorage.getItem('zy-session')&&!localStorage.getItem('zy_token')){window.location.href='../login.html';}
+// ── AUTH GATE ────────────────────────────────────────────────────────────────
+// The local zy-session/zy_token flags are a fast, synchronous hint — not the
+// source of truth. They can drift out of sync with the real Supabase session
+// (expiry, storage eviction, etc.). Previously this only checked the flags,
+// while loadLiveData() below separately checked the *real* session and
+// redirected on its own if invalid — and login.html's own "already logged
+// in?" check trusted the flags too. When the flags were stale (present) but
+// the real session had expired, login.html bounced here on the stale flags
+// and loadLiveData() immediately bounced back once it found no real
+// session: an infinite loop that looked like the app had crashed. Now: the
+// real session always wins. A valid session heals the local flags instead
+// of triggering a bounce; only a genuinely absent session (or no session at
+// all, with no flags either) redirects to login.
+(function(){
+  var hasFlags = !!(localStorage.getItem('zy-session') || localStorage.getItem('zy_token'));
+  function toLogin(){ window.location.href='../login.html'; }
+  if (typeof sb === 'undefined' || !sb) { if (!hasFlags) toLogin(); return; }
+  sb.auth.getSession().then(function(s){
+    if (s && s.data && s.data.session) {
+      try{ localStorage.setItem('zy-session','1'); }catch(e){}
+    } else {
+      try{ localStorage.removeItem('zy-session'); localStorage.removeItem('zy_token'); }catch(e){}
+      toLogin();
+    }
+  }).catch(function(){ if (!hasFlags) toLogin(); });
+})();
 function navigate(pg){
   var map={fundoverview:'fund-overview',ntahistory:'nta-history',financialresults:'financial-results'};
   var file=map[pg]||pg;
@@ -110,7 +135,11 @@ async function loadLiveData(){
   try{
     if(typeof sb === 'undefined' || !sb){ console.warn('Supabase client not initialised — check assets/js/supabase-auth.js credentials.'); return; }
     var authUser = (typeof mpCheckAuth === 'function') ? await mpCheckAuth() : null;
-    if(!authUser){ window.location.href='../login.html'; return; }
+    if(!authUser){
+      try{ localStorage.removeItem('zy-session'); localStorage.removeItem('zy_token'); }catch(e){}
+      window.location.href='../login.html'; return;
+    }
+    try{ localStorage.setItem('zy-session','1'); }catch(e){}
 
     var profile = null;
     try{ profile = await mpLoadProfile(authUser.id); }catch(e){ console.warn('Profile load failed:', e.message); }

@@ -205,17 +205,26 @@
     else { pw.type='password'; tog.textContent='Show'; }
   });
 
-  // Already logged in? Check Supabase session — not stale localStorage token.
+  // Already logged in? The real Supabase session always wins over the
+  // zy-session/zy_token localStorage flags, which are just a fast hint and
+  // can outlive an expired or invalidated session. desktop/dashboard.html's
+  // loadLiveData() only trusts the real session too — falling back to the
+  // stale flags here caused an infinite redirect loop whenever they
+  // disagreed (login.html bounced to the dashboard on the stale flags, and
+  // the dashboard immediately bounced back once it found no real session).
+  // A valid session heals the local flags instead of triggering a redirect
+  // loop; a genuinely absent session clears them and leaves the user here.
   (async function(){
     try{
       if(sb){
         var s=await sb.auth.getSession();
-        if(s.data.session){ window.location.href='desktop/dashboard.html'; return; }
+        if(s.data.session){
+          try{ localStorage.setItem('zy-session','1'); }catch(e){}
+          window.location.href='desktop/dashboard.html'; return;
+        }
       }
+      localStorage.removeItem('zy-session'); localStorage.removeItem('zy_token');
     }catch(e){}
-    if(localStorage.getItem('zy-session')||localStorage.getItem('zy_token')){
-      window.location.href='desktop/dashboard.html'; return;
-    }
   })();
 
   var form=document.getElementById('loginForm'), btn=document.getElementById('submitBtn'),
