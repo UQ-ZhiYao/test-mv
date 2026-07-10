@@ -243,8 +243,19 @@ async function doRegister(){
       window.location.href='login.html';
     }
   }catch(ex){
-    var m=(ex&&ex.message)||'Registration failed. Please try again.';
-    if(/already registered|already exists/i.test(m)) m='An account with this email already exists.';
+    console.error('[Register] signup failed:', ex);
+    var status=ex&&(ex.status||(ex.context&&ex.context.status));
+    var rawMsg=(ex&&ex.message)||'';
+    var m;
+    if(status===504||/gateway timeout/i.test(rawMsg)){
+      m='The server took too long to respond. This is usually temporary — please wait a moment and try again.';
+    } else if(/failed to fetch|networkerror|load failed/i.test(rawMsg)){
+      m='Could not reach the server. Please check your connection and try again.';
+    } else if(/already registered|already exists/i.test(rawMsg)){
+      m='An account with this email already exists.';
+    } else {
+      m=rawMsg||'Registration failed. Please try again.';
+    }
     err.textContent=m;err.classList.add('show');
     btn.disabled=false;txt.textContent='Create Account';spin.style.display='none';
   }

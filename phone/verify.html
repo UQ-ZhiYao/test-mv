@@ -238,7 +238,18 @@ input,textarea{-webkit-user-select:text;user-select:text;}
       await zyResend(email);
       note(noteId,'Verification email resent. Please check your inbox.',false);
     }catch(err){
-      note(noteId,(err&&err.message)||'Could not resend email. Please try again.',true);
+      console.error('[Verify] resend failed:', err);
+      var status=err&&(err.status||(err.context&&err.context.status));
+      var rawMsg=(err&&err.message)||'';
+      var m;
+      if(status===504||/gateway timeout/i.test(rawMsg)){
+        m='The server took too long to respond. Please wait a moment and try again.';
+      } else if(/failed to fetch|networkerror|load failed/i.test(rawMsg)){
+        m='Could not reach the server. Please check your connection and try again.';
+      } else {
+        m=rawMsg||'Could not resend email. Please try again.';
+      }
+      note(noteId,m,true);
     }
     btn.disabled=false; btn.textContent=orig;
   }
