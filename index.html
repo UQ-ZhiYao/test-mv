@@ -3,7 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+// Launched as an installed app? Skip the marketing homepage and go straight
+// into the device-appropriate sign-in/dashboard flow. login.html already
+// knows how to route mobile vs desktop and already-logged-in vs not.
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+  window.location.replace('login.html');
+}
+</script>
 <title>ZY-Invest — Smart Investing, Simply Done</title>
+<meta name="theme-color" content="#1565C0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
@@ -266,6 +279,14 @@
         <a href="login.html" class="btn btn-white">Access Dashboard →</a>
         <a href="mailto:nzy.invest@gmail.com" class="btn" style="background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.4);">Contact Us</a>
       </div>
+      <div style="display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;">
+        <button class="pwa-btn" id="pwaInstallBtn">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Install as Web App
+        </button>
+        <div class="pwa-installed" id="pwaInstalled">✓ App installed — launch from your home screen</div>
+        <div class="pwa-ios" id="pwaIos">📲 To install on iPhone: tap <b>Share</b> then <b>Add to Home Screen</b></div>
+      </div>
     </div>
   </div>
 </section>
@@ -299,5 +320,6 @@
 </footer>
 
 <script src="assets/js/site.js"></script>
+<script>window.zyInitPwaInstall();</script>
 </body>
 </html>

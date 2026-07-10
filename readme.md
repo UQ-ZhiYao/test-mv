@@ -17,44 +17,51 @@ A private investment fund website and member portal built for GitHub Pages + Sup
 ├── manifest.webmanifest        ← PWA manifest
 ├── sw.js                       ← Service worker (offline / PWA)
 │
+├── register.html                ← New member sign-up
+├── verify.html                   ← Email verification landing
+│
 ├── assets/
 │   ├── css/
 │   │   ├── site.css            ← Public site stylesheet
-│   │   ├── member-tokens.css   ← Member portal design tokens (shared)
-│   │   └── member-portal.css   ← Member portal component/layout CSS (shared)
+│   │   ├── member-tokens.css   ← Desktop portal design tokens (shared)
+│   │   └── member-portal.css   ← Desktop portal component/layout CSS (shared)
 │   ├── img/                    ← Logo, favicon, PWA icons
 │   └── js/
 │       ├── supabase-auth.js    ← Supabase client + auth helpers
 │       ├── api.js              ← REST API helpers + auth guards
 │       ├── member-api.js       ← All Supabase data queries
-│       ├── member-portal.js    ← Member portal shared app logic (nav, pages, charts)
+│       ├── member-portal.js    ← Desktop portal shared app logic (nav, pages, charts)
 │       └── site.js             ← Nav, animations, PWA transition
 │
-└── members/
-    ├── manifest.webmanifest    ← Portal PWA manifest
-    ├── sw.js                   ← Portal service worker
-    ├── phone/
-    │   ├── index.html          ← Mobile dashboard
-    │   └── login.html          ← Mobile login
-    └── desktop/                ← Each page below links the shared assets above and
-                                   keeps only its own <title> + a small render-dispatch script
-        ├── dashboard.html      ← Main SPA (all pages rendered here)
-        ├── holdings.html
-        ├── transactions.html
-        ├── distributions.html
-        ├── statements.html
-        ├── fund-overview.html
-        ├── factsheet.html
-        ├── shareholders.html
-        ├── nta-history.html
-        ├── comparison.html
-        ├── financial-results.html
-        ├── settings.html
-        ├── indices.html        ← Coming soon
-        ├── watchlist.html      ← Coming soon
-        ├── instruments.html    ← Coming soon
-        └── manifest.webmanifest
+├── desktop/                     ← Each page links the shared assets above and keeps
+│                                   only its own <title> + a small render-dispatch script
+│   ├── dashboard.html          ← Main SPA (all pages rendered here)
+│   ├── holdings.html
+│   ├── transactions.html
+│   ├── distributions.html
+│   ├── statements.html
+│   ├── fund-overview.html
+│   ├── factsheet.html
+│   ├── shareholders.html
+│   ├── nta-history.html
+│   ├── comparison.html
+│   ├── financial-results.html
+│   ├── settings.html
+│   ├── indices.html            ← Coming soon
+│   ├── watchlist.html          ← Coming soon
+│   └── instruments.html        ← Coming soon
+│
+└── phone/                       ← Mobile-optimised member portal
+    ├── index.html               ← Mobile dashboard
+    ├── login.html                ← Mobile login
+    └── ... (fund.html, market.html, profile.html, transaction.html, etc.)
 ```
+
+`index.html`, `login.html`, `desktop/*.html` and `phone/*.html` all share the
+single root `manifest.webmanifest` and `sw.js` — there is no longer a separate
+manifest/service worker per folder. Launching the installed app opens
+`index.html`, which detects the device and routes into `desktop/` or `phone/`
+automatically (see **PWA Install** below).
 
 ---
 
@@ -111,26 +118,43 @@ Replace with your deployed API URL.
 login.html
   └── Supabase signInWithPassword()
         ├── Sets localStorage: zy_token, zy_role, zy_name, zy-session
-        └── Redirects → members/desktop/dashboard.html
+        └── Redirects → desktop/dashboard.html (or phone/index.html on mobile)
 
 dashboard.html (on load)
   └── Checks localStorage: zy-session OR zy_token
-        ├── Missing → redirect to ../../login.html
+        ├── Missing → redirect to ../login.html
         └── Present → render portal SPA
 
 doLogout()
   └── Clears localStorage + Supabase signOut()
-        └── Redirects → ../../login.html
+        └── Redirects → ../login.html
 ```
 
 ---
 
-## PWA Install
+## PWA Install & Device Detection
 
-The portal is installable as a Web App on Android, iOS (Safari) and desktop Chrome/Edge.
-- Android: browser shows native "Add to Home Screen" prompt on login page
+One unified installable app — a single `manifest.webmanifest` and `sw.js` at
+the repo root, `start_url: index.html`. The "Install as Web App" button
+(`window.zyInitPwaInstall()` in `assets/js/site.js`) is available from both
+`index.html` and `login.html`.
+
+```
+Launching the installed app → opens index.html
+  └── display-mode: standalone? → redirect to login.html
+        ├── Mobile UA or narrow viewport → redirect to phone/login.html
+        │     └── Already signed in → phone/index.html
+        └── Desktop → already signed in? → desktop/dashboard.html
+                     : show the login form
+```
+
+Regular (non-installed) browser visits to `index.html` see the marketing
+homepage untouched — only standalone/installed launches trigger the
+redirect chain above.
+
+- Android: native "Add to Home Screen" prompt, or the in-page install button
 - iPhone/iPad: Share button → Add to Home Screen
-- Desktop: install icon in address bar
+- Desktop: install icon in the address bar, or the in-page install button
 
 ---
 

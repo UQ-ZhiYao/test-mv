@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1565C0">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="../manifest.webmanifest">
+<title>Dashboard — ZY-Invest</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/member-tokens.css">
+<link rel="stylesheet" href="../assets/css/member-portal.css">
+
+</head>
+<body>
+<!-- TOPNAV -->
+<header class="topnav" id="topnav">
+  <a href="../index.html" class="brand">
+    <img src="../assets/img/logo.png" alt="ZY-Invest">
+    <span class="bt"><b>ZY-Invest</b><span>Member Portal</span></span>
+  </a>
+  <nav class="nav-links">
+    <div class="nav-group">
+      <button class="nav-top">Fund <span class="caret">▾</span></button>
+      <div class="dropdown"><div class="dd-card">
+        <a class="dd-item" href="fund-overview.html"><b>Fund Overview</b><span>Mandate, objective &amp; key facts</span></a>
+        <a class="dd-item" href="factsheet.html"><b>Factsheet</b><span>Holdings allocation each financial year</span></a>
+        <a class="dd-item" href="shareholders.html"><b>Shareholder List</b><span>Unitholders, units held &amp; ownership</span></a>
+      </div></div>
+    </div>
+    <div class="nav-group">
+      <button class="nav-top">Performance <span class="caret">▾</span></button>
+      <div class="dropdown"><div class="dd-card">
+        <a class="dd-item" href="nta-history.html"><b>NTA History</b><span>Chart &amp; daily NTA / NAV history</span></a>
+        <a class="dd-item" href="comparison.html"><b>Comparison</b><span>Fund performance vs indices</span></a>
+        <a class="dd-item" href="financial-results.html"><b>Financial Results</b><span>Income, balance sheet &amp; cash flow</span></a>
+      </div></div>
+    </div>
+    <div class="nav-group">
+      <button class="nav-top">Documents <span class="caret">▾</span></button>
+      <div class="dropdown"><div class="dd-card">
+        <a class="dd-item" href="statements.html"><b>Statement Download</b><span>Factsheets &amp; annual reports</span></a>
+      </div></div>
+    </div>
+  </nav>
+  <div class="nav-right">
+    <button class="icon-btn" title="Search" onclick="toggleSearch()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+    </button>
+    <button class="icon-btn" title="Notifications" id="notifBtn" onclick="toggleNotif()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span class="badge-dot" id="notifDot"></span>
+    </button>
+      <div class="user-menu-wrap">
+      <button class="nav-user" id="userBtn" onclick="toggleUserMenu()">
+        <div style="text-align:right"><div class="nu-name" id="navName">—</div><div class="nu-role" id="navRole">—</div></div>
+        <div class="avatar" id="navAvatar">—</div>
+        <span style="font-size:.6rem;color:var(--fg-3)">▾</span>
+      </button>
+      <div class="user-menu" id="userMenu">
+        <div class="um-head">
+          <div class="avatar" id="menuAvatar" style="width:38px;height:38px;font-size:.88rem">—</div>
+          <div><div class="um-name" id="menuName">—</div><div class="um-mail" id="menuEmail">—</div></div>
+        </div>
+        <a class="um-item" href="#" onclick="window.location.href='settings.html';toggleUserMenu();return false;">
+          <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>
+          <span><b>Profile</b><span>Personal &amp; account details</span></span>
+        </a>
+        <a class="um-item" href="#" onclick="window.location.href='settings.html?tab=security';toggleUserMenu();return false;">
+          <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></span>
+          <span><b>Password</b><span>Sign-in &amp; security</span></span>
+        </a>
+        <a class="um-item" href="#" onclick="window.location.href='settings.html?tab=nominee';toggleUserMenu();return false;">
+          <span class="um-ic um-ic-blue"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3 2.5-4.6 5.5-4.6S14.5 17 14.5 20"/><circle cx="17" cy="9" r="2.6"/><path d="M16 15.6c2.6.2 4.5 1.7 4.5 4.4"/></svg></span>
+          <span><b>Nominee</b><span>Beneficiary nomination</span></span>
+        </a>
+        <div class="um-sep"></div>
+        <a class="um-item danger" href="#" onclick="doLogout();return false;">
+          <span class="um-ic um-ic-red"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
+          <span><b>Sign out</b></span>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-mask"><div class="ticker-track">
+    <span class="tk"><span style="font-size:.9rem">🇲🇾</span><span class="tname">FBM KLCI</span><span class="tval">1,612.40</span><span class="tchg up">+0.60%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇺🇸</span><span class="tname">S&amp;P 500</span><span class="tval">5,432.10</span><span class="tchg up">+0.42%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇺🇸</span><span class="tname">NASDAQ</span><span class="tval">17,210.5</span><span class="tchg up">+0.71%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇭🇰</span><span class="tname">HANG SENG</span><span class="tval">18,902.4</span><span class="tchg down">−0.52%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇯🇵</span><span class="tname">NIKKEI 225</span><span class="tval">38,505.0</span><span class="tchg up">+0.88%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇸🇬</span><span class="tname">STI</span><span class="tval">3,340.6</span><span class="tchg up">+0.30%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇲🇾</span><span class="tname">FBM KLCI</span><span class="tval">1,612.40</span><span class="tchg up">+0.60%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇺🇸</span><span class="tname">S&amp;P 500</span><span class="tval">5,432.10</span><span class="tchg up">+0.42%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇺🇸</span><span class="tname">NASDAQ</span><span class="tval">17,210.5</span><span class="tchg up">+0.71%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇭🇰</span><span class="tname">HANG SENG</span><span class="tval">18,902.4</span><span class="tchg down">−0.52%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇯🇵</span><span class="tname">NIKKEI 225</span><span class="tval">38,505.0</span><span class="tchg up">+0.88%</span></span><span class="tsep">•</span>
+    <span class="tk"><span style="font-size:.9rem">🇸🇬</span><span class="tname">STI</span><span class="tval">3,340.6</span><span class="tchg up">+0.30%</span></span><span class="tsep">•</span>
+  </div></div>
+</div>
+
+<!-- SHELL -->
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-group">Account</div>
+    <a class="sb-item active" href="dashboard.html" data-page="dashboard">
+      <span class="sb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>
+      <span class="sb-label">Dashboard</span>
+    </a>
+    <a class="sb-item" href="holdings.html" data-page="holdings">
+      <span class="sb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12V3"/><path d="M12 12l7.5 5"/></svg></span>
+      <span class="sb-label">Holdings</span>
+    </a>
+    <a class="sb-item" href="transactions.html" data-page="transactions">
+      <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M4 8h14l-3-3"/><path d="M20 16H6l3 3"/></svg></span>
+      <span class="sb-label">Transactions</span>
+    </a>
+    <a class="sb-item" href="distributions.html" data-page="distributions">
+      <span class="sb-ic"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span>
+      <span class="sb-label">Distributions</span>
+    </a>
+    <a class="sb-item" href="statements.html" data-page="statements">
+      <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span>
+      <span class="sb-label">Statements</span>
+    </a>
+    <div class="sb-group">Markets</div>
+    <a class="sb-item" href="indices.html" data-page="indices">
+      <span class="sb-ic"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
+      <span class="sb-label">Indices</span>
+    </a>
+    <a class="sb-item" href="watchlist.html" data-page="watchlist">
+      <span class="sb-ic"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+      <span class="sb-label">Watchlist</span>
+    </a>
+    <a class="sb-item" href="instruments.html" data-page="instruments">
+      <span class="sb-ic"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+      <span class="sb-label">Instruments</span>
+    </a>
+    <div class="sb-spacer"></div>
+    <a class="sb-item logout" href="../login.html" onclick="doLogout();return false;">
+      <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
+      <span class="sb-label">Sign out</span>
+    </a>
+  </aside>
+
+  <main class="main" id="mainContent"></main>
+</div>
+<!-- MODAL (legacy, unused) -->
+<div class="moverlay" id="moverlay"></div>
+
+<!-- SUBSCRIBE / REDEEM MODALS -->
+<div class="sr-scrim" id="srScrim" onclick="closeSR()"></div>
+
+<div class="sr-modal" id="subModal">
+  <div class="sr-head"><div><h3>Subscribe — Add Funds</h3><div class="sr-sub">Transfer to the fund's bank account, then submit your deposit details below.</div></div><button class="sr-x" onclick="closeSR()">&#x2715;</button></div>
+  <div class="sr-body">
+    <div class="sr-cols">
+      <div class="sr-bank">
+        <div class="sr-bhead">Fund Bank Account</div>
+        <div class="sr-kv"><span>Bank</span><b>Malayan Banking Berhad</b></div>
+        <div class="sr-kv"><span>Account Name</span><b>ZY-Invest Fund Sdn Bhd</b></div>
+        <div class="sr-kv"><span>Account No.</span><b style="font-family:var(--font-mono)">5141 8827 3041</b></div>
+        <div class="sr-kv"><span>SWIFT</span><b style="font-family:var(--font-mono)">MBBEMYKL</b></div>
+        <div class="sr-kv"><span>Reference</span><b id="srSubRef">—</b></div>
+      </div>
+      <div class="sr-form">
+        <div class="sr-field" id="sfAmt">
+          <label>Subscription Amount (RM) <span style="color:var(--red)">*</span></label>
+          <input class="sr-inp" type="text" id="subAmt" placeholder="e.g. 25,000.00">
+          <div class="sr-err">Please enter an amount.</div>
+          <div class="sr-chips">
+            <button onclick="setSubAmt(10000)">RM 10,000</button>
+            <button onclick="setSubAmt(20000)">RM 20,000</button>
+            <button onclick="setSubAmt(50000)">RM 50,000</button>
+          </div>
+        </div>
+        <div class="sr-field">
+          <label>Indicative Units <span class="opt">at NTA <span id="subNtaLbl">—</span></span></label>
+          <input class="sr-inp" type="text" id="subUnits" value="—" disabled>
+        </div>
+        <div class="sr-field" id="sfFile">
+          <label>Deposit Receipt <span style="color:var(--red)">*</span></label>
+          <div class="sr-drop" id="subDrop" onclick="simFileUpload('sub')">
+            <span style="font-size:1.1rem">⤓</span>
+            <span id="subFname">Click to upload your bank transfer slip (PDF/JPG/PNG)</span>
+          </div>
+          <div class="sr-err">A deposit receipt is required.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div class="sr-foot">
+    <button class="sr-cancel" onclick="closeSR()">Cancel</button>
+    <button class="sr-submit-sub" onclick="submitSub()">Submit Subscription</button>
+  </div>
+</div>
+
+<div class="sr-modal" id="redModal">
+  <div class="sr-head"><div><h3>Redeem — Withdraw Funds</h3><div class="sr-sub">Proceeds are paid to your registered bank account at the prevailing NTA.</div></div><button class="sr-x" onclick="closeSR()">&#x2715;</button></div>
+  <div class="sr-body">
+    <div class="sr-cols">
+      <div class="sr-bank">
+        <div class="sr-bhead">Your Account</div>
+        <div class="sr-kv"><span>Member</span><b id="srMemberName">—</b></div>
+        <div class="sr-kv"><span>Member ID</span><b id="srMemberId">—</b></div>
+        <div class="sr-kv"><span>Units Held</span><b id="srUnitsHeld" style="font-family:var(--font-mono)">—</b></div>
+        <div class="sr-kv"><span>Current Value</span><b id="srCurrentValue">—</b></div>
+        <div class="sr-bhead" style="margin-top:13px">Payout Bank Account</div>
+        <div class="sr-kv"><span>Bank</span><b id="srPayoutBank">—</b></div>
+        <div class="sr-kv"><span>Account No.</span><b id="srPayoutAcct" style="font-family:var(--font-mono)">—</b></div>
+      </div>
+      <div class="sr-form">
+        <div class="sr-field" id="rfAmt">
+          <label>Withdrawal Amount (RM) <span style="color:var(--red)">*</span></label>
+          <input class="sr-inp" type="text" id="redAmt" placeholder="e.g. 10,000.00" oninput="redAmtChanged()">
+          <div class="sr-err">Enter a valid withdrawal amount within your available balance.</div>
+        </div>
+        <div class="sr-or">or enter units</div>
+        <div class="sr-field">
+          <label>Units to Redeem <span class="opt">of <span id="redUnitsHeldLbl">—</span> held</span></label>
+          <input class="sr-inp" type="text" id="redUnitsIn" placeholder="e.g. 5,000.0000" oninput="redUnitsChanged()">
+          <div class="sr-chips">
+            <button onclick="setRedPct(25)">25%</button>
+            <button onclick="setRedPct(50)">50%</button>
+            <button onclick="setRedPct(75)">75%</button>
+            <button onclick="setRedPct(100)">Full</button>
+          </div>
+        </div>
+        <div class="sr-field">
+          <label>Indicative Output <span class="opt">at NTA <span id="redNtaLbl">—</span></span></label>
+          <input class="sr-inp" type="text" id="redOut" value="—" disabled>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div class="sr-foot">
+    <button class="sr-cancel" onclick="closeSR()">Cancel</button>
+    <button class="sr-submit-red" onclick="submitRed()">Submit Redemption</button>
+  </div>
+</div>
+
+<!-- NOTIFICATION PANEL -->
+<div class="npanel" id="npanel">
+  <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <span style="font-size:.95rem;font-weight:600;color:var(--fg-1)">Notifications</span>
+    <button onclick="toggleNotif()" style="background:none;border:none;font-size:.8rem;color:var(--fg-3);cursor:pointer;padding:4px 8px;border-radius:6px">Close</button>
+  </div>
+  <div id="nlist"></div>
+</div>
+
+<!-- SEARCH OVERLAY -->
+<div class="soverlay" id="soverlay" onclick="if(event.target===this)toggleSearch()">
+  <div class="sbox">
+    <input class="sinp" id="sinp" placeholder="Search holdings, transactions, documents…" oninput="renderSearch(this.value)">
+    <div style="border-top:1px solid var(--border);padding:6px 8px" id="sresults">
+      <div style="padding:10px 12px;font-size:.8rem;color:var(--fg-3)">Type to search — holdings, transactions, documents</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- LOGIN SCREEN -->
+<div class="lscreen" id="lscreen">
+  <div style="background:#fff;border-radius:20px;padding:36px 40px;width:400px;max-width:calc(100vw - 32px);box-shadow:0 24px 60px rgba(0,0,0,.3)">
+    <div style="text-align:center;margin-bottom:26px">
+      <img src="../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
+      <div style="font-size:1.1rem;font-weight:700;color:var(--blue-dark)">ZY-Invest</div>
+      <div style="font-size:.84rem;color:var(--fg-3);margin-top:3px">Member Portal · Sign in</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div><label class="lbl-f">Email address</label><input id="lemail" class="inp" type="email" placeholder="member@zy-invest.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div><label class="lbl-f">Password</label><input id="lpwd" class="inp" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button onclick="doLogin()" style="padding:13px;border-radius:10px;border:none;background:var(--blue);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(21,101,192,.35);margin-top:4px">Sign in →</button>
+    </div>
+    <p style="text-align:center;font-size:.74rem;color:var(--fg-3);margin:16px 0 0">Access by invitation only · Private fund</p>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/js/supabase-auth.js"></script>
+<script src="../assets/js/member-api.js"></script>
+<script src="../assets/js/portal/shell.js"></script>
+<script src="../assets/js/portal/pages-portfolio.js"></script>
+<script src="../assets/js/portal/pages-account.js"></script>
+<script src="../assets/js/portal/charts.js"></script>
+<script src="../assets/js/portal/pages-fund-overview.js"></script>
+<script src="../assets/js/portal/pages-factsheet.js"></script>
+<script src="../assets/js/portal/pages-performance.js"></script>
+<script src="../assets/js/portal/pages-financial-results.js"></script>
+<script src="../assets/js/portal/pages-subscribe-redeem.js"></script>
+<script src="../assets/js/portal/shell-widgets.js"></script>
+<script>
+var S = { page:'dashboard', period:'ytd', txf:'all' };
+// [init removed for standalone page]
+document.getElementById('mainContent').innerHTML=pgDashboard();renderNotifs();setTimeout(function(){initChart(S.period||'1d');},60);
+
+// Page init
+// Page init (waits for live Supabase data)
+loadLiveData().then(function(){
+  document.getElementById('mainContent').innerHTML=pgDashboard();renderNotifs();setTimeout(function(){initChart(S.period||'1d');},60);
+});
+</script>
+</body>
+</html>
