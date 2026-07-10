@@ -1704,9 +1704,9 @@ function switchFundTab2(tab){
     setTimeout(function(){tryFundChart(10);},80);
   }
   if(tab==='results') setTimeout(function(){drawISChart();drawBSChart();drawCFChart();drawRAChart();},50);
-  if(tab==='portfolio') setTimeout(function(){drawHoldingsChart();drawSectorChart();drawProductChart();},50);
+  if(tab==='portfolio') setTimeout(function(){loadPortfolioData();},50);
   if(tab==='shareholder'){
-    setTimeout(function(){drawShareholderChart();},50);
+    setTimeout(function(){loadShareholderData();},50);
     var btn=document.querySelector('.ownership-open-btn');
     if(btn && !btn._wired){btn.addEventListener('click',function(){openOwnershipPanel();});btn._wired=true;}
     var closeBtn=document.querySelector('.ownership-close-btn');
@@ -1813,20 +1813,33 @@ function updateFundSummaryHeader(){
     mpLoadIncomeStatement().then(function(rows){
       window.INCOME_STATEMENT=rows||[];
       applySharesAndDividend();
+      updateFundMarketValue();
     }).catch(function(){});
   } else {
     applySharesAndDividend();
+    updateFundMarketValue();
   }
-
-  // Market Value / Avg Cost — reuses PA_ACCT/JA_ACCT from the Account
-  // Summary computation (same source of truth, no duplicate logic).
-  var mvEl=document.getElementById('fsMarketValue'), acEl=document.getElementById('fsAvgCost');
-  var totalMv=(PA_ACCT?PA_ACCT.mv:0)+(JA_ACCT?JA_ACCT.mv:0);
-  var totalCost=(PA_ACCT?PA_ACCT.cost:0)+(JA_ACCT?JA_ACCT.cost:0);
-  var totalUnitsHeld=(PA_ACCT?PA_ACCT.units:0)+(JA_ACCT?JA_ACCT.units:0);
-  var avgCost=totalUnitsHeld?(totalCost/totalUnitsHeld):0;
-  if(mvEl) mvEl.textContent=fmtCompactM(totalMv);
-  if(acEl) acEl.textContent=avgCost.toFixed(4);
+}
+// Market Value = Total Shares (fund-wide outstanding units) × current price
+// (latest NTA) — this is the FUND's own market cap, not the logged-in
+// member's personal holdings. (Avg Cost below this field is still sourced
+// from the member's own PA/JA — flagging that as likely needing the same
+// fix, but holding off until confirmed since there's no single well-defined
+// "fund-wide average cost" the way there is for Market Value.)
+function updateFundMarketValue(){
+  var mvEl=document.getElementById('fsMarketValue');
+  var acEl=document.getElementById('fsAvgCost');
+  if(acEl) acEl.textContent='—'; // pending: no fund-wide definition confirmed yet (see note above)
+  var IS=window.INCOME_STATEMENT||(typeof INCOME_STATEMENT!=='undefined'?INCOME_STATEMENT:[]);
+  var lastNta=FUND_NTA_DAILY.length?FUND_NTA_DAILY[FUND_NTA_DAILY.length-1].nta:0;
+  var outstandingShares=(IS.length?IS[IS.length-1].outstandingShares:0)||0;
+  var marketCap=outstandingShares*lastNta;
+  if(mvEl) mvEl.textContent=fmtCompactM(marketCap);
+  var fundSizeEl=document.getElementById('foFundSize');
+  if(fundSizeEl) fundSizeEl.textContent='RM '+fmtCompactM(marketCap);
+  var poEl=document.getElementById('poMarketCap');
+  if(poEl) poEl.textContent='RM '+fmtCompactM(marketCap);
+  return marketCap;
 }
 function fmtCompactM(v){
   if(Math.abs(v)>=1000000) return (v/1000000).toFixed(1)+' M';
@@ -1835,9 +1848,12 @@ function fmtCompactM(v){
 function applySharesAndDividend(){
   var IS=window.INCOME_STATEMENT||(typeof INCOME_STATEMENT!=='undefined'?INCOME_STATEMENT:[]);
   var sharesEl=document.getElementById('fsShares');
-  if(sharesEl && IS.length){
+  var issuedEl=document.getElementById('foIssuedUnits');
+  if(IS.length){
     var lastIS=IS[IS.length-1];
-    sharesEl.textContent=fmtCompactM(lastIS.outstandingShares||0).replace(/\.00 M/,' M');
+    var sharesTxt=fmtCompactM(lastIS.outstandingShares||0).replace(/\.00 M/,' M');
+    if(sharesEl) sharesEl.textContent=sharesTxt;
+    if(issuedEl) issuedEl.textContent=sharesTxt+' units';
   }
   if(typeof mpLoadDistributionsByFy==='function'){
     mpLoadDistributionsByFy().then(function(distByFy){
@@ -2351,17 +2367,9 @@ function switchRATab(tab){
 }
 function drawRAChart(){drawComboChart('raChart',raData[activeRATab]);}
 // ── PORTFOLIO CHARTS ──
-var holdingsData=[
-  {label:'Maybank',     v:8.4},
-  {label:'Public Bank', v:7.2},
-  {label:'CIMB',        v:6.8},
-  {label:'IHH',         v:5.9},
-  {label:'Tenaga',      v:5.4},
-  {label:'Axiata',      v:4.8},
-  {label:'Petronas Gas',v:4.2},
-  {label:'Top Glove',   v:3.8}
-];
+var holdingsData=[];
 function drawHoldingsChart(){
+  if(!holdingsData.length) return;
   var canvas=document.getElementById('holdingsChart');
   if(!canvas)return;
   var dpr=window.devicePixelRatio||1;
@@ -2398,15 +2406,58 @@ function drawHoldingsChart(){
   });
 }
 // ── SHAREHOLDER CHART ──
-var shareholderData=[
-  {label:'Ng Zhi Yao',              v:38.2,c:'#1565C0'},
-  {label:'Siah Lih Ling',           v:21.9,c:'#42A5F5'},
-  {label:'Siah Kim Teck',           v:10.6,c:'#90CAF9'},
-  {label:'The rest of shareholder',  v:29.3,c:'#B0BEC5'}
-];
+var shareholderData=[];
+var SHAREHOLDER_FULL_LIST=[];
+var SHAREHOLDER_COLORS=['#1565C0','#42A5F5','#90CAF9','#B0BEC5'];
+var shareholderLoaded=false;
+async function loadShareholderData(){
+  if(shareholderLoaded){ drawShareholderChart(); return; }
+  try{
+    if(typeof mpLoadShareholders!=='function') return;
+    var rows=await mpLoadShareholders();
+    var total=rows.reduce(function(s,r){return s+(parseFloat(r.units_held)||0);},0)||1;
+    var top3=rows.slice(0,3);
+    var restUnits=rows.slice(3).reduce(function(s,r){return s+(parseFloat(r.units_held)||0);},0);
+    shareholderData=top3.map(function(r,i){
+      return {label:r.full_name||'Unknown', v:(parseFloat(r.units_held)||0)/total*100, c:SHAREHOLDER_COLORS[i]};
+    });
+    if(restUnits>0) shareholderData.push({label:'The rest of shareholder', v:restUnits/total*100, c:SHAREHOLDER_COLORS[3]});
+    SHAREHOLDER_FULL_LIST=rows.map(function(r){
+      var pct=(parseFloat(r.units_held)||0)/total*100;
+      return {name:r.full_name||'Unknown', units:parseFloat(r.units_held)||0, pct:pct};
+    });
+    shareholderLoaded=true;
+    var top3Pct=shareholderData.slice(0,3).reduce(function(s,d){return s+d.v;},0);
+    var todayStr=new Date().toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'});
+    var mainSum=document.getElementById('shMainSummary');
+    if(mainSum) mainSum.textContent='Top 3 holders: '+top3Pct.toFixed(1)+'% \u00a0\u00b7\u00a0 As at '+todayStr;
+    var detSum=document.getElementById('shDetailSummary');
+    if(detSum) detSum.textContent='As at '+todayStr+' \u00a0\u00b7\u00a0 Top 3 holders: '+top3Pct.toFixed(1)+'%';
+    renderShareholderTable();
+    drawShareholderChart();
+  }catch(e){ console.warn('[Shareholder] load failed:', e.message); }
+}
+function renderShareholderTable(){
+  var body=document.getElementById('shTableBody');
+  if(!body) return;
+  if(!SHAREHOLDER_FULL_LIST.length){
+    body.innerHTML='<tr><td colspan="4" style="padding:16px 4px;text-align:center;color:var(--fg-3);font-size:.72rem;">No shareholders on record</td></tr>';
+    return;
+  }
+  body.innerHTML=SHAREHOLDER_FULL_LIST.map(function(s,i){
+    var isLast=i===SHAREHOLDER_FULL_LIST.length-1;
+    return '<tr style="'+(isLast?'':'border-bottom:1px solid var(--border);')+'">'
+      +'<td style="padding:9px 4px;color:var(--fg-3);font-size:.72rem;">'+(i+1)+'</td>'
+      +'<td style="padding:9px 4px;color:var(--fg-1);">'+s.name+'</td>'
+      +'<td style="padding:9px 4px;text-align:right;color:var(--fg-1);">'+s.units.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>'
+      +'<td style="padding:9px 4px;text-align:right;font-weight:600;color:var(--fg-1);">'+s.pct.toFixed(1)+'%</td>'
+      +'</tr>';
+  }).join('');
+}
 function drawShareholderChart(canvasId){
   var canvas=document.getElementById(canvasId||'shareholderChart');
   if(!canvas)return;
+  if(!shareholderData.length)return;
   var isDetail=canvasId==='shareholderDetailChart';
   var dpr=window.devicePixelRatio||1;
   var scrollEl=document.getElementById('mainScroll');
@@ -2500,6 +2551,7 @@ function drawShareholderChart(canvasId){
 function drawPortfolioDonut(canvasId,data){
   var canvas=document.getElementById(canvasId);
   if(!canvas)return;
+  if(!data||!data.length)return;
   var dpr=window.devicePixelRatio||1;
   var W=canvas.parentElement.clientWidth;
   var H=200;
@@ -2535,20 +2587,52 @@ function drawPortfolioDonut(canvasId,data){
     ctx.fillText('  '+(d.v/total*100).toFixed(1)+'%',lx+14+nameW,ly+4);
   });
 }
-var sectorData=[
-  {label:'Financial Svcs',v:28,c:'#1565C0'},
-  {label:'Technology',    v:22,c:'#1E88E5'},
-  {label:'Consumer',      v:18,c:'#42A5F5'},
-  {label:'Healthcare',    v:15,c:'#90CAF9'},
-  {label:'Industrial',    v:10,c:'#546E7A'},
-  {label:'Others',        v:7, c:'#B0BEC5'}
-];
-var productData=[
-  {label:'Equities',     v:72,c:'#1565C0'},
-  {label:'Fixed Income', v:15,c:'#42A5F5'},
-  {label:'Cash & Equiv', v:8, c:'#90CAF9'},
-  {label:'REITs',        v:5, c:'#B0BEC5'}
-];
+var sectorData=[];
+var productData=[];
+var PORTFOLIO_COLORS=['#1565C0','#1E88E5','#42A5F5','#90CAF9','#546E7A','#B0BEC5','#78909C','#CFD8DC'];
+function applyPortfolioColors(entries){
+  return entries.map(function(e,i){ return {label:e.label, v:+e.v.toFixed(1), c:PORTFOLIO_COLORS[i%PORTFOLIO_COLORS.length]}; });
+}
+var portfolioLoaded=false;
+async function loadPortfolioData(){
+  if(portfolioLoaded){ drawHoldingsChart(); drawSectorChart(); drawProductChart(); return; }
+  try{
+    if(typeof mpLoadHoldingsByFy!=='function') return;
+    var byFy=await mpLoadHoldingsByFy();
+    if(!byFy || !byFy.length) return;
+    var latest=byFy[byFy.length-1];
+    var holdings=latest.holdings||[];
+    if(!holdings.length) return;
+
+    // Holdings — top 8 shown as bars, summary describes top-3 concentration
+    var top8=holdings.slice(0,8);
+    holdingsData=top8.map(function(h){ return {label:h.name, v:+h.pct.toFixed(1)}; });
+    var top3Total=holdings.slice(0,3).reduce(function(s,h){return s+h.pct;},0);
+    var holdSum=document.getElementById('holdSummary');
+    if(holdSum) holdSum.textContent='Top 3 Holdings '+top3Total.toFixed(2)+'% \u00a0\u00b7\u00a0 Latest Update '+latest.fy;
+
+    // Sector Allocation — aggregate by sector
+    var secMap={};
+    holdings.forEach(function(h){ var k=h.sector||'Other'; secMap[k]=(secMap[k]||0)+h.pct; });
+    var secEntries=Object.keys(secMap).map(function(k){return {label:k,v:secMap[k]};}).sort(function(a,b){return b.v-a.v;});
+    sectorData=applyPortfolioColors(secEntries);
+    var secSum=document.getElementById('sectorSummary');
+    if(secSum) secSum.textContent='As at '+latest.fy;
+
+    // Product Allocation — aggregate by product
+    var prodMap={};
+    holdings.forEach(function(h){ var k=h.product||'Other'; prodMap[k]=(prodMap[k]||0)+h.pct; });
+    var prodEntries=Object.keys(prodMap).map(function(k){return {label:k,v:prodMap[k]};}).sort(function(a,b){return b.v-a.v;});
+    productData=applyPortfolioColors(prodEntries);
+    var prodSum=document.getElementById('productSummary');
+    if(prodSum) prodSum.textContent='As at '+latest.fy;
+
+    portfolioLoaded=true;
+    drawHoldingsChart();
+    drawSectorChart();
+    drawProductChart();
+  }catch(e){ console.warn('[Portfolio] load failed:', e.message); }
+}
 function drawSectorChart(){drawPortfolioDonut('sectorChart',sectorData);}
 function drawProductChart(){drawPortfolioDonut('productChart',productData);}
 (function(){})();
