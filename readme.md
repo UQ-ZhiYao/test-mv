@@ -132,12 +132,29 @@ doLogout()
 
 ---
 
-## PWA Install
+## PWA Install & Device Detection
 
-The portal is installable as a Web App on Android, iOS (Safari) and desktop Chrome/Edge.
-- Android: browser shows native "Add to Home Screen" prompt on login page
+One unified installable app — a single `manifest.webmanifest` and `sw.js` at
+the repo root, `start_url: index.html`. The "Install as Web App" button
+(`window.zyInitPwaInstall()` in `assets/js/site.js`) is available from both
+`index.html` and `login.html`.
+
+```
+Launching the installed app → opens index.html
+  └── display-mode: standalone? → redirect to login.html
+        ├── Mobile UA or narrow viewport → redirect to phone/login.html
+        │     └── Already signed in → phone/index.html
+        └── Desktop → already signed in? → desktop/dashboard.html
+                     : show the login form
+```
+
+Regular (non-installed) browser visits to `index.html` see the marketing
+homepage untouched — only standalone/installed launches trigger the
+redirect chain above.
+
+- Android: native "Add to Home Screen" prompt, or the in-page install button
 - iPhone/iPad: Share button → Add to Home Screen
-- Desktop: install icon in address bar
+- Desktop: install icon in the address bar, or the in-page install button
 
 ---
 

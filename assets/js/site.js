@@ -144,3 +144,54 @@ window.zyEnterDashboard = function(dest){
   window.addEventListener('resize',function(){ clearTimeout(window.__wpz); window.__wpz=setTimeout(start,180); });
   start();
 })();
+
+/* ===== PWA: service worker registration + install prompt =====
+   Shared by index.html and login.html. Expects matching markup with
+   ids pwaInstallBtn / pwaInstalled / pwaIos (see login.html). */
+window.zyInitPwaInstall = function(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js',{scope:'./'}).catch(function(e){console.warn('SW reg:',e);});
+  }
+  var deferredPrompt=null;
+  var btn=document.getElementById('pwaInstallBtn');
+  var installed=document.getElementById('pwaInstalled');
+  var iosEl=document.getElementById('pwaIos');
+  var ua=navigator.userAgent;
+  var isIos=/iphone|ipad|ipod/i.test(ua)&&!window.MSStream;
+  var isAndroid=/android/i.test(ua);
+  var isWindows=/windows/i.test(ua);
+  if(btn&&!isIos) btn.style.display='none';
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();
+    deferredPrompt=e;
+    if(btn){btn.style.display='flex';}
+    if(iosEl)iosEl.classList.remove('show');
+  });
+  if(btn){
+    btn.addEventListener('click',function(){
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function(r){
+        if(r.outcome==='accepted'){
+          btn.classList.remove('visible');
+          if(installed) installed.classList.add('show');
+        }
+        deferredPrompt=null;
+      });
+    });
+  }
+  window.addEventListener('appinstalled',function(){
+    if(btn) btn.classList.remove('visible');
+    if(installed) installed.classList.add('show');
+  });
+  if(isIos&&!window.navigator.standalone){
+    if(iosEl){iosEl.innerHTML='📲 <b>iPhone/iPad:</b> Tap the Share button (↑) then <b>Add to Home Screen</b>';iosEl.classList.add('show');}
+  } else if(isAndroid){
+    setTimeout(function(){if(!deferredPrompt&&iosEl){iosEl.innerHTML='📱 <b>Android:</b> Tap ⋮ menu → <b>Add to Home Screen</b> or <b>Install App</b>';iosEl.classList.add('show');}},2500);
+  } else if(isWindows||(!isIos&&!isAndroid)){
+    setTimeout(function(){if(!deferredPrompt&&iosEl){iosEl.innerHTML='🖥️ <b>Desktop:</b> Click the install icon (⬇) in the address bar, or use browser menu → <b>Install ZY-Invest</b>';iosEl.classList.add('show');}},2500);
+  }
+  if(window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone){
+    if(installed){installed.classList.add('show');installed.textContent='✓ Running as installed app';}
+  }
+};
