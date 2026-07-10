@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Edit Profile – ZY-Invest</title>
@@ -15,7 +15,11 @@
   --border:#E2E8F0;--gray-50:#F8FAFC;--gray-100:#F1F5F9;
   --font:'DM Sans',sans-serif;
 }
-html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--gray-50);color:var(--fg-1);}
+html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--gray-50);color:var(--fg-1);
+  touch-action:pan-y;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+input,textarea,select{-webkit-user-select:text;user-select:text;}
 .app{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;background:#fff;box-shadow:0 0 40px rgba(0,0,0,.12);}
 
 .topbar{height:52px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 8px;flex-shrink:0;}
@@ -45,7 +49,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--g
 <div class="app">
 
   <div class="topbar">
-    <button class="tb-btn" onclick="location.href='profile.html'">
+    <button class="tb-btn" onclick="history.back()">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="tb-title" id="editTitle">Edit</span>
@@ -87,8 +91,7 @@ var PFE_SECTIONS={
       {field:'nric_passport',label:'IC / Passport No.',type:'text',placeholder:'e.g. 990512-14-5678'},
       {field:'date_of_birth',label:'Date of Birth',type:'date'},
       {field:'gender',label:'Gender',type:'select',options:['Male','Female']},
-      {field:'nationality',label:'Nationality',type:'select',options:['Malaysian','Singaporean','Permanent Resident','Other']},
-      {field:'risk_profile',label:'Risk Profile',type:'select',options:['Conservative','Moderate','Aggressive']}
+      {field:'nationality',label:'Nationality',type:'select',options:['Malaysian','Singaporean','Permanent Resident','Other']}
     ]
   },
   contact:{
@@ -186,7 +189,7 @@ async function savePfeSection(){
   try{
     await mpSaveProfile(PFE_USER.id, updates);
     pfeToast('Saved successfully');
-    setTimeout(function(){ window.location.href='profile.html'; },600);
+    setTimeout(function(){ window.location.replace('profile.html'); },600);
   }catch(e){
     errEl.textContent='Save failed: '+(e&&e.message||'Unknown error — some fields may not be supported by the database yet.');
     errEl.style.display='block';

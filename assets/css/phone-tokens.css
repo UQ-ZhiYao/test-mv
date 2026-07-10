@@ -209,6 +209,12 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 .sec-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;}
 .sec-lbl{font-size:.8rem;color:var(--fg-3);}
 .sec-val{font-size:.84rem;font-weight:600;color:var(--fg-1);text-align:right;}
+
+/* Segmented 6-box PIN input (Security page) */
+.pin-boxes{display:flex;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;}
+.pin-box{flex:1;min-width:0;border:none;border-right:1px solid var(--border);text-align:center;font-size:1.3rem;font-weight:700;color:var(--fg-1);padding:14px 0;outline:none;font-family:inherit;background:#fff;}
+.pin-box:last-child{border-right:none;}
+.pin-box:focus{background:var(--blue-bg);}
 .badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:99px;}
 .badge-green{background:#F0FDF4;color:var(--green);}
 .badge-gray{background:var(--gray-100);color:var(--fg-3);}

@@ -233,7 +233,10 @@ function switchTab(tab){
   if(tab==='watchlist'){renderWatchlist();}
   if(tab==='transaction'){renderTxList();}
   if(tab==='distribution'){renderDxList();}
-  if(tab==='password'){updatePinDisplay();}
+  if(tab==='password'){
+    updatePinDisplay();
+    ['pinVerifyBoxes','pinNewBoxes','pinConfirmBoxes'].forEach(setupPinBoxes);
+  }
   if(tab==='assetdetails'){setTimeout(function(){drawAdDonut();drawAdTrend(adPeriod);},50);}
   if(tab==='portfolio'){setTimeout(drawSparkline,50);}
   if(tab==='profile')setTimeout(function(){adjustProfileSpacer();},50);
@@ -351,20 +354,48 @@ async function savePw(){
 // first) since it's a supplementary quick-unlock, not the primary
 // account credential the way the login password is.
 function openPinModal(){
-  document.getElementById('pinNew').value='';
-  document.getElementById('pinConfirm').value='';
+  var hasPin=!!(PROFILE && PROFILE.pin);
+  ['pinVerifyBoxes','pinNewBoxes','pinConfirmBoxes'].forEach(clearPinBoxes);
+  document.getElementById('pinVerifyErr').style.display='none';
   document.getElementById('pinMatchErr').style.display='none';
+  var step1=document.getElementById('pinStep1'), step2=document.getElementById('pinStep2');
+  var step2Title=document.getElementById('pinStep2Title');
+  if(hasPin){
+    step1.style.display='block'; step2.style.display='none';
+    if(step2Title) step2Title.textContent='Set New PIN';
+  } else {
+    // No PIN on file yet — nothing to verify, go straight to setting one.
+    step1.style.display='none'; step2.style.display='block';
+    if(step2Title) step2Title.textContent='Set PIN';
+  }
   document.getElementById('pinScrim').style.display='block';
   document.getElementById('pinModal').style.display='block';
-  setTimeout(function(){document.getElementById('pinNew').focus();},100);
+  setTimeout(function(){ focusFirstPinBox(hasPin?'pinVerifyBoxes':'pinNewBoxes'); },100);
 }
 function closePinModal(){
   document.getElementById('pinScrim').style.display='none';
   document.getElementById('pinModal').style.display='none';
 }
+function verifyPinStep(){
+  var entered=getPinBoxesValue('pinVerifyBoxes');
+  var errEl=document.getElementById('pinVerifyErr');
+  if(!/^\d{6}$/.test(entered)){
+    errEl.textContent='Please enter your 6-digit PIN.'; errEl.style.display='block';
+    return;
+  }
+  if(entered!==String(PROFILE&&PROFILE.pin)){
+    errEl.textContent='Incorrect PIN. Please try again.'; errEl.style.display='block';
+    clearPinBoxes('pinVerifyBoxes'); focusFirstPinBox('pinVerifyBoxes');
+    return;
+  }
+  errEl.style.display='none';
+  document.getElementById('pinStep1').style.display='none';
+  document.getElementById('pinStep2').style.display='block';
+  setTimeout(function(){ focusFirstPinBox('pinNewBoxes'); },100);
+}
 async function savePin(){
-  var n=document.getElementById('pinNew').value.trim();
-  var c=document.getElementById('pinConfirm').value.trim();
+  var n=getPinBoxesValue('pinNewBoxes');
+  var c=getPinBoxesValue('pinConfirmBoxes');
   var errEl=document.getElementById('pinMatchErr');
   var btn=event&&event.target;
   errEl.style.display='none';
@@ -394,6 +425,42 @@ function updatePinDisplay(){
   var el=document.getElementById('pinDisplayVal');
   if(!el) return;
   el.textContent=(PROFILE&&PROFILE.pin)?'••••••':'Not set';
+}
+
+// ── Segmented 6-box PIN input helpers ───────────────────────────────────────
+var pinBoxesInitialized={};
+function setupPinBoxes(containerId){
+  if(pinBoxesInitialized[containerId]) return;
+  var boxes=document.querySelectorAll('#'+containerId+' .pin-box');
+  if(!boxes.length) return;
+  pinBoxesInitialized[containerId]=true;
+  boxes.forEach(function(box,i){
+    box.addEventListener('input',function(){
+      box.value=box.value.replace(/[^0-9]/g,'').slice(0,1);
+      if(box.value && i<boxes.length-1){ boxes[i+1].focus(); }
+    });
+    box.addEventListener('keydown',function(e){
+      if(e.key==='Backspace' && !box.value && i>0){ boxes[i-1].focus(); }
+    });
+    box.addEventListener('paste',function(e){
+      e.preventDefault();
+      var text=((e.clipboardData||window.clipboardData).getData('text')||'').replace(/[^0-9]/g,'').slice(0,boxes.length);
+      text.split('').forEach(function(ch,idx){ if(boxes[idx]) boxes[idx].value=ch; });
+      var nextIdx=Math.min(text.length,boxes.length-1);
+      boxes[nextIdx].focus();
+    });
+  });
+}
+function getPinBoxesValue(containerId){
+  var boxes=document.querySelectorAll('#'+containerId+' .pin-box');
+  return Array.prototype.map.call(boxes,function(b){return b.value;}).join('');
+}
+function clearPinBoxes(containerId){
+  document.querySelectorAll('#'+containerId+' .pin-box').forEach(function(b){b.value='';});
+}
+function focusFirstPinBox(containerId){
+  var first=document.querySelector('#'+containerId+' .pin-box');
+  if(first) first.focus();
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
