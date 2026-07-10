@@ -861,10 +861,8 @@ function switchTab(tab){
     function tryInitFundCharts(n){
       var c=document.getElementById('candleChart');
       if(c && c.parentElement && c.parentElement.clientWidth>0){
-        drawCandleChart('ytd',null,null);
         attachCandleListeners();
-        renderCorrMatrix();
-        drawRVChart();
+        loadFundChartData();
       } else if(n>0){setTimeout(function(){tryInitFundCharts(n-1);},120);}
     }
     setTimeout(function(){tryInitFundCharts(10);},80);
@@ -1699,7 +1697,8 @@ function switchFundTab2(tab){
     function tryFundChart(n){
       var c=document.getElementById('candleChart');
       if(c && c.parentElement && c.parentElement.clientWidth>0){
-        drawCandleChart('ytd',null,null);attachCandleListeners();renderCorrMatrix();drawRVChart();
+        attachCandleListeners();
+        loadFundChartData();
       } else if(n>0){setTimeout(function(){tryFundChart(n-1);},120);}
     }
     setTimeout(function(){tryFundChart(10);},80);
@@ -1715,31 +1714,147 @@ function switchFundTab2(tab){
   }
 }
 
-// ── CANDLE CHART ──
-function genCandles(n,startPrice){
-  var data=[];var p=startPrice;
-  for(var i=0;i<n;i++){
-    var o=p;
-    var hi=o+Math.random()*0.012;
-    var lo=o-Math.random()*0.012;
-    var cl=lo+(hi-lo)*Math.random();
-    data.push({o:+o.toFixed(4),h:+hi.toFixed(4),l:+lo.toFixed(4),c:+cl.toFixed(4)});
-    p=cl;
-  }
-  return data;
-}
-var candleData={
-  'ytd':genCandles(130,0.9700),
-  '1m':genCandles(22,1.0050),
-  '3m':genCandles(66,0.9850),
-  '6m':genCandles(130,0.9600),
-  '1y':genCandles(252,0.9300),
-  '3y':genCandles(756,0.8800),
-  'all':genCandles(900,0.8500)
-};
-var activeCPeriod='1m';
-var candleState={};
+// ── FUND CHART TAB (real data) ──────────────────────────────────────────
+var FUND_NTA_DAILY=[], FUND_NTA_WEEKLY=[], FUND_NTA_MONTHLY=[], FUND_NTA_QUARTERLY=[];
+var FUND_CORR_LOADED=false;
+var fundChartDataLoaded=false;
 
+function fundCutoffDate(period,latestDateStr){
+  if(!latestDateStr) return '0000-00-00';
+  var latest=new Date(latestDateStr+'T00:00:00');
+  var d=new Date(latest.getTime());
+  switch(period){
+    case 'ytd': d=new Date(latest.getFullYear(),0,1); break;
+    case '1m': d.setMonth(d.getMonth()-1); break;
+    case '3m': d.setMonth(d.getMonth()-3); break;
+    case '6m': d.setMonth(d.getMonth()-6); break;
+    case '1y': d.setFullYear(d.getFullYear()-1); break;
+    case '3y': d.setFullYear(d.getFullYear()-3); break;
+    case 'all': default: return '0000-00-00';
+  }
+  return d.toISOString().slice(0,10);
+}
+
+async function loadFundChartData(){
+  if(fundChartDataLoaded){
+    // Already loaded once this session — just redraw with current controls.
+    drawCandleChart(activeCPeriod||'ytd',null,null);
+    updateFundSummaryHeader();
+    if(!FUND_CORR_LOADED) loadFundCorrelationAndSharpe();
+    return;
+  }
+  try{
+    if(typeof sb==='undefined'||!sb) return;
+    var results=await Promise.allSettled([
+      mpLoadNtaDaily(), mpLoadNtaWeeklyOHLC(), mpLoadNtaMonthly(), mpLoadNtaQuarterlyOHLC()
+    ]);
+    FUND_NTA_DAILY=(results[0].status==='fulfilled')?(results[0].value||[]):[];
+    FUND_NTA_WEEKLY=(results[1].status==='fulfilled')?(results[1].value||[]):[];
+    FUND_NTA_MONTHLY=(results[2].status==='fulfilled')?(results[2].value||[]):[];
+    FUND_NTA_QUARTERLY=(results[3].status==='fulfilled')?(results[3].value||[]):[];
+    fundChartDataLoaded=true;
+    updateFundSummaryHeader();
+    drawCandleChart('ytd',null,null);
+    loadFundCorrelationAndSharpe();
+  }catch(e){ console.warn('[Fund Chart] load failed:', e.message); }
+}
+
+function getFundCandleSource(){
+  var sel=document.getElementById('candleDataType');
+  var gran=sel?sel.value:'weekly';
+  if(gran==='monthly') return FUND_NTA_MONTHLY;
+  if(gran==='quarterly') return FUND_NTA_QUARTERLY;
+  return FUND_NTA_WEEKLY;
+}
+
+// Price header: latest daily NTA, week-over-week change, latest weekly
+// candle's O/H/L, 52-week high/low from daily history, dividend/yield from
+// the latest completed FY, and Market Value / Avg Cost reusing the same
+// PA_ACCT/JA_ACCT already computed for the Account Summary page.
+function updateFundSummaryHeader(){
+  if(!FUND_NTA_DAILY.length) return;
+  var last=FUND_NTA_DAILY[FUND_NTA_DAILY.length-1];
+  var prev=FUND_NTA_DAILY.length>1?FUND_NTA_DAILY[FUND_NTA_DAILY.length-2]:last;
+  var chg=last.nta-prev.nta, chgPct=prev.nta?(chg/prev.nta*100):0;
+  var up=chg>=0;
+  var priceEl=document.getElementById('fsPrice');
+  if(priceEl){ priceEl.textContent=last.nta.toFixed(4); priceEl.style.color=up?'var(--green)':'var(--red)'; }
+  var arrow=document.getElementById('fsArrow');
+  if(arrow){ arrow.innerHTML=up?'<polygon points="6,0 12,10 0,10" fill="var(--green)"/>':'<polygon points="0,0 12,0 6,10" fill="var(--red)"/>'; }
+  var chEl=document.getElementById('fsChange');
+  if(chEl){ chEl.textContent=(up?'+':'')+chg.toFixed(4)+' \u00a0'+(up?'+':'')+chgPct.toFixed(2)+'%'; chEl.style.color=up?'var(--green)':'var(--red)'; }
+  var updEl=document.getElementById('fsUpdated');
+  if(updEl){ updEl.textContent='Updated '+new Date(last.date+'T00:00:00').toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'}); }
+
+  var wSrc=FUND_NTA_WEEKLY.length?FUND_NTA_WEEKLY:FUND_NTA_MONTHLY;
+  if(wSrc.length){
+    var lastCandle=wSrc[wSrc.length-1];
+    var o=document.getElementById('fsOpen'), h=document.getElementById('fsHigh'), l=document.getElementById('fsLow');
+    if(o) o.textContent=lastCandle.open.toFixed(4);
+    if(h) h.textContent=lastCandle.high.toFixed(4);
+    if(l) l.textContent=lastCandle.low.toFixed(4);
+  }
+
+  var cutoff52=new Date(last.date+'T00:00:00'); cutoff52.setDate(cutoff52.getDate()-365);
+  var cutoff52Str=cutoff52.toISOString().slice(0,10);
+  var last52=FUND_NTA_DAILY.filter(function(r){return r.date>=cutoff52Str;});
+  if(last52.length){
+    var hi52=Math.max.apply(null,last52.map(function(r){return r.nta;}));
+    var lo52=Math.min.apply(null,last52.map(function(r){return r.nta;}));
+    var h52El=document.getElementById('fs52High'), l52El=document.getElementById('fs52Low');
+    if(h52El) h52El.textContent=hi52.toFixed(4);
+    if(l52El) l52El.textContent=lo52.toFixed(4);
+  }
+
+  // Total Shares — reuses the outstanding-units figure already computed
+  // fund-wide for the Financial Results page (desktop), via the same
+  // shared mpLoadIncomeStatement().
+  if(typeof INCOME_STATEMENT==='undefined' || !INCOME_STATEMENT.length){
+    mpLoadIncomeStatement().then(function(rows){
+      window.INCOME_STATEMENT=rows||[];
+      applySharesAndDividend();
+    }).catch(function(){});
+  } else {
+    applySharesAndDividend();
+  }
+
+  // Market Value / Avg Cost — reuses PA_ACCT/JA_ACCT from the Account
+  // Summary computation (same source of truth, no duplicate logic).
+  var mvEl=document.getElementById('fsMarketValue'), acEl=document.getElementById('fsAvgCost');
+  var totalMv=(PA_ACCT?PA_ACCT.mv:0)+(JA_ACCT?JA_ACCT.mv:0);
+  var totalCost=(PA_ACCT?PA_ACCT.cost:0)+(JA_ACCT?JA_ACCT.cost:0);
+  var totalUnitsHeld=(PA_ACCT?PA_ACCT.units:0)+(JA_ACCT?JA_ACCT.units:0);
+  var avgCost=totalUnitsHeld?(totalCost/totalUnitsHeld):0;
+  if(mvEl) mvEl.textContent=fmtCompactM(totalMv);
+  if(acEl) acEl.textContent=avgCost.toFixed(4);
+}
+function fmtCompactM(v){
+  if(Math.abs(v)>=1000000) return (v/1000000).toFixed(1)+' M';
+  return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function applySharesAndDividend(){
+  var IS=window.INCOME_STATEMENT||(typeof INCOME_STATEMENT!=='undefined'?INCOME_STATEMENT:[]);
+  var sharesEl=document.getElementById('fsShares');
+  if(sharesEl && IS.length){
+    var lastIS=IS[IS.length-1];
+    sharesEl.textContent=fmtCompactM(lastIS.outstandingShares||0).replace(/\.00 M/,' M');
+  }
+  if(typeof mpLoadDistributionsByFy==='function'){
+    mpLoadDistributionsByFy().then(function(distByFy){
+      var divEl=document.getElementById('fsDividend'), yldEl=document.getElementById('fsYield');
+      if(distByFy && distByFy.length){
+        var lastFy=distByFy[distByFy.length-1];
+        if(divEl) divEl.textContent=(lastFy.totalDps||0).toFixed(2)+' sen';
+        var lastNta=FUND_NTA_DAILY.length?FUND_NTA_DAILY[FUND_NTA_DAILY.length-1].nta:0;
+        var yieldPct=lastNta?((lastFy.totalDps||0)/100/lastNta*100):0;
+        if(yldEl) yldEl.textContent=yieldPct.toFixed(2)+'%';
+      }
+    }).catch(function(){});
+  }
+}
+
+var activeCPeriod='ytd';
+var candleState={};
 function drawCandleChart(period,btn,hoverIdx){
   activeCPeriod=period;
   if(btn){
@@ -1748,6 +1863,12 @@ function drawCandleChart(period,btn,hoverIdx){
   }
   var canvas=document.getElementById('candleChart');
   if(!canvas)return;
+  var src=getFundCandleSource();
+  if(!src||src.length<2) return;
+  var latestDate=src[src.length-1].date;
+  var cutoff=fundCutoffDate(period,latestDate);
+  var data=src.filter(function(r){return r.date>=cutoff;});
+  if(data.length<2) data=src;
   var dpr=window.devicePixelRatio||1;
   var W=canvas.parentElement.clientWidth;
   var H=Math.round(W*0.58);
@@ -1755,38 +1876,34 @@ function drawCandleChart(period,btn,hoverIdx){
   canvas.style.width=W+'px'; canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');
   ctx.scale(dpr,dpr);
-  var data=candleData[period];
   var pad={t:8,r:4,b:20,l:4};
   var cw=W-pad.l-pad.r;
   var ch=H-pad.t-pad.b;
-  var hiV=Math.max.apply(null,data.map(function(d){return d.h;}));
-  var loV=Math.min.apply(null,data.map(function(d){return d.l;}));
-  var range=hiV-loV||0.001;
+  var hiV=Math.max.apply(null,data.map(function(d){return d.high;}));
+  var loV=Math.min.apply(null,data.map(function(d){return d.low;}));
+  var range=(hiV-loV)||0.001;
   var yScale=function(v){return pad.t+ch-(v-loV)/range*ch;};
   var gap=2;
   var slotW=(cw-(data.length-1)*gap)/data.length;
   var cw2=Math.max(1,slotW*0.5);
   candleState={data:data,pad:pad,slotW:slotW,gap:gap,cw2:cw2,W:W,H:H,ch:ch,yScale:yScale,period:period};
-  // grid lines
   ctx.strokeStyle='rgba(226,232,240,.7)';ctx.lineWidth=1;
   for(var g=0;g<=4;g++){
     var yy=pad.t+ch/4*g;
     ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke();
   }
-  // candles
   data.forEach(function(d,i){
     var cx=pad.l+i*(slotW+gap)+slotW/2;
-    var isUp=d.c>=d.o;
+    var isUp=d.close>=d.open;
     var color=(hoverIdx===i)?(isUp?'#1B5E20':'#B71C1C'):(isUp?'#2E7D32':'#DC2626');
-    var bodyTop=yScale(Math.max(d.o,d.c));
-    var bodyBot=yScale(Math.min(d.o,d.c));
+    var bodyTop=yScale(Math.max(d.open,d.close));
+    var bodyBot=yScale(Math.min(d.open,d.close));
     var bodyH=Math.max(1,bodyBot-bodyTop);
     ctx.strokeStyle=color;ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(cx,yScale(d.h));ctx.lineTo(cx,yScale(d.l));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,yScale(d.high));ctx.lineTo(cx,yScale(d.low));ctx.stroke();
     ctx.fillStyle=color;
     ctx.fillRect(cx-cw2/2,bodyTop,Math.max(1,cw2),bodyH);
   });
-  // y-axis labels overlaid
   ctx.font='bold 9px DM Sans,sans-serif';ctx.textAlign='left';
   for(var g=0;g<=4;g++){
     var yy=pad.t+ch/4*g;
@@ -1794,68 +1911,137 @@ function drawCandleChart(period,btn,hoverIdx){
     ctx.fillStyle='rgba(255,255,255,.75)';ctx.fillRect(pad.l,yy-9,38,12);
     ctx.fillStyle='#64748B';ctx.fillText(val,pad.l+2,yy+1);
   }
-  // x-axis labels
   var step=Math.ceil(data.length/5);
   ctx.textAlign='center';ctx.fillStyle='#94A3B8';ctx.font='9px DM Sans,sans-serif';
   data.forEach(function(d,i){
     if(i%step===0||i===data.length-1){
       var cx2=pad.l+i*(slotW+gap)+slotW/2;
-      var label=period==='all'||period==='3y'?'M'+(i%12+1):period==='1y'||period==='6m'?'M'+(Math.floor(i/21)+1):period==='ytd'?'W'+(Math.floor(i/5)+1):'D'+(i+1);
+      var dt=new Date(d.date+'T00:00:00');
+      var label=dt.toLocaleDateString('en-MY',{month:'short',year:'2-digit'});
       ctx.fillText(label,cx2,H-5);
     }
   });
-  // hover overlay
   if(hoverIdx!=null && hoverIdx>=0 && hoverIdx<data.length){
     var d=data[hoverIdx];
     var cx=pad.l+hoverIdx*(slotW+gap)+slotW/2;
-    // dashed vertical line
     ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle='rgba(100,116,139,.6)';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(cx,pad.t);ctx.lineTo(cx,pad.t+ch);ctx.stroke();ctx.restore();
   }
 }
-// ── CORRELATION MATRIX ──
-var corrLabels=['ZY-Invest','FBMKLCI','STI','MSCI'];
-var corrData=[
-  [1.00, 0.72, 0.45, 0.61],
-  [0.72, 1.00, 0.58, 0.74],
-  [0.45, 0.58, 1.00, 0.67],
-  [0.61, 0.74, 0.67, 1.00]
-];
+// ── CORRELATION MATRIX + SHARPE/RETURN SCATTER (real data) ──────────────
+var corrLabels=['ZY-Invest','FBM KLCI','STI','MSCI'];
+var corrMatrixData=null; // NxN, computed
+var rvPoints=[]; // computed from real weekly series
 function corrColor(v){
   if(v>=0){
     var t=v;
-    // white → light green (e.g. #BBEBBB)
-    var r=Math.round(255-(255-187)*t);
-    var g=Math.round(255-(255-235)*t);
-    var b=Math.round(255-(255-187)*t);
+    var r=Math.round(255-(255-187)*t), g=Math.round(255-(255-235)*t), b=Math.round(255-(255-187)*t);
     return'rgb('+r+','+g+','+b+')';
   } else {
     var t=-v;
-    // white → light red (e.g. #FFBBBB)
-    var r=Math.round(255);
-    var g=Math.round(255-(255-187)*t);
-    var b=Math.round(255-(255-187)*t);
-    return'rgb('+r+','+g+','+b+')';
+    var g=Math.round(255-(255-187)*t), b=Math.round(255-(255-187)*t);
+    return'rgb(255,'+g+','+b+')';
   }
 }
 function corrTextColor(v){return Math.abs(v)>0.7?'#1a1a1a':'#374151';}
+function pearsonCorrPhone(a,b){
+  var xs=[],ys=[];
+  for(var i=0;i<a.length;i++){ if(a[i]!=null&&b[i]!=null){ xs.push(a[i]); ys.push(b[i]); } }
+  var n=xs.length; if(n<2) return null;
+  var mx=xs.reduce(function(s,v){return s+v;},0)/n, my=ys.reduce(function(s,v){return s+v;},0)/n;
+  var cov=0,vx=0,vy=0;
+  for(var j=0;j<n;j++){ var dx=xs[j]-mx, dy=ys[j]-my; cov+=dx*dy; vx+=dx*dx; vy+=dy*dy; }
+  var den=Math.sqrt(vx*vy);
+  return den?cov/den:null;
+}
+async function loadFundCorrelationAndSharpe(){
+  try{
+    if(typeof sb==='undefined'||!sb) return;
+    var results=await Promise.allSettled([
+      mpLoadNtaWeekly(),
+      mpLoadYahooWeekly('^KLSE'),
+      mpLoadYahooWeekly('^STI'),
+      mpLoadYahooWeekly('MSCI')
+    ]);
+    var zy=(results[0].status==='fulfilled')?(results[0].value||[]):[];
+    var klci=(results[1].status==='fulfilled')?(results[1].value||[]):[];
+    var sti=(results[2].status==='fulfilled')?(results[2].value||[]):[];
+    var msci=(results[3].status==='fulfilled')?(results[3].value||[]):[];
+    var series=[{name:'ZY-Invest',color:'#1565C0',pts:zy},{name:'FBM KLCI',color:'#90A4AE',pts:klci},{name:'STI',color:'#78909C',pts:sti},{name:'MSCI',color:'#546E7A',pts:msci}]
+      .filter(function(s){return s.pts&&s.pts.length;});
+    if(!series.length) return;
+
+    // Align onto a shared weekly date axis (forward-fill), same approach
+    // used on desktop's Comparison page.
+    var allDates=[]; series.forEach(function(s){ s.pts.forEach(function(p){allDates.push(p.date);}); });
+    allDates=Array.from(new Set(allDates)).sort();
+    var aligned=series.map(function(s){
+      var idx=0,last=null,vals=[];
+      allDates.forEach(function(d){
+        while(idx<s.pts.length && s.pts[idx].date<=d){ last=s.pts[idx]; idx++; }
+        vals.push(last?last.close:null);
+      });
+      return {name:s.name,color:s.color,raw:vals};
+    });
+
+    // Weekly returns for correlation + annualised return/vol/sharpe
+    var rets=aligned.map(function(s){
+      var r=[];
+      for(var i=1;i<s.raw.length;i++){
+        var a=s.raw[i-1],b=s.raw[i];
+        r.push((a!=null&&b!=null&&a)?(b/a-1):null);
+      }
+      return {name:s.name,color:s.color,ret:r,raw:s.raw};
+    });
+
+    corrMatrixData=rets.map(function(rowS){
+      return rets.map(function(colS){
+        return rowS.name===colS.name?1:pearsonCorrPhone(rowS.ret,colS.ret);
+      });
+    });
+    corrLabels=rets.map(function(s){return s.name;});
+
+    rvPoints=rets.map(function(s,i){
+      var validIdx=[]; s.raw.forEach(function(v,idx){ if(v!=null) validIdx.push(idx); });
+      var annReturn=0, annVol=0;
+      if(validIdx.length>1){
+        var first=s.raw[validIdx[0]], last=s.raw[validIdx[validIdx.length-1]];
+        var weeks=validIdx[validIdx.length-1]-validIdx[0];
+        var totalReturn=first?(last/first-1):0;
+        annReturn=weeks>0?(Math.pow(1+totalReturn,52/weeks)-1)*100:0;
+        var validRets=s.ret.filter(function(v){return v!=null;});
+        if(validRets.length>1){
+          var mean=validRets.reduce(function(a,b){return a+b;},0)/validRets.length;
+          var variance=validRets.reduce(function(a,b){return a+(b-mean)*(b-mean);},0)/(validRets.length-1);
+          annVol=Math.sqrt(variance)*Math.sqrt(52)*100;
+        }
+      }
+      var sharpe=annVol?(annReturn/annVol):0;
+      return {label:s.name,ret:+annReturn.toFixed(1),vol:+annVol.toFixed(1),sharpe:+sharpe.toFixed(2),color:s.color,r:i===0?7:6};
+    });
+
+    FUND_CORR_LOADED=true;
+    renderCorrMatrix();
+    drawRVChart();
+  }catch(e){ console.warn('[Fund Chart] correlation/sharpe load failed:', e.message); }
+}
 function renderCorrMatrix(){
   var wrap=document.getElementById('corrMatrixWrap');
   if(!wrap)return;
-  var shortLabels=['ZY','KLCI','STI','MSCI'];
-  var html='<div style="display:flex;justify-content:center;"><div style="display:grid;grid-template-columns:36px repeat(4,48px);gap:2px;box-sizing:border-box;overflow:hidden;">';
-  // header row
+  if(!corrMatrixData){ wrap.innerHTML='<div style="padding:12px 0;color:var(--fg-3);font-size:.76rem;text-align:center">Loading…</div>'; return; }
+  var shortLabels=corrLabels.map(function(l){return l==='ZY-Invest'?'ZY':l==='FBM KLCI'?'KLCI':l;});
+  var html='<div style="display:flex;justify-content:center;"><div style="display:grid;grid-template-columns:36px repeat('+shortLabels.length+',48px);gap:2px;box-sizing:border-box;overflow:hidden;">';
   html+='<div></div>';
   shortLabels.forEach(function(l){
     html+='<div style="font-size:.55rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--fg-3);text-align:center;padding-bottom:4px;">'+l+'</div>';
   });
-  // data rows
-  corrData.forEach(function(row,ri){
+  corrMatrixData.forEach(function(row,ri){
     html+='<div style="font-size:.6rem;font-weight:600;color:var(--fg-2);display:flex;align-items:center;justify-content:flex-end;padding-right:4px;">'+shortLabels[ri]+'</div>';
     row.forEach(function(v){
-      var bg=corrColor(v);var tc=corrTextColor(v);
+      var vv=v==null?0:v;
+      var bg=corrColor(vv);var tc=corrTextColor(vv);
       html+='<div style="width:48px;height:48px;background:'+bg+';display:flex;align-items:center;justify-content:center;">'
-        +'<span style="font-size:.6rem;font-weight:600;color:'+tc+';">'+v.toFixed(2)+'</span>'
+        +'<span style="font-size:.6rem;font-weight:600;color:'+tc+';">'+(v==null?'—':vv.toFixed(2))+'</span>'
         +'</div>';
     });
   });
@@ -1880,34 +2066,28 @@ function candleHover(e){
   var idx=Math.round((xRel-s.pad.l-s.slotW/2)/(s.slotW+s.gap));
   idx=Math.max(0,Math.min(s.data.length-1,idx));
   drawCandleChart(activeCPeriod,null,idx);
-  // update HTML info box
   var d=s.data[idx];
-  var chg=+(d.c-d.o).toFixed(4);var chgPct=+(chg/d.o*100).toFixed(2);
+  var prevD=idx>0?s.data[idx-1]:d;
+  var chg=+(d.close-prevD.close).toFixed(4);var chgPct=+(prevD.close?(chg/prevD.close*100):0).toFixed(2);
   var isUp=chg>=0;var clr=isUp?'var(--green)':'var(--red)';
-  // date label
-  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var base=new Date(2025,6,7);base.setDate(base.getDate()-((s.data.length-1)-idx));
-  document.getElementById('ci-date').textContent=base.getDate()+' '+months[base.getMonth()]+' '+base.getFullYear();
-  document.getElementById('ci-ov').textContent=d.o.toFixed(4);
-  document.getElementById('ci-hv').textContent=d.h.toFixed(4);
+  var dt=new Date(d.date+'T00:00:00');
+  document.getElementById('ci-date').textContent=dt.toLocaleDateString('en-MY',{day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('ci-ov').textContent=d.open.toFixed(4);
+  document.getElementById('ci-hv').textContent=d.high.toFixed(4);
   document.getElementById('ci-cv').textContent=(chg>=0?'+':'')+chg;document.getElementById('ci-cv').style.color=clr;
-  document.getElementById('ci-clv').textContent=d.c.toFixed(4);
-  document.getElementById('ci-lv').textContent=d.l.toFixed(4);
+  document.getElementById('ci-clv').textContent=d.close.toFixed(4);
+  document.getElementById('ci-lv').textContent=d.low.toFixed(4);
   document.getElementById('ci-pv').textContent=(chgPct>=0?'+':'')+chgPct+'%';document.getElementById('ci-pv').style.color=clr;
   document.getElementById('candleInfoBox').style.display='block';
 }
 function candleLeave(){drawCandleChart(activeCPeriod,null,null);document.getElementById('candleInfoBox').style.display='none';}
-// ── RETURN VS VOLATILITY SCATTER ──
-var rvPoints=[
-  {label:'ZY-Invest',ret:12.4,vol:8.2,sharpe:1.51,color:'#1565C0',r:7},
-  {label:'KLCI',    ret:6.8, vol:9.1, sharpe:0.75,color:'#90A4AE',r:6},
-  {label:'STI',     ret:8.3, vol:10.2,sharpe:0.81,color:'#78909C',r:6},
-  {label:'MSCI',    ret:9.7, vol:11.8,sharpe:0.82,color:'#546E7A',r:6}
-];
+// ── RETURN VS VOLATILITY SCATTER — points are labeled directly with their
+// Sharpe ratio (no hover tooltip; option (b) as specified) ──────────────
 var rvState={};
 function drawRVChart(){
   var canvas=document.getElementById('rvChart');
   if(!canvas)return;
+  if(!rvPoints.length){ return; }
   var dpr=window.devicePixelRatio||1;
   var W=canvas.parentElement.clientWidth;
   var H=300;
@@ -1915,47 +2095,45 @@ function drawRVChart(){
   canvas.style.height=H+'px';
   var ctx=canvas.getContext('2d');
   ctx.scale(dpr,dpr);
-  // layout zones: chart | x-ticks | x-title | legend
+  ctx.clearRect(0,0,W,H);
   var pad={t:26,r:16,b:90,l:36};
   var cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
-  var chartBottom=pad.t+ch;           // bottom edge of plot area
-  var tickY=chartBottom+12;           // x-axis tick labels
-  var xTitleY=chartBottom+24;         // "Volatility" title
-  var legY=chartBottom+50;            // legend row
-  var minVol=4,maxVol=16,minRet=2,maxRet=18;
-  function xp(v){return pad.l+((v-minVol)/(maxVol-minVol))*cw;}
-  function yp(r){return pad.t+ch-((r-minRet)/(maxRet-minRet))*ch;}
+  var chartBottom=pad.t+ch;
+  var tickY=chartBottom+12;
+  var xTitleY=chartBottom+24;
+  var legY=chartBottom+50;
+  var allRet=rvPoints.map(function(p){return p.ret;}), allVol=rvPoints.map(function(p){return p.vol;});
+  var minVol=Math.min(0,Math.min.apply(null,allVol))-1, maxVol=Math.max.apply(null,allVol)+2;
+  var minRet=Math.min(0,Math.min.apply(null,allRet))-1, maxRet=Math.max.apply(null,allRet)+2;
+  function xp(v){return pad.l+((v-minVol)/((maxVol-minVol)||1))*cw;}
+  function yp(r){return pad.t+ch-((r-minRet)/((maxRet-minRet)||1))*ch;}
   rvState={xp:xp,yp:yp,pad:pad,W:W,H:H,chartBottom:chartBottom};
-  // grid
+  var volTicks=fundNiceTicks(minVol,maxVol,4), retTicks=fundNiceTicks(minRet,maxRet,4);
   ctx.strokeStyle='rgba(150,160,170,.5)'; ctx.lineWidth=1; ctx.setLineDash([3,4]);
-  [4,8,12,16].forEach(function(v){ctx.beginPath();ctx.moveTo(xp(v),pad.t);ctx.lineTo(xp(v),chartBottom);ctx.stroke();});
-  [4,8,12,16].forEach(function(r){ctx.beginPath();ctx.moveTo(pad.l,yp(r));ctx.lineTo(pad.l+cw,yp(r));ctx.stroke();});
+  volTicks.forEach(function(v){ctx.beginPath();ctx.moveTo(xp(v),pad.t);ctx.lineTo(xp(v),chartBottom);ctx.stroke();});
+  retTicks.forEach(function(r){ctx.beginPath();ctx.moveTo(pad.l,yp(r));ctx.lineTo(pad.l+cw,yp(r));ctx.stroke();});
   ctx.setLineDash([]);
-  // x-axis line
   ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.moveTo(pad.l,chartBottom); ctx.lineTo(pad.l+cw,chartBottom); ctx.stroke();
-  // y-axis line
   ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,chartBottom); ctx.stroke();
-  // x tick labels
   ctx.fillStyle='#374151'; ctx.font='600 8px DM Sans,sans-serif'; ctx.textAlign='center';
-  [4,8,12,16].forEach(function(v){ctx.fillText(v+'%',xp(v),tickY);});
-  // y tick labels
+  volTicks.forEach(function(v){ctx.fillText(v.toFixed(0)+'%',xp(v),tickY);});
   ctx.textAlign='right';
-  [4,8,12,16].forEach(function(r){ctx.fillText(r+'%',pad.l-4,yp(r)+3);});
-  // axis titles
+  retTicks.forEach(function(r){ctx.fillText(r.toFixed(0)+'%',pad.l-4,yp(r)+3);});
   ctx.fillStyle='#374151'; ctx.font='700 10px DM Sans,sans-serif';
   ctx.textAlign='center'; ctx.fillText('Volatility',W/2,xTitleY);
-  // Y-axis title at top of y-axis
   ctx.textAlign='left'; ctx.fillText('Return',pad.l-10,pad.t-7);
-  // points
+  // points + Sharpe ratio data labels (no hover — labels replace tooltip)
   rvPoints.forEach(function(p){
     var x=xp(p.vol),y=yp(p.ret);
     ctx.beginPath(); ctx.arc(x,y,p.r,0,Math.PI*2);
     ctx.fillStyle=p.color; ctx.fill();
+    ctx.font='700 9px DM Sans,sans-serif'; ctx.fillStyle='#0F172A'; ctx.textAlign='center';
+    ctx.fillText(p.sharpe.toFixed(2), x, y-p.r-4);
   });
-  // legend — centered with 2-char spacing
+  // legend
   ctx.font='600 11px DM Sans,sans-serif';
-  var legSpacing=16; // 2-char approx gap
+  var legSpacing=16;
   var legItems=rvPoints.map(function(p){return{p:p,w:10+ctx.measureText(p.label).width+legSpacing};});
   var totalLegW=legItems.reduce(function(s,it){return s+it.w;},0)-legSpacing;
   var lx=(W-totalLegW)/2;
@@ -1966,36 +2144,17 @@ function drawRVChart(){
     ctx.textAlign='left'; ctx.fillText(it.p.label,lx+13,legY+4);
     lx+=it.w;
   });
-  // attach listeners once
-  if(!canvas._rvCl){
-    canvas._rvCl=true;
-    function rvHover(e){
-      var rect=canvas.getBoundingClientRect();
-      var cx=e.touches?e.touches[0].clientX:e.clientX;
-      var cy=e.touches?e.touches[0].clientY:e.clientY;
-      var mx=cx-rect.left, my=cy-rect.top;
-      var tip=document.getElementById('rvTooltip');
-      var hit=null;
-      rvPoints.forEach(function(p){
-        var px=rvState.xp(p.vol), py=rvState.yp(p.ret);
-        var dist=Math.sqrt((mx-px)*(mx-px)+(my-py)*(my-py));
-        if(dist<=p.r+6)hit=p;
-      });
-      if(hit){
-        tip.innerHTML='<span style="color:#94A3B8;">'+hit.label+'</span><br>Return: <b>'+hit.ret+'%</b><br>Vol: <b>'+hit.vol+'%</b><br>Sharpe: <b>'+hit.sharpe+'</b>';
-        var tx=mx+12, ty=my-10;
-        if(tx+110>rvState.W)tx=mx-120;
-        if(ty<0)ty=my+14;
-        tip.style.left=tx+'px'; tip.style.top=ty+'px'; tip.style.display='block';
-      } else {
-        tip.style.display='none';
-      }
-    }
-    canvas.addEventListener('mousemove',rvHover);
-    canvas.addEventListener('touchmove',function(e){e.preventDefault();rvHover(e);},{passive:false});
-    canvas.addEventListener('mouseleave',function(){document.getElementById('rvTooltip').style.display='none';});
-    canvas.addEventListener('touchend',function(){document.getElementById('rvTooltip').style.display='none';});
-  }
+}
+function fundNiceTicks(mn,mx,count){
+  var range=mx-mn||1;
+  var rough=range/count;
+  var mag=Math.pow(10,Math.floor(Math.log(rough)/Math.LN10));
+  var norm=rough/mag;
+  var step=(norm<1.5?1:norm<3?2:norm<7?5:10)*mag;
+  var start=Math.ceil(mn/step)*step;
+  var ticks=[];
+  for(var v=start; v<=mx+step*0.001; v+=step) ticks.push(v);
+  return ticks;
 }
 // ── INCOME STATEMENT CHART ──
 var isData={
