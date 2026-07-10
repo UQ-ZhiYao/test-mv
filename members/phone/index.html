@@ -1703,7 +1703,7 @@ function switchFundTab2(tab){
     }
     setTimeout(function(){tryFundChart(10);},80);
   }
-  if(tab==='results') setTimeout(function(){drawISChart();drawBSChart();drawCFChart();drawRAChart();},50);
+  if(tab==='results') setTimeout(function(){loadResultsData();},50);
   if(tab==='portfolio') setTimeout(function(){loadPortfolioData();},50);
   if(tab==='shareholder'){
     setTimeout(function(){loadShareholderData();},50);
@@ -2173,11 +2173,7 @@ function fundNiceTicks(mn,mx,count){
   return ticks;
 }
 // ── INCOME STATEMENT CHART ──
-var isData={
-  revenue: {label:'Revenue',color:'#1565C0',values:[312480,378920,421350,456780,487310],years:['FY20','FY21','FY22','FY23','FY24']},
-  gp:      {label:'Gross Profit',color:'#2E7D32',values:[198400,241100,275200,298500,321400],years:['FY20','FY21','FY22','FY23','FY24']},
-  ni:      {label:'Net Income',color:'#B45309',values:[87200,112400,134100,152300,168700],years:['FY20','FY21','FY22','FY23','FY24']}
-};
+var isData={revenue:{label:'Revenue',color:'#1565C0',values:[],years:[]},gp:{label:'Gross Profit',color:'#2E7D32',values:[],years:[]},ni:{label:'Net Income',color:'#B45309',values:[],years:[]}};
 var activeISTab='revenue';
 function switchISTab(tab){
   activeISTab=tab;
@@ -2196,6 +2192,7 @@ function drawISChart(){drawComboChart('isChart',isData[activeISTab]);}
 function drawComboChart(canvasId,d){
   var canvas=document.getElementById(canvasId);
   if(!canvas)return;
+  if(!d||!d.values||!d.values.length)return;
   var dpr=window.devicePixelRatio||1;
   var W=canvas.parentElement.clientWidth;
   var H=230;
@@ -2248,12 +2245,13 @@ function drawComboChart(canvasId,d){
 }
 
 // ── BALANCE SHEET ──
-var bsAssets=[612000,724000,831000,956000,1048000];
-var bsLiab=  [198000,241000,287000,312000,334000];
-var bsYears= ['FY20','FY21','FY22','FY23','FY24'];
-function drawBSChart(){
-  var canvas=document.getElementById('bsChart');
+var bsAssets=[];
+var bsLiab=[];
+var bsYears=[];
+function drawBSChart(canvasId){
+  var canvas=document.getElementById(canvasId||'bsChart');
   if(!canvas)return;
+  if(!bsYears.length)return;
   var dpr=window.devicePixelRatio||1;
   var W=canvas.parentElement.clientWidth;
   var H=260;
@@ -2335,9 +2333,9 @@ function drawBSChart(){
 
 // ── CASH FLOWS ──
 var cfData={
-  op:  {label:'Operating CF', values:[124000,158000,187000,214000,238000],years:['FY20','FY21','FY22','FY23','FY24']},
-  inv: {label:'Investing CF', values:[-87000,-112000,-94000,-131000,-118000],years:['FY20','FY21','FY22','FY23','FY24']},
-  fin: {label:'Financing CF', values:[-34000,-41000,-52000,-48000,-56000],years:['FY20','FY21','FY22','FY23','FY24']}
+  op:  {label:'Operating CF', values:[],years:[]},
+  inv: {label:'Investing CF', values:[],years:[]},
+  fin: {label:'Financing CF', values:[],years:[]}
 };
 var activeCFTab='op';
 function switchCFTab(tab){
@@ -2349,16 +2347,71 @@ function drawCFChart(){drawComboChart('cfChart',cfData[activeCFTab]);}
 
 // ── RATIO ANALYSIS ──
 var raData={
-  gps:     {label:'GPS',         values:[0.0418,0.0509,0.0582,0.0630,0.0678],years:['FY20','FY21','FY22','FY23','FY24']},
-  eps:     {label:'EPS',         values:[0.0184,0.0237,0.0283,0.0321,0.0356],years:['FY20','FY21','FY22','FY23','FY24']},
-  dps:     {label:'DPS',         values:[0.0081,0.0104,0.0124,0.0138,0.0156],years:['FY20','FY21','FY22','FY23','FY24']},
-  yield:   {label:'Yield (%)',   values:[3.21,3.84,4.12,4.55,4.82],years:['FY20','FY21','FY22','FY23','FY24']},
-  gross:   {label:'Gross %',     values:[63.5,63.7,65.3,65.4,65.9],years:['FY20','FY21','FY22','FY23','FY24']},
-  roe:     {label:'ROE (%)',     values:[14.2,16.8,18.4,17.9,19.2],years:['FY20','FY21','FY22','FY23','FY24']},
-  shares:  {label:'Issued Share',values:[420000,438000,452000,463000,474200],years:['FY20','FY21','FY22','FY23','FY24']},
-  turnover:{label:'Turnover',    values:[312480,378920,421350,456780,487310],years:['FY20','FY21','FY22','FY23','FY24']}
+  gps:     {label:'GPS',         values:[],years:[]},
+  eps:     {label:'EPS',         values:[],years:[]},
+  dps:     {label:'DPS',         values:[],years:[]},
+  yield:   {label:'Yield (%)',   values:[],years:[]},
+  gross:   {label:'Gross %',     values:[],years:[]},
+  roe:     {label:'ROE (%)',     values:[],years:[]},
+  shares:  {label:'Issued Share',values:[],years:[]},
+  turnover:{label:'Turnover',    values:[],years:[]}
 };
+// ── RESULTS TAB (real data) ─────────────────────────────────────────────
+var RESULTS_IS=[], RESULTS_BS=[], RESULTS_CF=[], RESULTS_RA=[];
+var resultsLoaded=false;
+function fmtFyLabel(fy){ return fy; }
+async function loadResultsData(){
+  if(resultsLoaded){ drawISChart();drawBSChart();drawCFChart();drawRAChart(); return; }
+  try{
+    if(typeof sb==='undefined'||!sb) return;
+    var IS = (window.INCOME_STATEMENT&&window.INCOME_STATEMENT.length) ? window.INCOME_STATEMENT : await mpLoadIncomeStatement();
+    window.INCOME_STATEMENT=IS;
+    var BS = await mpLoadBalanceSheet();
+    var CF = await mpLoadCashFlow(IS, BS);
+    RESULTS_IS=IS; RESULTS_BS=BS; RESULTS_CF=CF;
+
+    var years=IS.map(function(r){return r.fy;});
+
+    // Income Statement
+    isData.revenue.values=IS.map(function(r){return r.revenue||0;}); isData.revenue.years=years;
+    isData.gp.values=IS.map(function(r){return r.grossIncome||0;});  isData.gp.years=years;
+    isData.ni.values=IS.map(function(r){return r.netIncome||0;});    isData.ni.years=years;
+
+    // Balance Sheet
+    bsYears=BS.map(function(r){return r.fy;});
+    bsAssets=BS.map(function(r){return r.totalAssets||0;});
+    bsLiab=BS.map(function(r){return r.totalLiabilities||0;});
+
+    // Cash Flows
+    var cfYears=CF.map(function(r){return r.fy;});
+    cfData.op.values=CF.map(function(r){return r.netCashOperating||0;});  cfData.op.years=cfYears;
+    cfData.inv.values=CF.map(function(r){return r.netCashInvesting||0;}); cfData.inv.years=cfYears;
+    cfData.fin.values=CF.map(function(r){return r.netCashFinancing||0;}); cfData.fin.years=cfYears;
+
+    // Ratio Analysis — combines Income Statement + Balance Sheet + the
+    // shared mpLoadRatioAnalysis() (for DPS/Yield/Gross%), matching fields
+    // to what desktop already computes rather than re-deriving them.
+    var bsByFy={}; BS.forEach(function(r){bsByFy[r.fy]=r;});
+    var RA=[];
+    try{ RA=await mpLoadRatioAnalysis(IS,BS); }catch(e){ console.warn('[Results] ratio analysis load failed:',e.message); }
+    RESULTS_RA=RA;
+    var raByFy={}; RA.forEach(function(r){raByFy[r.fy]=r;});
+
+    raData.gps.values=IS.map(function(r){return r.outstandingShares?(r.grossIncome/r.outstandingShares*100):0;}); raData.gps.years=years;
+    raData.eps.values=IS.map(function(r){return r.epsCents||0;}); raData.eps.years=years;
+    raData.dps.values=years.map(function(fy){return (raByFy[fy]&&raByFy[fy].dps)||0;}); raData.dps.years=years;
+    raData.yield.values=years.map(function(fy){return (raByFy[fy]&&raByFy[fy].dividendYield)||0;}); raData.yield.years=years;
+    raData.gross.values=years.map(function(fy){return (raByFy[fy]&&raByFy[fy].grossMargin)||0;}); raData.gross.years=years;
+    raData.roe.values=IS.map(function(r){var bs=bsByFy[r.fy]; return (bs&&bs.totalEquity)?(r.netIncome/bs.totalEquity*100):0;}); raData.roe.years=years;
+    raData.shares.values=IS.map(function(r){return r.outstandingShares||0;}); raData.shares.years=years;
+    raData.turnover.values=IS.map(function(r){return r.revenue||0;}); raData.turnover.years=years;
+
+    resultsLoaded=true;
+    drawISChart(); drawBSChart(); drawCFChart(); drawRAChart();
+  }catch(e){ console.warn('[Results] load failed:', e.message); }
+}
 var activeRATab='gps';
+
 var raTabs=['gps','eps','dps','yield','gross','roe','shares','turnover'];
 function switchRATab(tab){
   activeRATab=tab;
@@ -2832,6 +2885,94 @@ function closeOwnershipPanel(){
   if(detail) detail.style.display='none';
 }
 document.addEventListener('click',function(e){if(e.target.closest('.ownership-open-btn'))openOwnershipPanel();});
+
+// ── FINANCIAL RESULTS DETAIL (chart + full table, per statement type) ──
+var finDetailMode=null;
+var FIN_DETAIL_TITLES={is:'Income Statement',bs:'Balance Sheet',cf:'Cash Flows',ra:'Ratio Analysis'};
+function openFinDetail(mode){
+  finDetailMode=mode;
+  var resultsBody=document.getElementById('ftab-results-body');
+  var detail=document.getElementById('finDetail');
+  if(resultsBody) resultsBody.style.display='none';
+  if(detail) detail.style.display='block';
+  var scroll=document.getElementById('mainScroll');
+  if(scroll) scroll.scrollTop=0;
+  var titleEl=document.getElementById('finDetailTitle');
+  if(titleEl) titleEl.textContent=FIN_DETAIL_TITLES[mode]||'';
+  renderFinDetail();
+}
+function closeFinDetail(){
+  var resultsBody=document.getElementById('ftab-results-body');
+  var detail=document.getElementById('finDetail');
+  if(resultsBody) resultsBody.style.display='block';
+  if(detail) detail.style.display='none';
+}
+function fmtFinNum(v){
+  v=v||0;
+  var abs=Math.abs(v);
+  var disp=abs>=1000000?(v/1000000).toFixed(2)+'M':abs>=1000?(v/1000).toFixed(2)+'k':v.toFixed(2);
+  return disp;
+}
+// Builds a simple bordered table: first row = headers (FY labels), each
+// subsequent row = [metric name, ...values].
+function buildFinTable(headerRow,dataRows){
+  var thStyle='padding:8px 12px;text-align:right;font-weight:700;color:var(--fg-3);font-size:.66rem;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border);';
+  var thStyleFirst=thStyle.replace('text-align:right','text-align:left');
+  var tdStyle='padding:8px 12px;text-align:right;color:var(--fg-1);border-bottom:1px solid var(--border);';
+  var tdStyleFirst=tdStyle.replace('text-align:right','text-align:left').replace('color:var(--fg-1)','color:var(--fg-2);font-weight:600');
+  var html='<thead><tr>';
+  headerRow.forEach(function(h,i){ html+='<th style="'+(i===0?thStyleFirst:thStyle)+'">'+h+'</th>'; });
+  html+='</tr></thead><tbody>';
+  dataRows.forEach(function(row){
+    html+='<tr>';
+    row.forEach(function(cell,i){ html+='<td style="'+(i===0?tdStyleFirst:tdStyle)+'">'+cell+'</td>'; });
+    html+='</tr>';
+  });
+  html+='</tbody>';
+  return html;
+}
+function renderFinDetail(){
+  var mode=finDetailMode;
+  var table=document.getElementById('finDetailTable');
+  if(!table) return;
+  if(mode==='is'){
+    drawComboChart('finDetailChart', isData[activeISTab]||isData.revenue);
+    table.innerHTML=buildFinTable(['FY'].concat(isData.revenue.years),[
+      ['Revenue'].concat(isData.revenue.values.map(fmtFinNum)),
+      ['Gross Profit'].concat(isData.gp.values.map(fmtFinNum)),
+      ['Net Income'].concat(isData.ni.values.map(fmtFinNum)),
+      ['EPS (cents)'].concat(raData.eps.values.map(function(v){return v.toFixed(2);}))
+    ]);
+  } else if(mode==='bs'){
+    drawBSChart('finDetailChart');
+    table.innerHTML=buildFinTable(['FY'].concat(bsYears),[
+      ['Total Assets'].concat(bsAssets.map(fmtFinNum)),
+      ['Total Liabilities'].concat(bsLiab.map(fmtFinNum)),
+      ['Total Equity'].concat(RESULTS_BS.map(function(r){return fmtFinNum(r.totalEquity||0);})),
+      ['NTA / Share'].concat(RESULTS_BS.map(function(r){return (r.ntaPerShare||0).toFixed(4);}))
+    ]);
+  } else if(mode==='cf'){
+    drawComboChart('finDetailChart', cfData[activeCFTab]||cfData.op);
+    table.innerHTML=buildFinTable(['FY'].concat(cfData.op.years),[
+      ['Operating CF'].concat(cfData.op.values.map(fmtFinNum)),
+      ['Investing CF'].concat(cfData.inv.values.map(fmtFinNum)),
+      ['Financing CF'].concat(cfData.fin.values.map(fmtFinNum))
+    ]);
+  } else if(mode==='ra'){
+    drawComboChart('finDetailChart', raData[activeRATab]||raData.gps);
+    table.innerHTML=buildFinTable(['FY'].concat(raData.gps.years),[
+      ['GPS (cents)'].concat(raData.gps.values.map(function(v){return v.toFixed(2);})),
+      ['EPS (cents)'].concat(raData.eps.values.map(function(v){return v.toFixed(2);})),
+      ['DPS (sen)'].concat(raData.dps.values.map(function(v){return v.toFixed(2);})),
+      ['Yield (%)'].concat(raData.yield.values.map(function(v){return v.toFixed(2);})),
+      ['Gross (%)'].concat(raData.gross.values.map(function(v){return v.toFixed(2);})),
+      ['ROE (%)'].concat(raData.roe.values.map(function(v){return v.toFixed(2);})),
+      ['Issued Shares'].concat(raData.shares.values.map(fmtFinNum)),
+      ['Turnover'].concat(raData.turnover.values.map(fmtFinNum))
+    ]);
+  }
+}
+
 // ── PAGE LOADER ──
 (function loadPages(){
   var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails"];
