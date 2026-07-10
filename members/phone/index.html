@@ -788,6 +788,11 @@ function renderAccountSummary(){
   if(totalPortfolioEl && portfolioVisible) totalPortfolioEl.textContent=fmtMoney(totalValue);
   applyEyeVisibility();
   if(typeof drawAdDonut==='function') drawAdDonut();
+  if(typeof buildTxDataFromCi==='function'){
+    TX_DATA=buildTxDataFromCi();
+    if(document.getElementById('txList')) renderTxList();
+  }
+  if(typeof loadDistributionHistory==='function') loadDistributionHistory();
 }
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 var activeTab='portfolio';
@@ -1079,16 +1084,32 @@ function drawSparkline(){
 }
 
 // ── TRANSACTIONS ──────────────────────────────────────────────────────────────
-var TX_DATA=[
-  {date:'02 Jul 2026',type:'Subscription',acct:'pa',kind:'deposit',amt:10000.00,units:9760.86},
-  {date:'28 Jun 2026',type:'Redemption',acct:'ja',kind:'withdrawal',amt:5000.00,units:5416.67},
-  {date:'19 Jun 2026',type:'Subscription',acct:'ja',kind:'deposit',amt:15000.00,units:16250.00},
-  {date:'11 Jun 2026',type:'Redemption',acct:'pa',kind:'withdrawal',amt:3200.00,units:3123.48},
-  {date:'02 Jun 2026',type:'Subscription',acct:'pa',kind:'deposit',amt:20000.00,units:19521.72},
-  {date:'24 May 2026',type:'Subscription',acct:'ja',kind:'deposit',amt:10000.00,units:10833.33},
-  {date:'15 May 2026',type:'Redemption',acct:'pa',kind:'withdrawal',amt:8000.00,units:7808.69},
-  {date:'03 May 2026',type:'Subscription',acct:'pa',kind:'deposit',amt:50000.00,units:48804.29}
-];
+var TX_DATA=[];
+function fmtTxDate(d){
+  var dt=new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'});
+}
+// Builds the transaction list directly from the same capital_injection rows
+// already loaded for Account Summary (PA_CI_ROWS/JA_CI_ROWS) — no separate
+// query needed, and guarantees the two views can never disagree.
+function buildTxDataFromCi(){
+  var rows=[];
+  function addRows(ciRows,acct){
+    (ciRows||[]).forEach(function(r){
+      var u=parseFloat(r.units)||0, a=parseFloat(r.amount)||0;
+      rows.push({
+        date:fmtTxDate(r.date), _sortDate:r.date,
+        type:u>=0?'Subscription':'Redemption', acct:acct,
+        kind:u>=0?'deposit':'withdrawal',
+        amt:Math.abs(a), units:Math.abs(u)
+      });
+    });
+  }
+  addRows(PA_CI_ROWS,'pa');
+  addRows(JA_CI_ROWS,'ja');
+  rows.sort(function(a,b){ return a._sortDate<b._sortDate?1:(a._sortDate>b._sortDate?-1:0); });
+  return rows;
+}
 var txFilter='all';
 function setTxFilter(f){
   txFilter=f;
@@ -1115,14 +1136,38 @@ function renderTxList(){
 }
 
 // ── DISTRIBUTIONS ────────────────────────────────────────────────────────
-var DX_DATA=[
-  {date:'30 Jun 2026',type:'Cash Payout',acct:'pa',kind:'cash',amt:842.50,units:0},
-  {date:'30 Jun 2026',type:'Unit Reinvestment',acct:'ja',kind:'reinvest',amt:410.00,units:400.20},
-  {date:'31 Mar 2026',type:'Cash Payout',acct:'ja',kind:'cash',amt:388.00,units:0},
-  {date:'31 Mar 2026',type:'Unit Reinvestment',acct:'pa',kind:'reinvest',amt:761.20,units:743.06},
-  {date:'31 Dec 2025',type:'Cash Payout',acct:'pa',kind:'cash',amt:695.40,units:0},
-  {date:'30 Sep 2025',type:'Unit Reinvestment',acct:'ja',kind:'reinvest',amt:352.80,units:344.60}
-];
+var DX_DATA=[];
+// Computes each account's distribution entitlement per historical payout:
+// units held as of that distribution's ex-date (from the same
+// PA_CI_ROWS/JA_CI_ROWS already loaded) × that distribution's DPS. Note:
+// whether an investor took cash or reinvested is a per-investor election
+// not present in the fund-wide distributions table, so every entry is
+// shown as "Cash Payout" — this is a known simplification, not a real
+// reinvestment/cash distinction.
+async function loadDistributionHistory(){
+  try{
+    if(typeof sb==='undefined'||!sb) return;
+    var res=await sb.from('distributions').select('dps, ex_date, pay_date, status').eq('status','Paid').order('pay_date',{ascending:false});
+    if(res.error){ console.warn('[Distributions] load failed:', res.error.message); return; }
+    var distRows=res.data||[];
+    var rows=[];
+    distRows.forEach(function(d){
+      [['pa',PA_CI_ROWS],['ja',JA_CI_ROWS]].forEach(function(pair){
+        var acct=pair[0], ciRows=pair[1];
+        if(!ciRows||!ciRows.length) return;
+        var unitsAtExDate=0;
+        ciRows.forEach(function(r){ if(r.date<=d.ex_date) unitsAtExDate+=parseFloat(r.units)||0; });
+        if(unitsAtExDate<=0.0001) return;
+        var amt=unitsAtExDate*(parseFloat(d.dps)||0)/100; // dps in sen → RM
+        var payDate=d.pay_date||d.ex_date;
+        rows.push({date:fmtTxDate(payDate), _sortDate:payDate, type:'Cash Payout', acct:acct, kind:'cash', amt:amt, units:0});
+      });
+    });
+    rows.sort(function(a,b){ return a._sortDate<b._sortDate?1:(a._sortDate>b._sortDate?-1:0); });
+    DX_DATA=rows;
+    if(document.getElementById('dxList')) renderDxList();
+  }catch(e){ console.warn('[Distributions] load failed:', e.message); }
+}
 var dxFilter='all';
 function setDxFilter(f){
   dxFilter=f;
@@ -2931,44 +2976,101 @@ function buildFinTable(headerRow,dataRows){
   html+='</tbody>';
   return html;
 }
+function fmtCentsRow(v){ return v==null?'-':(v).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtUnitsRow(v){ return v==null?'-':(v).toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4}); }
+function fmtNtaRow(v){ return v==null?'-':(v).toLocaleString('en-MY',{minimumFractionDigits:4,maximumFractionDigits:4}); }
+function fmtPctRow(v){ return v==null?'-':(v).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})+'%'; }
+function fmtCountRow(v){ return v==null?'-':Math.round(v).toLocaleString('en-MY'); }
+function fmtMoneyRow(v){ return v==null?'-':(v).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+// Builds one table row from a per-FY rows array (e.g. RESULTS_IS), matching
+// desktop's fsRow() — field pulled by name, missing/null shown as "–".
+function finRow(rows,label,field,fmtFn){
+  fmtFn=fmtFn||fmtMoneyRow;
+  return [label].concat(rows.map(function(r){
+    var v=r?r[field]:null;
+    return fmtFn(v==null?null:v);
+  }));
+}
 function renderFinDetail(){
   var mode=finDetailMode;
   var table=document.getElementById('finDetailTable');
   if(!table) return;
+  var years=RESULTS_IS.map(function(r){return r.fy;});
   if(mode==='is'){
     drawComboChart('finDetailChart', isData[activeISTab]||isData.revenue);
-    table.innerHTML=buildFinTable(['FY'].concat(isData.revenue.years),[
-      ['Revenue'].concat(isData.revenue.values.map(fmtFinNum)),
-      ['Gross Profit'].concat(isData.gp.values.map(fmtFinNum)),
-      ['Net Income'].concat(isData.ni.values.map(fmtFinNum)),
-      ['EPS (cents)'].concat(raData.eps.values.map(function(v){return v.toFixed(2);}))
+    table.innerHTML=buildFinTable(['FY'].concat(years),[
+      finRow(RESULTS_IS,'Dividend Income','dividendIncome'),
+      finRow(RESULTS_IS,'Interest Income','interestIncome'),
+      finRow(RESULTS_IS,'Revenue / Total Income','revenue'),
+      finRow(RESULTS_IS,'Management Cost','managementCost'),
+      finRow(RESULTS_IS,'Gross Income','grossIncome'),
+      finRow(RESULTS_IS,'Realised Profit & Loss','realizedPnl'),
+      finRow(RESULTS_IS,'Unrealised Profit & Loss','unrealizedPnl'),
+      finRow(RESULTS_IS,'Other Income / (Expenses)','otherIncomeExpense'),
+      finRow(RESULTS_IS,'Profit before Tax','profitBeforeTax'),
+      finRow(RESULTS_IS,'Tax Paid','tax'),
+      finRow(RESULTS_IS,'Net Income / Profit after Tax (NPAT)','netIncome'),
+      finRow(RESULTS_IS,'Outstanding Shares (Units)','outstandingShares',fmtUnitsRow),
+      finRow(RESULTS_IS,'EPS (cents)','epsCents',fmtCentsRow)
     ]);
   } else if(mode==='bs'){
     drawBSChart('finDetailChart');
-    table.innerHTML=buildFinTable(['FY'].concat(bsYears),[
-      ['Total Assets'].concat(bsAssets.map(fmtFinNum)),
-      ['Total Liabilities'].concat(bsLiab.map(fmtFinNum)),
-      ['Total Equity'].concat(RESULTS_BS.map(function(r){return fmtFinNum(r.totalEquity||0);})),
-      ['NTA / Share'].concat(RESULTS_BS.map(function(r){return (r.ntaPerShare||0).toFixed(4);}))
+    var bsYearsFull=RESULTS_BS.map(function(r){return r.fy;});
+    table.innerHTML=buildFinTable(['FY'].concat(bsYearsFull),[
+      finRow(RESULTS_BS,'Securities','securities'),
+      finRow(RESULTS_BS,'Other Investments','otherInvestments'),
+      finRow(RESULTS_BS,'Dividend Receivables','dividendReceivables'),
+      finRow(RESULTS_BS,'Cash & Cash Equivalents','cash'),
+      finRow(RESULTS_BS,'Total Assets','totalAssets'),
+      finRow(RESULTS_BS,'Accrual Fees','accrualFees'),
+      finRow(RESULTS_BS,'Total Liabilities','totalLiabilities'),
+      finRow(RESULTS_BS,'Total Capital','totalCapital'),
+      finRow(RESULTS_BS,'Retained Earnings','retainedEarnings'),
+      finRow(RESULTS_BS,'Total Equities','totalEquity'),
+      finRow(RESULTS_BS,'Outstanding Shares (Units)','outstandingShares',fmtUnitsRow),
+      finRow(RESULTS_BS,'NTA per Share','ntaPerShare',fmtNtaRow)
     ]);
   } else if(mode==='cf'){
     drawComboChart('finDetailChart', cfData[activeCFTab]||cfData.op);
-    table.innerHTML=buildFinTable(['FY'].concat(cfData.op.years),[
-      ['Operating CF'].concat(cfData.op.values.map(fmtFinNum)),
-      ['Investing CF'].concat(cfData.inv.values.map(fmtFinNum)),
-      ['Financing CF'].concat(cfData.fin.values.map(fmtFinNum))
+    var cfYearsFull=RESULTS_CF.map(function(r){return r.fy;});
+    table.innerHTML=buildFinTable(['FY'].concat(cfYearsFull),[
+      finRow(RESULTS_CF,'Profit before Tax','profitBeforeTax'),
+      finRow(RESULTS_CF,'Unrealised (Gain) / Loss on Investment','unrealizedAdjustment'),
+      finRow(RESULTS_CF,'Realised (Gain) / Loss on Investment','realizedAdjustment'),
+      finRow(RESULTS_CF,'Net Proceeds — Securities','proceedsSecurities'),
+      finRow(RESULTS_CF,'Net Proceeds — Other Assets','proceedsOtherAssets'),
+      finRow(RESULTS_CF,'Changes in Receivables','changeReceivables'),
+      finRow(RESULTS_CF,'Changes in Accrual Fees','changeAccrualFees'),
+      finRow(RESULTS_CF,'Cashflow from Operations','cashflowFromOps'),
+      finRow(RESULTS_CF,'Income Tax Paid','incomeTaxPaid'),
+      finRow(RESULTS_CF,'Net Cash from Operating Activities','netCashOperating'),
+      finRow(RESULTS_CF,'Net Cash from Investing Activities','netCashInvesting'),
+      finRow(RESULTS_CF,'Dividend Paid','dividendPaid'),
+      finRow(RESULTS_CF,'Issuance of New Shares','issuanceOfShares'),
+      finRow(RESULTS_CF,'Net Cash from Financing Activities','netCashFinancing'),
+      finRow(RESULTS_CF,'Net Increase in Cash & Bank Balances','netIncreaseInCash'),
+      finRow(RESULTS_CF,'Cash & Bank Balances at Beginning of FY','cashBeginning'),
+      finRow(RESULTS_CF,'Cash & Bank Balances at End of FY','cashEnding')
     ]);
   } else if(mode==='ra'){
     drawComboChart('finDetailChart', raData[activeRATab]||raData.gps);
-    table.innerHTML=buildFinTable(['FY'].concat(raData.gps.years),[
-      ['GPS (cents)'].concat(raData.gps.values.map(function(v){return v.toFixed(2);})),
-      ['EPS (cents)'].concat(raData.eps.values.map(function(v){return v.toFixed(2);})),
-      ['DPS (sen)'].concat(raData.dps.values.map(function(v){return v.toFixed(2);})),
-      ['Yield (%)'].concat(raData.yield.values.map(function(v){return v.toFixed(2);})),
-      ['Gross (%)'].concat(raData.gross.values.map(function(v){return v.toFixed(2);})),
-      ['ROE (%)'].concat(raData.roe.values.map(function(v){return v.toFixed(2);})),
-      ['Issued Shares'].concat(raData.shares.values.map(fmtFinNum)),
-      ['Turnover'].concat(raData.turnover.values.map(fmtFinNum))
+    var raYearsFull=RESULTS_RA.map(function(r){return r.fy;});
+    table.innerHTML=buildFinTable(['FY'].concat(raYearsFull),[
+      finRow(RESULTS_RA,'Gross Margin','grossMargin',fmtPctRow),
+      finRow(RESULTS_RA,'PBT Margin','pbtMargin',fmtPctRow),
+      finRow(RESULTS_RA,'NAT Margin','natMargin',fmtPctRow),
+      finRow(RESULTS_RA,'Yield Return','yieldReturn',fmtPctRow),
+      finRow(RESULTS_RA,'Gross Return','grossReturn',fmtPctRow),
+      finRow(RESULTS_RA,'Return on Asset','returnOnAsset',fmtPctRow),
+      finRow(RESULTS_RA,'Gearing Ratio','gearingRatio',fmtPctRow),
+      finRow(RESULTS_RA,'Cash Reserve Ratio','cashReserveRatio',fmtPctRow),
+      finRow(RESULTS_RA,'Dividend per Share (sen)','dps',fmtCentsRow),
+      finRow(RESULTS_RA,'Dividend Yield','dividendYield',fmtPctRow),
+      finRow(RESULTS_RA,'No. of Transactions','numTransactions',fmtCountRow),
+      finRow(RESULTS_RA,'Total Trading Amount (RM)','totalTradingAmount'),
+      finRow(RESULTS_RA,'Total Trading Units','totalTradingUnits',fmtUnitsRow),
+      finRow(RESULTS_RA,'Total Trading Fees (RM)','totalTradingFees'),
+      finRow(RESULTS_RA,'Fees Rate','feesRate',fmtPctRow)
     ]);
   }
 }
