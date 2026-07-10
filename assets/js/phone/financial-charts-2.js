@@ -15,24 +15,42 @@ function drawComboChart(canvasId,d){
   var chartBottom=pad.t+ch;
   var yearY=chartBottom+14, valueY=chartBottom+28, yoyY=chartBottom+42, legY=chartBottom+68;
   var n=d.values.length;
-  var maxV=Math.max.apply(null,d.values.map(Math.abs))*1.12;
+  // Zero-baseline scale — always includes 0 in the range, so a negative
+  // value's bar correctly dips below the baseline instead of rendering
+  // identically to a positive value (which Math.abs() used to cause).
+  var maxV=Math.max.apply(null,d.values.concat([0]))*1.12;
+  var minV=Math.min.apply(null,d.values.concat([0]))*1.12;
+  var vRange=(maxV-minV)||1;
+  function barY(v){ return pad.t+ch*((maxV-v)/vRange); }
+  var zeroY=barY(0);
   var slot=cw/n, barW=slot*0.14;
   ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(pad.l,chartBottom); ctx.lineTo(pad.l+cw,chartBottom); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,zeroY); ctx.lineTo(pad.l+cw,zeroY); ctx.stroke();
   var yoyVals=d.values.map(function(v,i){return i===0?null:((v-d.values[i-1])/d.values[i-1]*100);});
   var yoyNonNull=yoyVals.filter(function(v){return v!==null;});
   var minYoy=Math.min.apply(null,yoyNonNull)-2, maxYoy=Math.max.apply(null,yoyNonNull)+2;
   function yoyYp(v){return pad.t+ch-((v-minYoy)/(maxYoy-minYoy))*ch;}
   d.values.forEach(function(v,i){
     var cx=pad.l+i*slot+slot/2, x=cx-barW/2;
-    var barH=ch*(Math.abs(v)/maxV), y=chartBottom-barH;
+    var vTop=barY(v);
+    var y=Math.min(zeroY,vTop), barH=Math.abs(vTop-zeroY);
+    var up=v>=0;
     ctx.fillStyle='#226ad6';
-    var r=3;
+    var r=Math.min(3,barH); // avoid corner radius overshoot on very short bars
     ctx.beginPath();
-    ctx.moveTo(x+r,y); ctx.lineTo(x+barW-r,y);
-    ctx.arcTo(x+barW,y,x+barW,y+r,r);
-    ctx.lineTo(x+barW,chartBottom); ctx.lineTo(x,chartBottom);
-    ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+    if(up){
+      ctx.moveTo(x+r,y); ctx.lineTo(x+barW-r,y);
+      ctx.arcTo(x+barW,y,x+barW,y+r,r);
+      ctx.lineTo(x+barW,zeroY); ctx.lineTo(x,zeroY);
+      ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+    } else {
+      // rounded corners on the bottom edge instead, since the bar hangs
+      // below the zero line
+      var yb=zeroY+barH;
+      ctx.moveTo(x,zeroY); ctx.lineTo(x+barW,zeroY);
+      ctx.lineTo(x+barW,yb-r); ctx.arcTo(x+barW,yb,x+barW-r,yb,r);
+      ctx.lineTo(x+r,yb); ctx.arcTo(x,yb,x,yb-r,r);
+    }
     ctx.closePath(); ctx.fill();
     ctx.fillStyle='#374151'; ctx.font='500 12px DM Sans,sans-serif'; ctx.textAlign='center';
     ctx.fillText(d.years[i],cx,yearY);
@@ -74,11 +92,16 @@ function drawBSChart(canvasId){
   var chartBottom=pad.t+ch;
   var yearY=chartBottom+14, legY=chartBottom+90;
   var n=bsYears.length;
-  var maxV=Math.max.apply(null,bsAssets)*1.12;
+  var maxV=Math.max.apply(null,bsAssets.concat(bsLiab).concat([0]))*1.12;
+  var minV=Math.min.apply(null,bsAssets.concat(bsLiab).concat([0]))*1.12;
+  var vRange=(maxV-minV)||1;
+  function barYAbs(v){ return pad.t+ch*((maxV-v)/vRange); }
+  var zeroYAbs=barYAbs(0);
   var slot=cw/n, barW=slot*0.13, gap=3;
-  // x-axis
+  // x-axis (zero baseline — coincides with the bottom edge whenever every
+  // value is non-negative, same visual result as before in that case)
   ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(pad.l,chartBottom); ctx.lineTo(pad.l+cw,chartBottom); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.l,zeroYAbs); ctx.lineTo(pad.l+cw,zeroYAbs); ctx.stroke();
   // ratio scale
   var ratios=bsLiab.map(function(l,i){return l/bsAssets[i];});
   var minR=Math.min.apply(null,ratios)-0.02, maxR=Math.max.apply(null,ratios)+0.02;
@@ -88,13 +111,23 @@ function drawBSChart(canvasId){
     var cx=pad.l+i*slot+slot/2;
     var x0=cx-barW-gap/2, x1=cx+gap/2;
     function drawBar(x,h,color){
-      var barH=ch*(h/maxV), y=chartBottom-barH, r=3;
+      var vTop=barYAbs(h);
+      var up=h>=0;
+      var y=Math.min(zeroYAbs,vTop), barH=Math.abs(vTop-zeroYAbs);
+      var r=Math.min(3,barH);
       ctx.fillStyle=color;
       ctx.beginPath();
-      ctx.moveTo(x+r,y); ctx.lineTo(x+barW-r,y);
-      ctx.arcTo(x+barW,y,x+barW,y+r,r);
-      ctx.lineTo(x+barW,chartBottom); ctx.lineTo(x,chartBottom);
-      ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+      if(up){
+        ctx.moveTo(x+r,y); ctx.lineTo(x+barW-r,y);
+        ctx.arcTo(x+barW,y,x+barW,y+r,r);
+        ctx.lineTo(x+barW,zeroYAbs); ctx.lineTo(x,zeroYAbs);
+        ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
+      } else {
+        var yb=zeroYAbs+barH;
+        ctx.moveTo(x,zeroYAbs); ctx.lineTo(x+barW,zeroYAbs);
+        ctx.lineTo(x+barW,yb-r); ctx.arcTo(x+barW,yb,x+barW-r,yb,r);
+        ctx.lineTo(x+r,yb); ctx.arcTo(x,yb,x,yb-r,r);
+      }
       ctx.closePath(); ctx.fill();
     }
     drawBar(x0,bsAssets[i],'#226ad6');

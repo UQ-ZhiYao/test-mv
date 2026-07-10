@@ -114,7 +114,8 @@
             <button onclick="drawCandleChart('all',this)" class="cperiod" style="font:inherit;font-size:.73rem;font-weight:600;padding:3px 0;border:none;background:none;color:var(--fg-3);cursor:pointer;flex:1;text-align:center;">ALL</button>
           </div>
           <div style="flex:1;display:flex;justify-content:center;align-items:center;">
-            <select id="candleDataType" onchange="drawCandleChart(activeCPeriod,null,null)" style="font:inherit;font-size:.7rem;font-weight:600;color:var(--fg-2);background:none;border:none;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;text-align:center;width:100%;">            <option value="weekly">Weekly</option>
+            <select id="candleDataType" onchange="drawCandleChart(activeCPeriod,null,null)" style="font:inherit;font-size:.7rem;font-weight:600;color:var(--fg-2);background:none;border:none;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;text-align:center;text-align-last:center;-moz-text-align-last:center;width:100%;">
+              <option value="weekly">Weekly</option>
               <option value="monthly">Monthly</option>
               <option value="quarterly">Quarterly</option>
             </select>
