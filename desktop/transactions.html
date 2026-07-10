@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1565C0">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest">
-<title>Fund Comparison — ZY-Invest</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<title>Transactions — ZY-Invest</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/css/member-tokens.css">
-<link rel="stylesheet" href="../../assets/css/member-portal.css">
+<link rel="stylesheet" href="../assets/css/member-tokens.css">
+<link rel="stylesheet" href="../assets/css/member-portal.css">
 
 </head>
 <body>
 <!-- TOPNAV -->
 <header class="topnav" id="topnav">
-  <a href="../../index.html" class="brand">
-    <img src="../../assets/img/logo.png" alt="ZY-Invest">
+  <a href="../index.html" class="brand">
+    <img src="../assets/img/logo.png" alt="ZY-Invest">
     <span class="bt"><b>ZY-Invest</b><span>Member Portal</span></span>
   </a>
   <nav class="nav-links">
@@ -115,7 +115,7 @@
       <span class="sb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12V3"/><path d="M12 12l7.5 5"/></svg></span>
       <span class="sb-label">Holdings</span>
     </a>
-    <a class="sb-item" href="transactions.html" data-page="transactions">
+    <a class="sb-item active" href="transactions.html" data-page="transactions">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M4 8h14l-3-3"/><path d="M20 16H6l3 3"/></svg></span>
       <span class="sb-label">Transactions</span>
     </a>
@@ -141,7 +141,7 @@
       <span class="sb-label">Instruments</span>
     </a>
     <div class="sb-spacer"></div>
-    <a class="sb-item logout" href="../../login.html" onclick="doLogout();return false;">
+    <a class="sb-item logout" href="../login.html" onclick="doLogout();return false;">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
       <span class="sb-label">Sign out</span>
     </a>
@@ -154,6 +154,19 @@
 
 <!-- SUBSCRIBE / REDEEM MODALS -->
 <div class="sr-scrim" id="srScrim" onclick="closeSR()"></div>
+
+<!-- TRANSACTION DOCUMENT VIEWER -->
+<div class="sr-scrim" id="txDocScrim" onclick="closeTxDoc()"></div>
+<div class="sr-modal" id="txDocModal" style="width:560px;height:auto;max-height:86vh;">
+  <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex:none;">
+    <div>
+      <h3 style="margin:0;font-size:1.05rem;font-weight:600;color:var(--fg-1)">Transaction Document</h3>
+      <div id="txDocRef" style="font-size:.8rem;color:var(--fg-3);margin-top:2px;font-family:var(--font-mono)">—</div>
+    </div>
+    <button onclick="closeTxDoc()" style="background:none;border:none;font-size:1.2rem;color:var(--fg-3);cursor:pointer">&#x2715;</button>
+  </div>
+  <div id="txDocBody" style="padding:20px 24px;overflow-y:auto;flex:1"></div>
+</div>
 
 <div class="sr-modal" id="subModal">
   <div class="sr-head"><div><h3>Subscribe — Add Funds</h3><div class="sr-sub">Transfer to the fund's bank account, then submit your deposit details below.</div></div><button class="sr-x" onclick="closeSR()">&#x2715;</button></div>
@@ -271,7 +284,7 @@
 <div class="lscreen" id="lscreen">
   <div style="background:#fff;border-radius:20px;padding:36px 40px;width:400px;max-width:calc(100vw - 32px);box-shadow:0 24px 60px rgba(0,0,0,.3)">
     <div style="text-align:center;margin-bottom:26px">
-      <img src="../../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
+      <img src="../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
       <div style="font-size:1.1rem;font-weight:700;color:var(--blue-dark)">ZY-Invest</div>
       <div style="font-size:.84rem;color:var(--fg-3);margin-top:3px">Member Portal · Sign in</div>
     </div>
@@ -285,44 +298,17 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../../assets/js/supabase-auth.js"></script>
-<script src="../../assets/js/member-api.js"></script>
-<script src="../../assets/js/member-portal.js"></script>
+<script src="../assets/js/supabase-auth.js"></script>
+<script src="../assets/js/member-api.js"></script>
+<script src="../assets/js/member-portal.js"></script>
 <script>
-var S = { page:'comparison', period:'ytd', txf:'all' };
+var S = { page:'transactions', period:'ytd', txf:'all' };
 // [init removed for standalone page]
 
 // Page init
-// Page init (waits for live Supabase + Yahoo Finance data)
+// Page init (waits for live Supabase data)
 loadLiveData().then(function(){
-  return Promise.allSettled([
-    (typeof mpLoadNtaWeekly==='function') ? mpLoadNtaWeekly() : Promise.resolve([]),
-    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^KLSE') : Promise.resolve([]),
-    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^GSPC') : Promise.resolve([]),
-    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('MSCI') : Promise.resolve([]),
-    (typeof mpLoadInceptionDate==='function') ? mpLoadInceptionDate() : Promise.resolve(null),
-    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^STI') : Promise.resolve([]),
-    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^IXIC') : Promise.resolve([])
-  ]);
-}).then(function(results){
-  var fund = (results[0].status==='fulfilled') ? (results[0].value||[]) : [];
-  var klci = (results[1].status==='fulfilled') ? (results[1].value||[]) : [];
-  var sp   = (results[2].status==='fulfilled') ? (results[2].value||[]) : [];
-  var msci = (results[3].status==='fulfilled') ? (results[3].value||[]) : [];
-  var inception = (results[4].status==='fulfilled') ? results[4].value : null;
-  var sti = (results[5].status==='fulfilled') ? (results[5].value||[]) : [];
-  var nasdaq = (results[6].status==='fulfilled') ? (results[6].value||[]) : [];
-  results.forEach(function(r,i){
-    if(r.status!=='fulfilled') console.warn('Comparison data source '+i+' failed:', r.reason && r.reason.message);
-  });
-  COMPARISON_DATA = { fund:fund, klci:klci, sp:sp, msci:msci, inception:inception, sti:sti, nasdaq:nasdaq };
-  COMPARISON_ERROR = fund.length ? null : 'Fund NTA history unavailable';
-}).catch(function(e){
-  COMPARISON_DATA = null;
-  COMPARISON_ERROR = (e && e.message) || 'Unknown error';
-  console.warn('Comparison page data load failed:', COMPARISON_ERROR);
-}).finally(function(){
-  document.getElementById('mainContent').innerHTML=pgComparison();renderNotifs();
+  document.getElementById('mainContent').innerHTML=pgTransactions();renderNotifs();
 });
 </script>
 </body>

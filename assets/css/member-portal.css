@@ -1,6 +1,6 @@
 /* ============================================================
    ZY-Invest Member Portal — Shared Component & Layout Styles
-   Shared across all members/desktop/*.html pages.
+   Shared across all desktop/*.html pages.
    ============================================================ */
 *,*::before,*::after{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}

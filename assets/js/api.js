@@ -27,10 +27,12 @@ const api = {
 
 /* ── Auth helpers ─────────────────────────────────────────── */
 function authSave(data) {
-  localStorage.setItem('zy_token',       data.access_token);
-  localStorage.setItem('zy_role',        data.role);
-  localStorage.setItem('zy_name',        data.name);
-  localStorage.setItem('zy_investor_id', data.investor_id || '');
+  localStorage.setItem('zy_token',              data.access_token);
+  localStorage.setItem('zy_role',                data.role);
+  localStorage.setItem('zy_name',                data.name);
+  localStorage.setItem('zy_investor_id',         data.investor_id || '');
+  localStorage.setItem('zy_joint_account_id',    data.joint_account_id || '');
+  localStorage.setItem('zy_joint_account_name',  data.joint_account_name || '');
 }
 
 async function authLogout() {
@@ -46,29 +48,37 @@ async function authLogout() {
   try {
     if (typeof sb !== 'undefined' && sb) sb.auth.signOut().catch(function(){});
   } catch(e) {}
-  ['zy_token','zy_role','zy_name','zy_investor_id'].forEach(k => localStorage.removeItem(k));
-  window.location.href = '/login.html';
+  ['zy_token','zy_role','zy_name','zy_investor_id','zy_joint_account_id','zy_joint_account_name','zy-session'].forEach(k => localStorage.removeItem(k));
+  var loginPath = (location.pathname.indexOf('/desktop/') >= 0 || location.pathname.indexOf('/phone/') >= 0) ? '../login.html' : 'login.html';
+  window.location.href = loginPath;
 }
 
 function authUser() {
   return {
-    token:      localStorage.getItem('zy_token'),
-    role:       localStorage.getItem('zy_role'),
-    name:       localStorage.getItem('zy_name'),
-    investorId: localStorage.getItem('zy_investor_id'),
+    token:            localStorage.getItem('zy_token'),
+    role:             localStorage.getItem('zy_role'),
+    name:             localStorage.getItem('zy_name'),
+    investorId:       localStorage.getItem('zy_investor_id'),
+    jointAccountId:   localStorage.getItem('zy_joint_account_id') || '',
+    jointAccountName: localStorage.getItem('zy_joint_account_name') || '',
   };
 }
 
 function authRequired() {
   const { token } = authUser();
-  if (!token) { window.location.href = '/login.html'; return false; }
+  if (!token) {
+    var loginPath = (location.pathname.indexOf('/desktop/') >= 0 || location.pathname.indexOf('/phone/') >= 0) ? '../login.html' : 'login.html';
+    window.location.href = loginPath;
+    return false;
+  }
   return true;
 }
 
 function adminRequired() {
   const { token, role } = authUser();
-  if (!token) { window.location.href = '/login.html'; return false; }
-  if (role !== 'admin') { window.location.href = '/dashboard/index.html'; return false; }
+  var loginPath = (location.pathname.indexOf('/desktop/') >= 0 || location.pathname.indexOf('/phone/') >= 0) ? '../login.html' : 'login.html';
+  if (!token) { window.location.href = loginPath; return false; }
+  if (role !== 'admin') { window.location.href = loginPath; return false; }
   return true;
 }
 

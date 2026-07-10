@@ -1,12 +1,12 @@
 /* ============================================================
    ZY-Invest Member Portal — Shared Application Logic
-   Shared across all members/desktop/*.html pages.
+   Shared across all desktop/*.html pages.
    Requires supabase-auth.js (sb client) loaded first.
    Expects the including page to declare `var S = {...}` and the
    page-specific render dispatch (see bottom of each *.html file)
    in its own inline <script> tag after this file loads.
    ============================================================ */
-if(!localStorage.getItem('zy-session')&&!localStorage.getItem('zy_token')){window.location.href='../../login.html';}
+if(!localStorage.getItem('zy-session')&&!localStorage.getItem('zy_token')){window.location.href='../login.html';}
 function navigate(pg){
   var map={fundoverview:'fund-overview',ntahistory:'nta-history',financialresults:'financial-results'};
   var file=map[pg]||pg;
@@ -109,7 +109,7 @@ async function loadLiveData(){
   try{
     if(typeof sb === 'undefined' || !sb){ console.warn('Supabase client not initialised — check assets/js/supabase-auth.js credentials.'); return; }
     var authUser = (typeof mpCheckAuth === 'function') ? await mpCheckAuth() : null;
-    if(!authUser){ window.location.href='../../login.html'; return; }
+    if(!authUser){ window.location.href='../login.html'; return; }
 
     var profile = null;
     try{ profile = await mpLoadProfile(authUser.id); }catch(e){ console.warn('Profile load failed:', e.message); }
@@ -4193,7 +4193,7 @@ function doLogout(){
     ['zy-page','zy_token','zy_role','zy_name','zy_investor_id','zy-session','zy-email'].forEach(function(k){localStorage.removeItem(k);});
   }catch(e){}
   try{ if(typeof sb!=='undefined'&&sb) sb.auth.signOut().catch(function(){}); }catch(e){}
-  window.location.href='../../login.html';
+  window.location.href='../login.html';
 }
 function doLogin(){
   var e=document.getElementById('lemail').value, p=document.getElementById('lpwd').value;

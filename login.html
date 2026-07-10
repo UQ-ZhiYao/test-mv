@@ -200,7 +200,7 @@
   var ua=navigator.userAgent;
   var isMobile=/android|iphone|ipad|ipod|blackberry|windows phone|opera mini|mobile/i.test(ua);
   var isSmall=window.innerWidth<768;
-  if(isMobile||isSmall){ window.location.replace('members/phone/login.html'); }
+  if(isMobile||isSmall){ window.location.replace('phone/login.html'); }
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -220,11 +220,11 @@
     try{
       if(sb){
         var s=await sb.auth.getSession();
-        if(s.data.session){ window.location.href='members/desktop/dashboard.html'; return; }
+        if(s.data.session){ window.location.href='desktop/dashboard.html'; return; }
       }
     }catch(e){}
     if(localStorage.getItem('zy-session')||localStorage.getItem('zy_token')){
-      window.location.href='members/desktop/dashboard.html'; return;
+      window.location.href='desktop/dashboard.html'; return;
     }
   })();
 
@@ -252,7 +252,7 @@
         investor_id:  res.data.user.user_metadata?.investor_id || ''
       });
       try{ localStorage.setItem('zy-session','1'); }catch(e){}
-      window.zyEnterDashboard('members/desktop/dashboard.html');
+      window.zyEnterDashboard('desktop/dashboard.html');
     }catch(err){
       var m=(err && err.message) || 'Login failed. Please try again.';
       if(/invalid credentials/i.test(m)) m='Incorrect email or password. Please try again.';

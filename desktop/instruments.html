@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1565C0">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest">
-<title>Financial Results — ZY-Invest</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<title>Instruments — ZY-Invest</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/css/member-tokens.css">
-<link rel="stylesheet" href="../../assets/css/member-portal.css">
+<link rel="stylesheet" href="../assets/css/member-tokens.css">
+<link rel="stylesheet" href="../assets/css/member-portal.css">
 
 </head>
 <body>
 <!-- TOPNAV -->
 <header class="topnav" id="topnav">
-  <a href="../../index.html" class="brand">
-    <img src="../../assets/img/logo.png" alt="ZY-Invest">
+  <a href="../index.html" class="brand">
+    <img src="../assets/img/logo.png" alt="ZY-Invest">
     <span class="bt"><b>ZY-Invest</b><span>Member Portal</span></span>
   </a>
   <nav class="nav-links">
@@ -136,12 +136,12 @@
       <span class="sb-ic"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
       <span class="sb-label">Watchlist</span>
     </a>
-    <a class="sb-item" href="instruments.html" data-page="instruments">
+    <a class="sb-item active" href="instruments.html" data-page="instruments">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
       <span class="sb-label">Instruments</span>
     </a>
     <div class="sb-spacer"></div>
-    <a class="sb-item logout" href="../../login.html" onclick="doLogout();return false;">
+    <a class="sb-item logout" href="../login.html" onclick="doLogout();return false;">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
       <span class="sb-label">Sign out</span>
     </a>
@@ -271,7 +271,7 @@
 <div class="lscreen" id="lscreen">
   <div style="background:#fff;border-radius:20px;padding:36px 40px;width:400px;max-width:calc(100vw - 32px);box-shadow:0 24px 60px rgba(0,0,0,.3)">
     <div style="text-align:center;margin-bottom:26px">
-      <img src="../../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
+      <img src="../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
       <div style="font-size:1.1rem;font-weight:700;color:var(--blue-dark)">ZY-Invest</div>
       <div style="font-size:.84rem;color:var(--fg-3);margin-top:3px">Member Portal · Sign in</div>
     </div>
@@ -285,50 +285,18 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../../assets/js/supabase-auth.js"></script>
-<script src="../../assets/js/member-api.js"></script>
-<script src="../../assets/js/member-portal.js"></script>
+<script src="../assets/js/supabase-auth.js"></script>
+<script src="../assets/js/member-api.js"></script>
+<script src="../assets/js/member-portal.js"></script>
 <script>
-var S = { page:'financialresults', period:'ytd', txf:'all' };
+var S = { page:'instruments', period:'ytd', txf:'all' };
 // [init removed for standalone page]
-
-// Deep-link support: ?tab=income|balance|cashflow|ratios (used by the
-// Fund Overview page's "Details →" links on each card).
-(function(){
-  var qs=new URLSearchParams(window.location.search);
-  var tab=qs.get('tab');
-  if(tab && ['income','balance','cashflow','ratios'].indexOf(tab)>=0){ window._frTab=tab; }
-})();
+window._csPage='instruments';
 
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
-  return Promise.allSettled([
-    (typeof mpLoadIncomeStatement==='function') ? mpLoadIncomeStatement() : Promise.resolve([]),
-    (typeof mpLoadBalanceSheet==='function') ? mpLoadBalanceSheet() : Promise.resolve([])
-  ]);
-}).then(function(results){
-  if(results[0].status==='fulfilled'){ INCOME_STATEMENT = results[0].value || []; INCOME_STATEMENT_ERROR = null; }
-  else { INCOME_STATEMENT = []; INCOME_STATEMENT_ERROR = (results[0].reason && results[0].reason.message) || 'Unknown error'; console.warn('Income statement load failed:', INCOME_STATEMENT_ERROR); }
-
-  if(results[1].status==='fulfilled'){ BALANCE_SHEET = results[1].value || []; BALANCE_SHEET_ERROR = null; }
-  else { BALANCE_SHEET = []; BALANCE_SHEET_ERROR = (results[1].reason && results[1].reason.message) || 'Unknown error'; console.warn('Balance sheet load failed:', BALANCE_SHEET_ERROR); }
-
-  // Cash Flow and Ratio Analysis are both derived from the two statements
-  // above, so they run after them — but don't depend on each other, so
-  // they load in parallel.
-  return Promise.allSettled([
-    (typeof mpLoadCashFlow==='function') ? mpLoadCashFlow(INCOME_STATEMENT, BALANCE_SHEET) : Promise.resolve([]),
-    (typeof mpLoadRatioAnalysis==='function') ? mpLoadRatioAnalysis(INCOME_STATEMENT, BALANCE_SHEET) : Promise.resolve([])
-  ]);
-}).then(function(results){
-  if(results[0].status==='fulfilled'){ CASH_FLOW = results[0].value || []; CASH_FLOW_ERROR = null; }
-  else { CASH_FLOW = []; CASH_FLOW_ERROR = (results[0].reason && results[0].reason.message) || 'Unknown error'; console.warn('Cash flow load failed:', CASH_FLOW_ERROR); }
-
-  if(results[1].status==='fulfilled'){ RATIO_ANALYSIS = results[1].value || []; RATIO_ANALYSIS_ERROR = null; }
-  else { RATIO_ANALYSIS = []; RATIO_ANALYSIS_ERROR = (results[1].reason && results[1].reason.message) || 'Unknown error'; console.warn('Ratio analysis load failed:', RATIO_ANALYSIS_ERROR); }
-}).finally(function(){
-  document.getElementById('mainContent').innerHTML=pgFinancialResults();renderNotifs();
+  window._csPage='instruments';document.getElementById('mainContent').innerHTML=pgComingSoon();renderNotifs();
 });
 </script>
 </body>

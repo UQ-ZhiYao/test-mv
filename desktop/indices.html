@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1565C0">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest">
-<title>Holdings — ZY-Invest</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<title>Indices — ZY-Invest</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/css/member-tokens.css">
-<link rel="stylesheet" href="../../assets/css/member-portal.css">
+<link rel="stylesheet" href="../assets/css/member-tokens.css">
+<link rel="stylesheet" href="../assets/css/member-portal.css">
 
 </head>
 <body>
 <!-- TOPNAV -->
 <header class="topnav" id="topnav">
-  <a href="../../index.html" class="brand">
-    <img src="../../assets/img/logo.png" alt="ZY-Invest">
+  <a href="../index.html" class="brand">
+    <img src="../assets/img/logo.png" alt="ZY-Invest">
     <span class="bt"><b>ZY-Invest</b><span>Member Portal</span></span>
   </a>
   <nav class="nav-links">
@@ -111,7 +111,7 @@
       <span class="sb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>
       <span class="sb-label">Dashboard</span>
     </a>
-    <a class="sb-item active" href="holdings.html" data-page="holdings">
+    <a class="sb-item" href="holdings.html" data-page="holdings">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12V3"/><path d="M12 12l7.5 5"/></svg></span>
       <span class="sb-label">Holdings</span>
     </a>
@@ -128,7 +128,7 @@
       <span class="sb-label">Statements</span>
     </a>
     <div class="sb-group">Markets</div>
-    <a class="sb-item" href="indices.html" data-page="indices">
+    <a class="sb-item active" href="indices.html" data-page="indices">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
       <span class="sb-label">Indices</span>
     </a>
@@ -141,7 +141,7 @@
       <span class="sb-label">Instruments</span>
     </a>
     <div class="sb-spacer"></div>
-    <a class="sb-item logout" href="../../login.html" onclick="doLogout();return false;">
+    <a class="sb-item logout" href="../login.html" onclick="doLogout();return false;">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
       <span class="sb-label">Sign out</span>
     </a>
@@ -271,7 +271,7 @@
 <div class="lscreen" id="lscreen">
   <div style="background:#fff;border-radius:20px;padding:36px 40px;width:400px;max-width:calc(100vw - 32px);box-shadow:0 24px 60px rgba(0,0,0,.3)">
     <div style="text-align:center;margin-bottom:26px">
-      <img src="../../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
+      <img src="../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
       <div style="font-size:1.1rem;font-weight:700;color:var(--blue-dark)">ZY-Invest</div>
       <div style="font-size:.84rem;color:var(--fg-3);margin-top:3px">Member Portal · Sign in</div>
     </div>
@@ -285,17 +285,18 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../../assets/js/supabase-auth.js"></script>
-<script src="../../assets/js/member-api.js"></script>
-<script src="../../assets/js/member-portal.js"></script>
+<script src="../assets/js/supabase-auth.js"></script>
+<script src="../assets/js/member-api.js"></script>
+<script src="../assets/js/member-portal.js"></script>
 <script>
-var S = { page:'holdings', period:'ytd', txf:'all' };
+var S = { page:'indices', period:'ytd', txf:'all' };
 // [init removed for standalone page]
+window._csPage='indices';
 
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
-  document.getElementById('mainContent').innerHTML=pgHoldings();renderNotifs();
+  window._csPage='indices';document.getElementById('mainContent').innerHTML=pgComingSoon();renderNotifs();
 });
 </script>
 </body>

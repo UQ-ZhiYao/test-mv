@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1565C0">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest">
-<title>Fund Overview — ZY-Invest</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<title>Account Settings — ZY-Invest</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/css/member-tokens.css">
-<link rel="stylesheet" href="../../assets/css/member-portal.css">
+<link rel="stylesheet" href="../assets/css/member-tokens.css">
+<link rel="stylesheet" href="../assets/css/member-portal.css">
 
 </head>
 <body>
 <!-- TOPNAV -->
 <header class="topnav" id="topnav">
-  <a href="../../index.html" class="brand">
-    <img src="../../assets/img/logo.png" alt="ZY-Invest">
+  <a href="../index.html" class="brand">
+    <img src="../assets/img/logo.png" alt="ZY-Invest">
     <span class="bt"><b>ZY-Invest</b><span>Member Portal</span></span>
   </a>
   <nav class="nav-links">
@@ -141,7 +141,7 @@
       <span class="sb-label">Instruments</span>
     </a>
     <div class="sb-spacer"></div>
-    <a class="sb-item logout" href="../../login.html" onclick="doLogout();return false;">
+    <a class="sb-item logout" href="../login.html" onclick="doLogout();return false;">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
       <span class="sb-label">Sign out</span>
     </a>
@@ -271,7 +271,7 @@
 <div class="lscreen" id="lscreen">
   <div style="background:#fff;border-radius:20px;padding:36px 40px;width:400px;max-width:calc(100vw - 32px);box-shadow:0 24px 60px rgba(0,0,0,.3)">
     <div style="text-align:center;margin-bottom:26px">
-      <img src="../../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
+      <img src="../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
       <div style="font-size:1.1rem;font-weight:700;color:var(--blue-dark)">ZY-Invest</div>
       <div style="font-size:.84rem;color:var(--fg-3);margin-top:3px">Member Portal · Sign in</div>
     </div>
@@ -285,56 +285,26 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../../assets/js/supabase-auth.js"></script>
-<script src="../../assets/js/member-api.js"></script>
-<script src="../../assets/js/member-portal.js"></script>
+<script src="../assets/js/supabase-auth.js"></script>
+<script src="../assets/js/member-api.js"></script>
+<script src="../assets/js/member-portal.js"></script>
 <script>
-var S = { page:'fundoverview', period:'ytd', txf:'all' };
+var S = { page:'profile', period:'ytd', txf:'all' };
 // [init removed for standalone page]
+
+// Deep-link support: ?tab=personal|security|nominee (used by the
+// Profile/Password/Nominee links in the user menu on every page).
+var _settingsTab='personal';
+(function(){
+  var qs=new URLSearchParams(window.location.search);
+  var tab=qs.get('tab');
+  if(tab && ['personal','security','nominee'].indexOf(tab)>=0){ _settingsTab=tab; }
+})();
 
 // Page init
 // Page init (waits for live Supabase data)
 loadLiveData().then(function(){
-  return Promise.allSettled([
-    (typeof mpLoadBalanceSheet==='function') ? mpLoadBalanceSheet() : Promise.resolve([]),
-    (typeof mpLoadInceptionDate==='function') ? mpLoadInceptionDate() : Promise.resolve(null),
-    (typeof mpLoadIncomeStatement==='function') ? mpLoadIncomeStatement() : Promise.resolve([]),
-    (typeof mpLoadNtaMonthly==='function') ? mpLoadNtaMonthly() : Promise.resolve([]),
-    (typeof mpLoadDistributionsByFy==='function') ? mpLoadDistributionsByFy() : Promise.resolve([])
-  ]);
-}).then(function(results){
-  BALANCE_SHEET = (results[0].status==='fulfilled') ? (results[0].value||[]) : [];
-  BALANCE_SHEET_ERROR = (results[0].status==='fulfilled') ? null : ((results[0].reason&&results[0].reason.message)||'Unknown error');
-  if(BALANCE_SHEET_ERROR) console.warn('Balance sheet load failed:', BALANCE_SHEET_ERROR);
-
-  INCEPTION_DATE = (results[1].status==='fulfilled') ? results[1].value : null;
-  if(results[1].status!=='fulfilled') console.warn('Inception date load failed:', results[1].reason && results[1].reason.message);
-
-  INCOME_STATEMENT = (results[2].status==='fulfilled') ? (results[2].value||[]) : [];
-  INCOME_STATEMENT_ERROR = (results[2].status==='fulfilled') ? null : ((results[2].reason&&results[2].reason.message)||'Unknown error');
-  if(INCOME_STATEMENT_ERROR) console.warn('Income statement load failed:', INCOME_STATEMENT_ERROR);
-
-  NTA_MONTHLY = (results[3].status==='fulfilled') ? (results[3].value||[]) : [];
-  NTA_MONTHLY_ERROR = (results[3].status==='fulfilled') ? null : ((results[3].reason&&results[3].reason.message)||'Unknown error');
-  if(NTA_MONTHLY_ERROR) console.warn('NTA monthly load failed:', NTA_MONTHLY_ERROR);
-
-  DIST_BY_FY = (results[4].status==='fulfilled') ? (results[4].value||[]) : [];
-  DIST_BY_FY_ERROR = (results[4].status==='fulfilled') ? null : ((results[4].reason&&results[4].reason.message)||'Unknown error');
-  if(DIST_BY_FY_ERROR) console.warn('Distribution breakdown load failed:', DIST_BY_FY_ERROR);
-
-  // Ratio Analysis (drives Cash Reserve Ratio + Distribution History's
-  // dividend yield) needs INCOME_STATEMENT/BALANCE_SHEET already resolved
-  // above, so it's chained as its own step rather than run in parallel.
-  return (typeof mpLoadRatioAnalysis==='function') ? mpLoadRatioAnalysis(INCOME_STATEMENT, BALANCE_SHEET) : Promise.resolve([]);
-}).then(function(ratios){
-  RATIO_ANALYSIS = ratios || [];
-  RATIO_ANALYSIS_ERROR = null;
-}).catch(function(e){
-  RATIO_ANALYSIS = [];
-  RATIO_ANALYSIS_ERROR = (e && e.message) || 'Unknown error';
-  console.warn('Ratio analysis load failed (fund overview):', RATIO_ANALYSIS_ERROR);
-}).finally(function(){
-  document.getElementById('mainContent').innerHTML=pgFundOverview();renderNotifs();
+  document.getElementById('mainContent').innerHTML=pgSettings(_settingsTab);renderNotifs();
 });
 </script>
 </body>

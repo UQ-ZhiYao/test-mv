@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1565C0">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="./manifest.webmanifest">
-<title>Shareholder List — ZY-Invest</title>
+<link rel="manifest" href="../manifest.webmanifest">
+<title>Fund Comparison — ZY-Invest</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../assets/css/member-tokens.css">
-<link rel="stylesheet" href="../../assets/css/member-portal.css">
+<link rel="stylesheet" href="../assets/css/member-tokens.css">
+<link rel="stylesheet" href="../assets/css/member-portal.css">
 
 </head>
 <body>
 <!-- TOPNAV -->
 <header class="topnav" id="topnav">
-  <a href="../../index.html" class="brand">
-    <img src="../../assets/img/logo.png" alt="ZY-Invest">
+  <a href="../index.html" class="brand">
+    <img src="../assets/img/logo.png" alt="ZY-Invest">
     <span class="bt"><b>ZY-Invest</b><span>Member Portal</span></span>
   </a>
   <nav class="nav-links">
@@ -141,7 +141,7 @@
       <span class="sb-label">Instruments</span>
     </a>
     <div class="sb-spacer"></div>
-    <a class="sb-item logout" href="../../login.html" onclick="doLogout();return false;">
+    <a class="sb-item logout" href="../login.html" onclick="doLogout();return false;">
       <span class="sb-ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
       <span class="sb-label">Sign out</span>
     </a>
@@ -271,7 +271,7 @@
 <div class="lscreen" id="lscreen">
   <div style="background:#fff;border-radius:20px;padding:36px 40px;width:400px;max-width:calc(100vw - 32px);box-shadow:0 24px 60px rgba(0,0,0,.3)">
     <div style="text-align:center;margin-bottom:26px">
-      <img src="../../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
+      <img src="../assets/img/logo.png" style="height:36px;margin:0 auto 12px">
       <div style="font-size:1.1rem;font-weight:700;color:var(--blue-dark)">ZY-Invest</div>
       <div style="font-size:.84rem;color:var(--fg-3);margin-top:3px">Member Portal · Sign in</div>
     </div>
@@ -285,26 +285,44 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../../assets/js/supabase-auth.js"></script>
-<script src="../../assets/js/member-api.js"></script>
-<script src="../../assets/js/member-portal.js"></script>
+<script src="../assets/js/supabase-auth.js"></script>
+<script src="../assets/js/member-api.js"></script>
+<script src="../assets/js/member-portal.js"></script>
 <script>
-var S = { page:'shareholders', period:'ytd', txf:'all' };
+var S = { page:'comparison', period:'ytd', txf:'all' };
 // [init removed for standalone page]
 
 // Page init
-// Page init (waits for live Supabase data)
+// Page init (waits for live Supabase + Yahoo Finance data)
 loadLiveData().then(function(){
-  return (typeof mpLoadShareholdersByFy==='function') ? mpLoadShareholdersByFy() : Promise.resolve([]);
-}).then(function(byFy){
-  SHAREHOLDERS_BY_FY = byFy || [];
-  SHAREHOLDERS_BY_FY_ERROR = null;
+  return Promise.allSettled([
+    (typeof mpLoadNtaWeekly==='function') ? mpLoadNtaWeekly() : Promise.resolve([]),
+    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^KLSE') : Promise.resolve([]),
+    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^GSPC') : Promise.resolve([]),
+    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('MSCI') : Promise.resolve([]),
+    (typeof mpLoadInceptionDate==='function') ? mpLoadInceptionDate() : Promise.resolve(null),
+    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^STI') : Promise.resolve([]),
+    (typeof mpLoadYahooWeekly==='function') ? mpLoadYahooWeekly('^IXIC') : Promise.resolve([])
+  ]);
+}).then(function(results){
+  var fund = (results[0].status==='fulfilled') ? (results[0].value||[]) : [];
+  var klci = (results[1].status==='fulfilled') ? (results[1].value||[]) : [];
+  var sp   = (results[2].status==='fulfilled') ? (results[2].value||[]) : [];
+  var msci = (results[3].status==='fulfilled') ? (results[3].value||[]) : [];
+  var inception = (results[4].status==='fulfilled') ? results[4].value : null;
+  var sti = (results[5].status==='fulfilled') ? (results[5].value||[]) : [];
+  var nasdaq = (results[6].status==='fulfilled') ? (results[6].value||[]) : [];
+  results.forEach(function(r,i){
+    if(r.status!=='fulfilled') console.warn('Comparison data source '+i+' failed:', r.reason && r.reason.message);
+  });
+  COMPARISON_DATA = { fund:fund, klci:klci, sp:sp, msci:msci, inception:inception, sti:sti, nasdaq:nasdaq };
+  COMPARISON_ERROR = fund.length ? null : 'Fund NTA history unavailable';
 }).catch(function(e){
-  SHAREHOLDERS_BY_FY = [];
-  SHAREHOLDERS_BY_FY_ERROR = (e && e.message) || 'Unknown error';
-  console.warn('Shareholders by FY load failed:', SHAREHOLDERS_BY_FY_ERROR);
+  COMPARISON_DATA = null;
+  COMPARISON_ERROR = (e && e.message) || 'Unknown error';
+  console.warn('Comparison page data load failed:', COMPARISON_ERROR);
 }).finally(function(){
-  document.getElementById('mainContent').innerHTML=pgShareholders();renderNotifs();
+  document.getElementById('mainContent').innerHTML=pgComparison();renderNotifs();
 });
 </script>
 </body>

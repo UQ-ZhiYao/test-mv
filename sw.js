@@ -1,6 +1,6 @@
 /* ZY-Invest — root service worker */
 const CACHE = 'zy-v1';
-const SHELL = ['/', 'login.html', 'members/desktop/dashboard.html', 'manifest.webmanifest',
+const SHELL = ['/', 'index.html', 'login.html', 'desktop/dashboard.html', 'phone/login.html', 'manifest.webmanifest',
   'assets/css/site.css', 'assets/js/site.js', 'assets/js/supabase-auth.js',
   'assets/js/api.js', 'assets/js/member-api.js',
   'assets/img/logo.png', 'assets/img/icon-192.png', 'assets/img/icon-512.png'];
