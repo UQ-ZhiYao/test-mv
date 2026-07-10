@@ -26,6 +26,7 @@ function applyProfileToUI(){
   document.querySelectorAll('.prof-email').forEach(function(el){el.textContent=email;});
   document.querySelectorAll('.prof-av-lg,.avatar-sm').forEach(function(el){el.textContent=initials;});
   document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent='Verified Investor · '+(P.investor_id||'—');});
+  if(typeof updatePinDisplay==='function') updatePinDisplay();
 }
 
 // ── ACCOUNT SUMMARY (real data) ─────────────────────────────────────────────
@@ -232,6 +233,7 @@ function switchTab(tab){
   if(tab==='watchlist'){renderWatchlist();}
   if(tab==='transaction'){renderTxList();}
   if(tab==='distribution'){renderDxList();}
+  if(tab==='password'){updatePinDisplay();}
   if(tab==='assetdetails'){setTimeout(function(){drawAdDonut();drawAdTrend(adPeriod);},50);}
   if(tab==='portfolio'){setTimeout(drawSparkline,50);}
   if(tab==='profile')setTimeout(function(){adjustProfileSpacer();},50);
@@ -341,6 +343,57 @@ async function savePw(){
   }finally{
     if(btn){btn.disabled=false;btn.textContent=origTxt;}
   }
+}
+
+// ── PIN MODAL ────────────────────────────────────────────────────────────────
+// PIN is stored on profiles.pin — used to gate revealing details on the
+// Personal Profile page. Single-step (no "verify current PIN" required
+// first) since it's a supplementary quick-unlock, not the primary
+// account credential the way the login password is.
+function openPinModal(){
+  document.getElementById('pinNew').value='';
+  document.getElementById('pinConfirm').value='';
+  document.getElementById('pinMatchErr').style.display='none';
+  document.getElementById('pinScrim').style.display='block';
+  document.getElementById('pinModal').style.display='block';
+  setTimeout(function(){document.getElementById('pinNew').focus();},100);
+}
+function closePinModal(){
+  document.getElementById('pinScrim').style.display='none';
+  document.getElementById('pinModal').style.display='none';
+}
+async function savePin(){
+  var n=document.getElementById('pinNew').value.trim();
+  var c=document.getElementById('pinConfirm').value.trim();
+  var errEl=document.getElementById('pinMatchErr');
+  var btn=event&&event.target;
+  errEl.style.display='none';
+  if(!/^\d{6}$/.test(n)){
+    errEl.textContent='PIN must be exactly 6 digits.'; errEl.style.display='block'; return;
+  }
+  if(n!==c){
+    errEl.textContent='PINs do not match.'; errEl.style.display='block'; return;
+  }
+  if(typeof mpSaveProfile!=='function'||!AUTH_USER){ showToastM('PIN service unavailable'); return; }
+  var origTxt=btn&&btn.textContent;
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    await mpSaveProfile(AUTH_USER.id,{pin:n});
+    if(PROFILE) PROFILE.pin=n;
+    updatePinDisplay();
+    closePinModal();
+    showToastM('PIN updated successfully');
+  }catch(e){
+    errEl.textContent='Update failed: '+(e&&e.message||'Unknown error — confirm the "pin" column exists on profiles.');
+    errEl.style.display='block';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=origTxt;}
+  }
+}
+function updatePinDisplay(){
+  var el=document.getElementById('pinDisplayVal');
+  if(!el) return;
+  el.textContent=(PROFILE&&PROFILE.pin)?'••••••':'Not set';
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
