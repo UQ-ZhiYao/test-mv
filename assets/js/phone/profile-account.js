@@ -158,6 +158,7 @@ function renderAccountSummary(){
 }
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 var activeTab='portfolio';
+var lastMainTab='portfolio';
 var DRILL_PAGES={
   password:{title:'Password & Security',back:'profile'},
   transaction:{title:'Transaction',back:'all'},
@@ -166,13 +167,21 @@ var DRILL_PAGES={
 };
 function topbarBackClick(){
   var d=DRILL_PAGES[activeTab];
-  switchTab(d?d.back:'portfolio');
+  if(!d){ switchTab('portfolio'); return; }
+  // Password & Security can be opened from more than one place (Me page or
+  // All Services) — its back destination follows wherever it was actually
+  // opened from, rather than a single hardcoded tab. Other drill pages only
+  // have one real entry point, so their fixed "back" is left as-is.
+  var dest=(activeTab==='password')?lastMainTab:d.back;
+  switchTab(dest);
 }
 function updateTopbarChrome(tab){
   var d=DRILL_PAGES[tab];
   var logo=document.getElementById('topbarLogo');
   var back=document.getElementById('topbarBack');
   var bar=document.getElementById('mainTopbar');
+  var fundCompact=document.getElementById('topbarFundCompact');
+  if(fundCompact && tab!=='fund') fundCompact.style.display='none';
   if(d){
     if(logo)logo.style.display='none';
     if(back){back.style.display='flex';document.getElementById('topbarBackTitle').textContent=d.title;}
@@ -182,7 +191,8 @@ function updateTopbarChrome(tab){
   }
   // No divider line under the topbar on the Accounts page or its Asset
   // Details drill-in — every other page keeps the usual border.
-  if(bar) bar.style.borderBottom=(tab==='portfolio'||tab==='assetdetails')?'none':'1px solid var(--border)';
+  var noBorderTabs=['portfolio','assetdetails','fund','market','watchlist','discover','all'];
+  if(bar) bar.style.borderBottom=(noBorderTabs.indexOf(tab)>=0)?'none':'1px solid var(--border)';
 }
 function switchFundTab(tab){
   document.querySelectorAll('.ftab').forEach(function(b){b.classList.remove('active');});
@@ -211,6 +221,7 @@ function switchTab(tab){
     return;
   }
   pendingTab=null;
+  if(!DRILL_PAGES[activeTab]) lastMainTab=activeTab;
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   if(tabEl) tabEl.classList.add('active');
@@ -233,7 +244,30 @@ function switchTab(tab){
       } else if(n>0){setTimeout(function(){tryInitFundCharts(n-1);},120);}
     }
     setTimeout(function(){tryInitFundCharts(10);},80);
+    initFundScrollHeader();
   }
+}
+
+// ── FUND PAGE: scroll-collapsing header ─────────────────────────────────────
+// Past a threshold, the topbar swaps from the normal logo to a compact
+// Title + Price/Change subline — only active while on the Fund tab.
+var fundScrollAttached=false;
+function initFundScrollHeader(){
+  if(fundScrollAttached) return;
+  var el=document.getElementById('mainScroll');
+  if(!el) return;
+  fundScrollAttached=true;
+  el.addEventListener('scroll',handleFundTopbarScroll);
+}
+function handleFundTopbarScroll(){
+  if(activeTab!=='fund') return;
+  var compact=document.getElementById('topbarFundCompact');
+  var logo=document.getElementById('topbarLogo');
+  if(!compact||!logo) return;
+  var scrollEl=document.getElementById('mainScroll');
+  var scrolled=scrollEl && scrollEl.scrollTop>70;
+  compact.style.display=scrolled?'flex':'none';
+  logo.style.display=scrolled?'none':'flex';
 }
 
 // ── PASSWORD MODAL ──────────────────────────────────────────────────────────

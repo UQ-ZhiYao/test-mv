@@ -11,6 +11,8 @@ function updateFundSummaryHeader(){
   if(arrow){ arrow.innerHTML=up?'<polygon points="6,0 12,10 0,10" fill="var(--green)"/>':'<polygon points="0,0 12,0 6,10" fill="var(--red)"/>'; }
   var chEl=document.getElementById('fsChange');
   if(chEl){ chEl.textContent=(up?'+':'')+chg.toFixed(4)+' \u00a0'+(up?'+':'')+chgPct.toFixed(2)+'%'; chEl.style.color=up?'var(--green)':'var(--red)'; }
+  var tfcSub=document.getElementById('tfcSub');
+  if(tfcSub){ tfcSub.textContent=last.nta.toFixed(4)+' \u00a0'+(up?'+':'')+chg.toFixed(4)+' ('+(up?'+':'')+chgPct.toFixed(2)+'%)'; tfcSub.style.color=up?'var(--green)':'var(--red)'; }
   var updEl=document.getElementById('fsUpdated');
   if(updEl){ updEl.textContent='Updated '+new Date(last.date+'T00:00:00').toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'}); }
 
