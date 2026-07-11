@@ -561,6 +561,7 @@ function applyEyeVisibility(){
 // so the app can't just be reopened by anyone holding the device. New users
 // with no PIN yet are forced to set one before they can proceed at all.
 var appLockInitialCheckDone=false;
+var appLockEverBackgrounded=false;
 
 function checkAppLockOnLoad(){
   ['appLockVerifyBoxes','appLockNewBoxes','appLockConfirmBoxes'].forEach(setupPinBoxes);
@@ -586,13 +587,19 @@ function checkAppLockOnLoad(){
   // focus" signal means the overlay is already active and blocking the
   // screen by the time the user returns, regardless of which signal (if
   // any) fires on resume. showAppLock() is safe to call repeatedly.
-  document.addEventListener('visibilitychange',function(){ if(document.hidden) showAppLock(); });
-  window.addEventListener('pagehide',function(){ showAppLock(); });
-  window.addEventListener('blur',function(){ showAppLock(); });
-  // Also re-check on resume/restore signals, as a second layer — harmless
-  // if the lock is already showing (showAppLock() is idempotent).
-  window.addEventListener('pageshow',function(){ showAppLock(); });
-  window.addEventListener('focus',function(){ if(document.hidden===false) showAppLock(); });
+  function markBackgroundedThenLock(){ appLockEverBackgrounded=true; showAppLock(); }
+  document.addEventListener('visibilitychange',function(){ if(document.hidden) markBackgroundedThenLock(); });
+  window.addEventListener('pagehide',markBackgroundedThenLock);
+  window.addEventListener('blur',markBackgroundedThenLock);
+  // Second layer, for the resume trip back in — but pageshow/focus can BOTH
+  // also fire on a plain fresh page load (not just a genuine resume from
+  // background), which was the actual bug: it fired right after login and
+  // showed the PIN prompt anyway, ignoring the just-logged-in skip. Gating
+  // these on "we've actually seen the app go to background at least once"
+  // means they can never fire as a false positive on a fresh load — only
+  // once a real backgrounding has genuinely happened first.
+  window.addEventListener('pageshow',function(){ if(appLockEverBackgrounded) showAppLock(); });
+  window.addEventListener('focus',function(){ if(appLockEverBackgrounded && document.hidden===false) showAppLock(); });
 }
 
 function showAppLock(){
