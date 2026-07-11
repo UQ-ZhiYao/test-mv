@@ -1,6 +1,12 @@
 /* ===== assets/js/phone/profile-account.js — Profile/account data loading, capital-injection summary rendering ===== */
 // ── PROFILE DATA (real, from Supabase) ─────────────────────────────────────
 var PROFILE=null, AUTH_USER=null;
+// True while the account is pending approval or suspended — gates sensitive
+// fund figures (Market Value/Total Shares header + the Results/Portfolio/
+// Shareholder tabs) on the Fund page. See applyFundRestriction() below and
+// its call sites in assets/js/phone/financial-charts-1.js and
+// assets/js/phone/markets-actions.js.
+var ACCOUNT_RESTRICTED=false;
 function mpInitialsPhone(name){
   if(!name) return '—';
   var parts=String(name).trim().split(/\s+/);
@@ -31,6 +37,8 @@ function applyProfileToUI(){
   document.querySelectorAll('.prof-av-lg,.avatar-sm').forEach(function(el){el.textContent=initials;});
   document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent='Verified Investor · '+(P.investor_id||'—');});
   if(typeof updatePinDisplay==='function') updatePinDisplay();
+  ACCOUNT_RESTRICTED=(P.status==='pending'||P.status==='suspended');
+  if(typeof applyFundRestriction==='function') applyFundRestriction();
 }
 
 // ── ACCOUNT SUMMARY (real data) ─────────────────────────────────────────────

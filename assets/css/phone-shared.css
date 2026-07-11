@@ -171,3 +171,18 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 /* Standalone page wrapper */
 .standalone-shell{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;background:#fff;box-shadow:0 0 40px rgba(0,0,0,.12);}
 .page{display:block !important;padding:0 0 16px;}
+
+/* Restricted-account tab lock (pending/suspended accounts — Fund page's
+   Results/Portfolio/Shareholder tabs). The outer element covers the FULL
+   (possibly very tall) tab content with a blurred backdrop so nothing in it
+   is readable at any scroll position; the inner message is sticky so it
+   stays near the top of the viewport as the user scrolls through that
+   blurred region, instead of sitting centered in the middle of a
+   1000px+-tall container where it would start off-screen. */
+.fund-tab-lock{position:absolute;inset:0;z-index:5;display:none;background:rgba(255,255,255,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.fund-tab-lock.show{display:block;}
+.fund-tab-lock-inner{position:sticky;top:32px;display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 28px;}
+.fund-tab-lock-icon{width:44px;height:44px;border-radius:50%;background:var(--gray-100);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.fund-tab-lock-icon svg{width:20px;height:20px;stroke:var(--fg-3);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.fund-tab-lock-title{font-size:.9rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;}
+.fund-tab-lock-sub{font-size:.78rem;color:var(--fg-3);line-height:1.5;max-width:240px;}

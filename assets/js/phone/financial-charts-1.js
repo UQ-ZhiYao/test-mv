@@ -64,7 +64,11 @@ function updateFundMarketValue(){
   var lastNta=FUND_NTA_DAILY.length?FUND_NTA_DAILY[FUND_NTA_DAILY.length-1].nta:0;
   var outstandingShares=(IS.length?IS[IS.length-1].outstandingShares:0)||0;
   var marketCap=outstandingShares*lastNta;
-  if(mvEl) mvEl.textContent=fmtCompactM(marketCap);
+  if(mvEl){ mvEl.setAttribute('data-real', fmtCompactM(marketCap)); mvEl.textContent=(typeof ACCOUNT_RESTRICTED!=='undefined'&&ACCOUNT_RESTRICTED)?'••••••':fmtCompactM(marketCap); }
+  // foFundSize/poMarketCap intentionally left unmasked: foFundSize lives on
+  // the Fund page's own "Profile" tab, which is excluded from restriction,
+  // and poMarketCap lives inside the Portfolio tab, which gets the full
+  // blur+lock overlay via applyFundRestriction() instead.
   var fundSizeEl=document.getElementById('foFundSize');
   if(fundSizeEl) fundSizeEl.textContent='RM '+fmtCompactM(marketCap);
   var poEl=document.getElementById('poMarketCap');
@@ -82,7 +86,8 @@ function applySharesAndDividend(){
   if(IS.length){
     var lastIS=IS[IS.length-1];
     var sharesTxt=fmtCompactM(lastIS.outstandingShares||0).replace(/\.00 M/,' M');
-    if(sharesEl) sharesEl.textContent=sharesTxt;
+    if(sharesEl){ sharesEl.setAttribute('data-real', sharesTxt); sharesEl.textContent=(typeof ACCOUNT_RESTRICTED!=='undefined'&&ACCOUNT_RESTRICTED)?'••••••':sharesTxt; }
+    // foIssuedUnits lives on the excluded "Profile" tab — left unmasked, see note in updateFundMarketValue().
     if(issuedEl) issuedEl.textContent=sharesTxt+' units';
   }
   if(typeof mpLoadDistributionsByFy==='function'){
@@ -97,6 +102,27 @@ function applySharesAndDividend(){
       }
     }).catch(function(){});
   }
+}
+
+// Re-applies the Market Value/Total Shares header mask and the Results/
+// Portfolio/Shareholder tab-lock overlays for the current ACCOUNT_RESTRICTED
+// state. Called whenever profile data (re)loads (assets/js/phone/
+// profile-account.js's applyProfileToUI()) and whenever the Fund page's
+// header re-renders, so it's correct regardless of whether profile data or
+// fund data finishes loading first.
+var FUND_LOCK_TABS=['results','portfolio','shareholder'];
+function applyFundRestriction(){
+  var restricted=(typeof ACCOUNT_RESTRICTED!=='undefined'&&ACCOUNT_RESTRICTED);
+  ['fsMarketValue','fsShares'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    var real=el.getAttribute('data-real');
+    if(real!=null) el.textContent=restricted?'••••••':real;
+  });
+  FUND_LOCK_TABS.forEach(function(tab){
+    var lockEl=document.getElementById('ftab-'+tab+'-lock');
+    if(lockEl) lockEl.classList.toggle('show', restricted);
+  });
 }
 
 var activeCPeriod='ytd';
