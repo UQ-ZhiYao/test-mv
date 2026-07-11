@@ -24,9 +24,25 @@ async function zySignUp({ name, email, password }) {
   var r = await sb.auth.signUp({ email:email, password:password, options:{ data:{ full_name:name }, emailRedirectTo:zyVerifyRedirect() } });
   if (r.error) throw r.error;
   try{ localStorage.setItem('zy_pending_email', email); }catch(e){}
-  // Write email into the profiles row so admin can see it without joining auth.users
+  // Write email into the profiles row so admin can see it without joining
+  // auth.users. This depends on a DB trigger having already created the
+  // profiles row for this new user — normally synchronous (fires within
+  // the same signup transaction), but retried once with a short delay in
+  // case of any timing gap, and logged (not silently swallowed) if it
+  // still fails, so a broken write is actually visible instead of just
+  // quietly not happening.
   if (r.data && r.data.user) {
-    await sb.from('profiles').update({ email: email }).eq('id', r.data.user.id);
+    var writeEmail=async function(){
+      var res=await sb.from('profiles').update({ email: email }).eq('id', r.data.user.id).select();
+      return res;
+    };
+    var res1=await writeEmail();
+    if (res1.error || !res1.data || !res1.data.length) {
+      await new Promise(function(res){ setTimeout(res,800); });
+      var res2=await writeEmail();
+      if (res2.error) console.warn('[zySignUp] Failed to write email to profiles:', res2.error.message);
+      else if (!res2.data || !res2.data.length) console.warn('[zySignUp] Email write to profiles affected 0 rows — profiles row may not exist for this user yet.');
+    }
   }
   return { needsVerification: !r.data.session, email:email, session:r.data.session };
 }
@@ -36,11 +52,25 @@ async function zyVerifyFromUrl() {
   var hashErr=q.get('error_description')||hash.get('error_description');
   if (hashErr) return { status:'error', message:hashErr };
   if (ZY_DEMO || !sb) { await new Promise(function(r){ setTimeout(r,1100); }); if(token_hash||hashAccess||q.get('demo')==='ok') return {status:'success',demo:true}; return {status:'pending',demo:true}; }
-  if (hashAccess) { var s=await sb.auth.getSession(); return s.data.session?{status:'success'}:{status:'error',message:'No active session'}; }
+  if (hashAccess) {
+    var s=await sb.auth.getSession();
+    if (!s.data.session) return {status:'error',message:'No active session'};
+    await zyWriteEmailToProfile(s.data.session.user);
+    return {status:'success'};
+  }
   if (!token_hash) return { status:'pending' };
   var v=await sb.auth.verifyOtp({ token_hash:token_hash, type:type });
   if (v.error) return { status:/expired/i.test(v.error.message)?'expired':'error', message:v.error.message };
+  // A real session now exists (verifyOtp signs the user in), so this write
+  // can actually pass RLS — the same write attempted at signUp() time
+  // fails silently there since no session/auth.uid() exists that early.
+  if (v.data && v.data.user) await zyWriteEmailToProfile(v.data.user);
   return { status:'success' };
+}
+async function zyWriteEmailToProfile(user) {
+  if (!user || !user.email) return;
+  try { await sb.from('profiles').update({ email: user.email }).eq('id', user.id); }
+  catch(e) { console.warn('[Auth] Could not write email to profile:', e.message); }
 }
 async function zyResend(email) {
   if (ZY_DEMO || !sb) { await new Promise(function(r){ setTimeout(r,600); }); return { demo:true }; }
