@@ -561,19 +561,38 @@ function applyEyeVisibility(){
 // so the app can't just be reopened by anyone holding the device. New users
 // with no PIN yet are forced to set one before they can proceed at all.
 var appLockInitialCheckDone=false;
-var appLockWasHidden=false;
 
 function checkAppLockOnLoad(){
   ['appLockVerifyBoxes','appLockNewBoxes','appLockConfirmBoxes'].forEach(setupPinBoxes);
-  showAppLock();
-  document.addEventListener('visibilitychange',function(){
-    if(document.hidden){
-      appLockWasHidden=true;
-    } else if(appLockWasHidden){
-      appLockWasHidden=false;
-      showAppLock();
+  var justLoggedIn=false;
+  try{
+    if(sessionStorage.getItem('zy_just_logged_in')==='1'){
+      justLoggedIn=true;
+      sessionStorage.removeItem('zy_just_logged_in'); // one-time only
     }
-  });
+  }catch(e){}
+  // Skip the immediate PIN prompt only for this very first load right after
+  // a genuine password login — asking again seconds later is redundant.
+  // Every subsequent open/resume still locks normally (the flag above is
+  // single-use, and it's stored in sessionStorage, not localStorage, so a
+  // real new session — e.g. reopening after fully quitting the browser —
+  // won't carry it over anyway).
+  if(!justLoggedIn) showAppLock();
+  // Lock the INSTANT the app might be losing focus — not after detecting a
+  // "return" event. Waiting to detect resume is fragile: if iOS suspends or
+  // fully kills the backgrounded page (very common for PWAs to save
+  // memory/battery), that resume event can simply never fire, and the app
+  // would silently stay unlocked. Locking proactively on every "losing
+  // focus" signal means the overlay is already active and blocking the
+  // screen by the time the user returns, regardless of which signal (if
+  // any) fires on resume. showAppLock() is safe to call repeatedly.
+  document.addEventListener('visibilitychange',function(){ if(document.hidden) showAppLock(); });
+  window.addEventListener('pagehide',function(){ showAppLock(); });
+  window.addEventListener('blur',function(){ showAppLock(); });
+  // Also re-check on resume/restore signals, as a second layer — harmless
+  // if the lock is already showing (showAppLock() is idempotent).
+  window.addEventListener('pageshow',function(){ showAppLock(); });
+  window.addEventListener('focus',function(){ if(document.hidden===false) showAppLock(); });
 }
 
 function showAppLock(){
