@@ -656,7 +656,7 @@ function checkAppLockOnLoad(){
   // single-use, and it's stored in sessionStorage, not localStorage, so a
   // real new session — e.g. reopening after fully quitting the browser —
   // won't carry it over anyway).
-  if(!justLoggedIn) showAppLock();
+  if(!justLoggedIn) verifySessionThenLock();
   // Lock the INSTANT the app is actually backgrounded — not after detecting
   // a "return" event. Waiting to detect resume is fragile: if iOS suspends
   // or fully kills the backgrounded page (very common for PWAs to save
@@ -673,7 +673,7 @@ function checkAppLockOnLoad(){
   // it too, which was locking the app in the middle of ordinary in-app
   // interactions that never actually left the page. visibilitychange only
   // flips when the tab/app itself is genuinely hidden.
-  function markBackgroundedThenLock(){ appLockEverBackgrounded=true; showAppLock(); }
+  function markBackgroundedThenLock(){ appLockEverBackgrounded=true; verifySessionThenLock(); }
   document.addEventListener('visibilitychange',function(){ if(document.hidden) markBackgroundedThenLock(); });
   window.addEventListener('pagehide',markBackgroundedThenLock);
   // Second layer, for the resume trip back in — but pageshow/focus can BOTH
@@ -683,8 +683,23 @@ function checkAppLockOnLoad(){
   // these on "we've actually seen the app go to background at least once"
   // means they can never fire as a false positive on a fresh load — only
   // once a real backgrounding has genuinely happened first.
-  window.addEventListener('pageshow',function(){ if(appLockEverBackgrounded) showAppLock(); });
-  window.addEventListener('focus',function(){ if(appLockEverBackgrounded && document.hidden===false) showAppLock(); });
+  window.addEventListener('pageshow',function(){ if(appLockEverBackgrounded) verifySessionThenLock(); });
+  window.addEventListener('focus',function(){ if(appLockEverBackgrounded && document.hidden===false) verifySessionThenLock(); });
+}
+
+// Resuming the app shouldn't demand a PIN if the real Supabase session is
+// already gone (expired, revoked, or signed out elsewhere) — that just ends
+// with the user solving a PIN puzzle for nothing before being bounced to
+// login anyway. Check the real session first; only show the lock screen if
+// it's still valid, otherwise go straight to login.
+function verifySessionThenLock(){
+  try{
+    if(typeof sb==='undefined'||!sb){ showAppLock(); return; }
+    sb.auth.getSession().then(function(s){
+      if(s&&s.data&&s.data.session){ showAppLock(); }
+      else { window.location.href='login.html'; }
+    }).catch(function(){ showAppLock(); });
+  }catch(e){ showAppLock(); }
 }
 
 function showAppLock(){
