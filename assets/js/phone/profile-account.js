@@ -16,6 +16,10 @@ async function loadProfileData(){
     PROFILE=await mpLoadProfile(user.id);
   }catch(e){ console.warn('Profile load failed:', e.message); PROFILE=PROFILE||{}; }
   applyProfileToUI();
+  if(!appLockInitialCheckDone){
+    appLockInitialCheckDone=true;
+    if(typeof checkAppLockOnLoad==='function') checkAppLockOnLoad();
+  }
 }
 function applyProfileToUI(){
   var P=PROFILE||{};
@@ -548,4 +552,101 @@ function applyEyeVisibility(){
     var real=el.getAttribute('data-real');
     el.textContent=portfolioVisible?(real!=null?real:el.textContent):mask;
   });
+}
+
+// ── APP LOCK ─────────────────────────────────────────────────────────────────
+// Requires the PIN every time the app is opened or resumed from the
+// background — the underlying Supabase session is left alone (still
+// persisted, per persistSession:true), this is purely a local re-entry gate
+// so the app can't just be reopened by anyone holding the device. New users
+// with no PIN yet are forced to set one before they can proceed at all.
+var appLockInitialCheckDone=false;
+var appLockWasHidden=false;
+
+function checkAppLockOnLoad(){
+  ['appLockVerifyBoxes','appLockNewBoxes','appLockConfirmBoxes'].forEach(setupPinBoxes);
+  showAppLock();
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden){
+      appLockWasHidden=true;
+    } else if(appLockWasHidden){
+      appLockWasHidden=false;
+      showAppLock();
+    }
+  });
+}
+
+function showAppLock(){
+  var overlay=document.getElementById('appLockOverlay');
+  if(!overlay) return;
+  var hasPin=!!(PROFILE && PROFILE.pin);
+  overlay.style.display='flex';
+  var verifyEl=document.getElementById('appLockVerify'), setEl=document.getElementById('appLockSet');
+  var title=document.getElementById('appLockTitle'), sub=document.getElementById('appLockSub');
+  if(hasPin){
+    verifyEl.style.display='block'; setEl.style.display='none';
+    title.textContent='Enter PIN';
+    sub.textContent='Enter your 6-digit PIN to continue.';
+    clearPinBoxes('appLockVerifyBoxes');
+    document.getElementById('appLockVerifyErr').style.display='none';
+    setTimeout(function(){ focusFirstPinBox('appLockVerifyBoxes'); },150);
+  } else {
+    verifyEl.style.display='none'; setEl.style.display='block';
+    title.textContent='Set Up App Lock';
+    sub.textContent='For your security, please set a 6-digit PIN to protect this app. You\u2019ll need it every time you reopen the app.';
+    clearPinBoxes('appLockNewBoxes'); clearPinBoxes('appLockConfirmBoxes');
+    document.getElementById('appLockSetErr').style.display='none';
+    setTimeout(function(){ focusFirstPinBox('appLockNewBoxes'); },150);
+  }
+}
+function hideAppLock(){
+  var overlay=document.getElementById('appLockOverlay');
+  if(overlay) overlay.style.display='none';
+}
+function appLockVerifySubmit(){
+  var entered=getPinBoxesValue('appLockVerifyBoxes');
+  var errEl=document.getElementById('appLockVerifyErr');
+  if(!/^\d{6}$/.test(entered)){
+    errEl.textContent='Please enter your 6-digit PIN.'; errEl.style.display='block';
+    return;
+  }
+  if(entered!==String(PROFILE&&PROFILE.pin)){
+    errEl.textContent='Incorrect PIN. Please try again.'; errEl.style.display='block';
+    clearPinBoxes('appLockVerifyBoxes'); focusFirstPinBox('appLockVerifyBoxes');
+    return;
+  }
+  hideAppLock();
+}
+async function appLockSetSubmit(){
+  var n=getPinBoxesValue('appLockNewBoxes');
+  var c=getPinBoxesValue('appLockConfirmBoxes');
+  var errEl=document.getElementById('appLockSetErr');
+  var btn=event&&event.target;
+  errEl.style.display='none';
+  if(!/^\d{6}$/.test(n)){
+    errEl.textContent='PIN must be exactly 6 digits.'; errEl.style.display='block'; return;
+  }
+  if(n!==c){
+    errEl.textContent='PINs do not match.'; errEl.style.display='block'; return;
+  }
+  if(typeof mpSaveProfile!=='function'||!AUTH_USER){
+    errEl.textContent='Unable to save PIN right now. Please try again.'; errEl.style.display='block'; return;
+  }
+  var origTxt=btn&&btn.textContent;
+  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  try{
+    await mpSaveProfile(AUTH_USER.id,{pin:n});
+    if(PROFILE) PROFILE.pin=n;
+    if(typeof updatePinDisplay==='function') updatePinDisplay();
+    hideAppLock();
+  }catch(e){
+    errEl.textContent='Could not save PIN: '+(e&&e.message||'Unknown error — confirm the "pin" column exists on profiles.');
+    errEl.style.display='block';
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=origTxt;}
+  }
+}
+function appLockForgotPin(){
+  if(typeof doLogout==='function') doLogout();
+  else window.location.href='login.html';
 }

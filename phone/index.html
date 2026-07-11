@@ -15,6 +15,59 @@
 <link rel="stylesheet" href="../assets/css/phone-tokens.css">
 </head>
 <body>
+
+<!-- ── APP LOCK OVERLAY ── requires PIN on every open/resume, forces PIN
+     setup for new users, offers "log in with password" as a forgot-PIN
+     fallback (real sign-out). Sits above everything else in the app. -->
+<div id="appLockOverlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:9999;flex-direction:column;overflow-y:auto;">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 24px calc(28px + env(safe-area-inset-bottom,0px));max-width:430px;margin:0 auto;width:100%;box-sizing:border-box;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <img src="../assets/img/logo.png" alt="ZY" style="width:52px;height:52px;margin-bottom:16px;">
+      <div id="appLockTitle" style="font-size:1.15rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;">Enter PIN</div>
+      <div id="appLockSub" style="font-size:.85rem;color:var(--fg-3);line-height:1.5;">Enter your 6-digit PIN to continue.</div>
+    </div>
+
+    <!-- VERIFY mode (existing PIN) -->
+    <div id="appLockVerify">
+      <div id="appLockVerifyBoxes" class="pin-boxes" style="margin-bottom:8px;">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+      </div>
+      <div id="appLockVerifyErr" style="display:none;color:var(--red);font-size:.78rem;text-align:center;margin-top:8px;"></div>
+      <button onclick="appLockVerifySubmit()" style="width:100%;margin-top:20px;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;">Unlock</button>
+      <button onclick="appLockForgotPin()" style="width:100%;margin-top:14px;padding:8px;border-radius:10px;border:none;background:none;color:var(--blue);font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">Forgot PIN? Log in with password instead</button>
+    </div>
+
+    <!-- SET mode (mandatory for new users with no PIN yet) -->
+    <div id="appLockSet" style="display:none;">
+      <label style="font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);display:block;margin-bottom:6px;">New PIN</label>
+      <div id="appLockNewBoxes" class="pin-boxes" style="margin-bottom:16px;">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+      </div>
+      <label style="font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);display:block;margin-bottom:6px;">Confirm PIN</label>
+      <div id="appLockConfirmBoxes" class="pin-boxes" style="margin-bottom:8px;">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+        <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1">
+      </div>
+      <div id="appLockSetErr" style="display:none;color:var(--red);font-size:.78rem;text-align:center;margin-top:8px;"></div>
+      <button onclick="appLockSetSubmit()" style="width:100%;margin-top:20px;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;">Set PIN &amp; Continue</button>
+    </div>
+  </div>
+</div>
+
 <div class="app" style="position:relative;">
 
   <!-- STATUS BAR -->
