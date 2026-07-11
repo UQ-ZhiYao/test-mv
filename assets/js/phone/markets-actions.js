@@ -298,6 +298,11 @@ function switchFundTab2(tab){
     document.getElementById('ftab-'+t+'-btn').style.color=tab===t?'var(--blue)':'var(--fg-3)';
     document.getElementById('ftab-'+t+'-btn').style.borderBottomColor=tab===t?'var(--blue)':'transparent';
   });
+  if(typeof applyFundRestriction==='function') applyFundRestriction();
+  var restricted=(typeof ACCOUNT_RESTRICTED!=='undefined'&&ACCOUNT_RESTRICTED);
+  // Pending/suspended accounts see the tab-lock overlay instead — skip
+  // fetching data they can't view anyway.
+  if(restricted && (tab==='results'||tab==='portfolio'||tab==='shareholder')) return;
   if(tab==='chart'){
     function tryFundChart(n){
       var c=document.getElementById('candleChart');

@@ -215,6 +215,12 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 .pin-box{flex:1;min-width:0;border:none;border-right:1px solid var(--border);text-align:center;font-size:1.3rem;font-weight:700;color:var(--fg-1);padding:14px 0;outline:none;font-family:inherit;background:#fff;}
 .pin-box:last-child{border-right:none;}
 .pin-box:focus{background:var(--blue-bg);}
+
+/* Step indicator (Verify / New / Confirm — password & PIN change modals) */
+.step-dots{display:flex;gap:6px;margin-bottom:16px;}
+.step-dot{height:5px;flex:1;min-width:0;border-radius:3px;background:var(--border);transition:.2s;}
+.step-dot.active{background:var(--blue);}
+.step-dot.done{background:var(--blue);opacity:.4;}
 .badge{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:99px;}
 .badge-green{background:#F0FDF4;color:var(--green);}
 .badge-gray{background:var(--gray-100);color:var(--fg-3);}
