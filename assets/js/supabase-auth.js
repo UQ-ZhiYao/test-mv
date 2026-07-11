@@ -25,15 +25,16 @@ async function zySignUp({ name, email, password }) {
   if (r.error) throw r.error;
   try{ localStorage.setItem('zy_pending_email', email); }catch(e){}
   // Write email into the profiles row so admin can see it without joining
-  // auth.users. This depends on a DB trigger having already created the
-  // profiles row for this new user — normally synchronous (fires within
-  // the same signup transaction), but retried once with a short delay in
-  // case of any timing gap, and logged (not silently swallowed) if it
-  // still fails, so a broken write is actually visible instead of just
-  // quietly not happening.
+  // auth.users. Uses upsert (not update) so this succeeds whether or not the
+  // DB trigger that's supposed to create the profiles row for this new user
+  // has actually run yet — update() on a not-yet-existing row silently
+  // affects 0 rows and writes nothing. Retried once with a short delay in
+  // case of any timing gap, and logged (not silently swallowed) if it still
+  // fails, so a broken write is actually visible instead of just quietly
+  // not happening.
   if (r.data && r.data.user) {
     var writeEmail=async function(){
-      var res=await sb.from('profiles').update({ email: email }).eq('id', r.data.user.id).select();
+      var res=await sb.from('profiles').upsert({ id: r.data.user.id, email: email }, { onConflict: 'id' }).select();
       return res;
     };
     var res1=await writeEmail();
@@ -69,7 +70,7 @@ async function zyVerifyFromUrl() {
 }
 async function zyWriteEmailToProfile(user) {
   if (!user || !user.email) return;
-  try { await sb.from('profiles').update({ email: user.email }).eq('id', user.id); }
+  try { await sb.from('profiles').upsert({ id: user.id, email: user.email }, { onConflict: 'id' }); }
   catch(e) { console.warn('[Auth] Could not write email to profile:', e.message); }
 }
 async function zyResend(email) {

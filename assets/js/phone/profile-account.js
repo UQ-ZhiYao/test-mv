@@ -280,14 +280,28 @@ function handleFundTopbarScroll(){
 }
 
 // ── PASSWORD MODAL ──────────────────────────────────────────────────────────
+// Verify -> New -> Confirm, one field per step (not new+confirm together),
+// with a step-dot indicator and a Back action between steps.
+function setPwStepDots(step){
+  document.querySelectorAll('#pwStepDots .step-dot').forEach(function(d){
+    var s=parseInt(d.getAttribute('data-step'),10);
+    d.classList.toggle('active', s===step);
+    d.classList.toggle('done', s<step);
+  });
+}
 function openPwModal(){
   document.getElementById('pwStep1').style.display='block';
   document.getElementById('pwStep2').style.display='none';
+  document.getElementById('pwStep3').style.display='none';
+  setPwStepDots(1);
   document.getElementById('pwCurrent').value='';
   document.getElementById('pwCurrent').style.borderColor='var(--border)';
   document.getElementById('pwCurrentErr').style.display='none';
   document.getElementById('pwNew').value='';
+  document.getElementById('pwNew').style.borderColor='var(--border)';
+  document.getElementById('pwNewErr').style.display='none';
   document.getElementById('pwConfirm').value='';
+  document.getElementById('pwConfirm').style.borderColor='var(--border)';
   document.getElementById('pwMatchErr').style.display='none';
   document.getElementById('pwScrim').style.display='block';
   document.getElementById('pwModal').style.display='block';
@@ -296,6 +310,12 @@ function openPwModal(){
 function closePwModal(){
   document.getElementById('pwScrim').style.display='none';
   document.getElementById('pwModal').style.display='none';
+}
+function pwBackTo(step){
+  document.getElementById('pwStep1').style.display=step===1?'block':'none';
+  document.getElementById('pwStep2').style.display=step===2?'block':'none';
+  document.getElementById('pwStep3').style.display=step===3?'block':'none';
+  setPwStepDots(step);
 }
 function toggleVis(id){
   var f=document.getElementById(id);
@@ -322,6 +342,7 @@ async function verifyPw(){
     document.getElementById('pwCurrent').style.borderColor='var(--border)';
     document.getElementById('pwStep1').style.display='none';
     document.getElementById('pwStep2').style.display='block';
+    setPwStepDots(2);
     setTimeout(function(){document.getElementById('pwNew').focus();},100);
   }catch(e){
     document.getElementById('pwCurrentErr').textContent='Incorrect password. Please try again.';
@@ -331,11 +352,24 @@ async function verifyPw(){
     if(btn){btn.disabled=false;btn.textContent=origTxt;}
   }
 }
+function pwNewContinue(){
+  var n=document.getElementById('pwNew').value;
+  if(n.length<8){
+    document.getElementById('pwNewErr').style.display='block';
+    document.getElementById('pwNew').style.borderColor='var(--red)';
+    return;
+  }
+  document.getElementById('pwNewErr').style.display='none';
+  document.getElementById('pwNew').style.borderColor='var(--border)';
+  document.getElementById('pwStep2').style.display='none';
+  document.getElementById('pwStep3').style.display='block';
+  setPwStepDots(3);
+  setTimeout(function(){document.getElementById('pwConfirm').focus();},100);
+}
 async function savePw(){
   var n=document.getElementById('pwNew').value;
   var c=document.getElementById('pwConfirm').value;
   var btn=event&&event.target;
-  if(n.length<8){document.getElementById('pwNew').style.borderColor='var(--red)';return;}
   if(n!==c){document.getElementById('pwMatchErr').style.display='block';document.getElementById('pwConfirm').style.borderColor='var(--red)';return;}
   if(typeof mpUpdatePassword!=='function'){showToastM('Password service unavailable');return;}
   var origTxt=btn&&btn.textContent;
@@ -354,23 +388,42 @@ async function savePw(){
 
 // ── PIN MODAL ────────────────────────────────────────────────────────────────
 // PIN is stored on profiles.pin — used to gate revealing details on the
-// Personal Profile page. Single-step (no "verify current PIN" required
-// first) since it's a supplementary quick-unlock, not the primary
-// account credential the way the login password is.
+// Personal Profile page. Verify -> New -> Confirm (verify step skipped
+// entirely when no PIN is on file yet, same as before), one field per step
+// with a step-dot indicator and a Back action between steps.
+var pinModalHasVerify=false;
+function setPinStepDots(step){
+  var dots=document.querySelectorAll('#pinStepDots .step-dot');
+  if(!dots.length) return;
+  dots[0].style.display=pinModalHasVerify?'block':'none';
+  dots.forEach(function(d){
+    var s=parseInt(d.getAttribute('data-step'),10);
+    d.classList.toggle('active', s===step);
+    d.classList.toggle('done', s<step);
+  });
+}
 function openPinModal(){
   var hasPin=!!(PROFILE && PROFILE.pin);
+  pinModalHasVerify=hasPin;
   ['pinVerifyBoxes','pinNewBoxes','pinConfirmBoxes'].forEach(clearPinBoxes);
   document.getElementById('pinVerifyErr').style.display='none';
+  document.getElementById('pinNewErr').style.display='none';
   document.getElementById('pinMatchErr').style.display='none';
-  var step1=document.getElementById('pinStep1'), step2=document.getElementById('pinStep2');
+  var step1=document.getElementById('pinStep1'), step2=document.getElementById('pinStep2'), step3=document.getElementById('pinStep3');
   var step2Title=document.getElementById('pinStep2Title');
+  var step2BackBtn=document.getElementById('pinStep2BackBtn');
+  step3.style.display='none';
   if(hasPin){
     step1.style.display='block'; step2.style.display='none';
     if(step2Title) step2Title.textContent='Set New PIN';
+    if(step2BackBtn){ step2BackBtn.textContent='Back'; step2BackBtn.setAttribute('onclick','pinBackTo(1)'); }
+    setPinStepDots(1);
   } else {
     // No PIN on file yet — nothing to verify, go straight to setting one.
     step1.style.display='none'; step2.style.display='block';
     if(step2Title) step2Title.textContent='Set PIN';
+    if(step2BackBtn){ step2BackBtn.textContent='Cancel'; step2BackBtn.setAttribute('onclick','closePinModal()'); }
+    setPinStepDots(2);
   }
   document.getElementById('pinScrim').style.display='block';
   document.getElementById('pinModal').style.display='block';
@@ -379,6 +432,12 @@ function openPinModal(){
 function closePinModal(){
   document.getElementById('pinScrim').style.display='none';
   document.getElementById('pinModal').style.display='none';
+}
+function pinBackTo(step){
+  document.getElementById('pinStep1').style.display=step===1?'block':'none';
+  document.getElementById('pinStep2').style.display=step===2?'block':'none';
+  document.getElementById('pinStep3').style.display=step===3?'block':'none';
+  setPinStepDots(step);
 }
 function verifyPinStep(){
   var entered=getPinBoxesValue('pinVerifyBoxes');
@@ -395,7 +454,21 @@ function verifyPinStep(){
   errEl.style.display='none';
   document.getElementById('pinStep1').style.display='none';
   document.getElementById('pinStep2').style.display='block';
+  setPinStepDots(2);
   setTimeout(function(){ focusFirstPinBox('pinNewBoxes'); },100);
+}
+function pinNewContinue(){
+  var n=getPinBoxesValue('pinNewBoxes');
+  var errEl=document.getElementById('pinNewErr');
+  if(!/^\d{6}$/.test(n)){
+    errEl.textContent='PIN must be exactly 6 digits.'; errEl.style.display='block';
+    return;
+  }
+  errEl.style.display='none';
+  document.getElementById('pinStep2').style.display='none';
+  document.getElementById('pinStep3').style.display='block';
+  setPinStepDots(3);
+  setTimeout(function(){ focusFirstPinBox('pinConfirmBoxes'); },100);
 }
 async function savePin(){
   var n=getPinBoxesValue('pinNewBoxes');
@@ -403,9 +476,6 @@ async function savePin(){
   var errEl=document.getElementById('pinMatchErr');
   var btn=event&&event.target;
   errEl.style.display='none';
-  if(!/^\d{6}$/.test(n)){
-    errEl.textContent='PIN must be exactly 6 digits.'; errEl.style.display='block'; return;
-  }
   if(n!==c){
     errEl.textContent='PINs do not match.'; errEl.style.display='block'; return;
   }
@@ -579,18 +649,25 @@ function checkAppLockOnLoad(){
   // real new session — e.g. reopening after fully quitting the browser —
   // won't carry it over anyway).
   if(!justLoggedIn) showAppLock();
-  // Lock the INSTANT the app might be losing focus — not after detecting a
-  // "return" event. Waiting to detect resume is fragile: if iOS suspends or
-  // fully kills the backgrounded page (very common for PWAs to save
+  // Lock the INSTANT the app is actually backgrounded — not after detecting
+  // a "return" event. Waiting to detect resume is fragile: if iOS suspends
+  // or fully kills the backgrounded page (very common for PWAs to save
   // memory/battery), that resume event can simply never fire, and the app
-  // would silently stay unlocked. Locking proactively on every "losing
-  // focus" signal means the overlay is already active and blocking the
-  // screen by the time the user returns, regardless of which signal (if
-  // any) fires on resume. showAppLock() is safe to call repeatedly.
+  // would silently stay unlocked. Locking proactively on every genuine
+  // "went to background" signal means the overlay is already active and
+  // blocking the screen by the time the user returns. showAppLock() is safe
+  // to call repeatedly.
+  //
+  // visibilitychange (document.hidden) and pagehide are used deliberately
+  // instead of window 'blur' — blur fires on ANY loss of window focus, not
+  // just real backgrounding: opening a native <input type=date> picker, a
+  // confirm()/alert() dialog, or any other in-page focus shift all trigger
+  // it too, which was locking the app in the middle of ordinary in-app
+  // interactions that never actually left the page. visibilitychange only
+  // flips when the tab/app itself is genuinely hidden.
   function markBackgroundedThenLock(){ appLockEverBackgrounded=true; showAppLock(); }
   document.addEventListener('visibilitychange',function(){ if(document.hidden) markBackgroundedThenLock(); });
   window.addEventListener('pagehide',markBackgroundedThenLock);
-  window.addEventListener('blur',markBackgroundedThenLock);
   // Second layer, for the resume trip back in — but pageshow/focus can BOTH
   // also fire on a plain fresh page load (not just a genuine resume from
   // background), which was the actual bug: it fired right after login and
