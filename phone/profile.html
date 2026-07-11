@@ -173,8 +173,17 @@ a,a:hover{color:var(--blue);text-decoration:none;}
 <script>
 // This page is a genuine standalone navigation (not an in-app SPA tab, by
 // original design) — it needs its own auth check and its own data fetch,
-// since a full page load starts a fresh JS context.
-var PF_USER=null, PF_PROFILE=null, profileUnlocked=false;
+// since a full page load starts a fresh JS context. That also means
+// Edit -> profile-edit.html -> Cancel/Save/Back is a REAL page reload
+// back to this page, which would reset profileUnlocked to false on every
+// round trip if it were a plain variable — requiring the PIN again for a
+// routine edit that never left this feature. Persisting the unlocked
+// state in sessionStorage (not localStorage) fixes that: it survives a
+// same-tab reload, but not a real new session (closing and reopening the
+// app), matching "PIN required only on resume/reopen."
+function pfIsUnlocked(){ try{ return sessionStorage.getItem('zy_profile_unlocked')==='1'; }catch(e){ return false; } }
+function pfSetUnlocked(v){ try{ if(v) sessionStorage.setItem('zy_profile_unlocked','1'); else sessionStorage.removeItem('zy_profile_unlocked'); }catch(e){} }
+var PF_USER=null, PF_PROFILE=null, profileUnlocked=pfIsUnlocked();
 
 function pfToast(msg){
   var el=document.getElementById('pfToast');
@@ -217,6 +226,8 @@ async function loadProfilePage(){
     pfSetField('bank_name',P.bank_name);
     pfSetField('bank_account_no',P.bank_account_no);
     pfSetField('bank_account_holder',P.bank_account_holder);
+    var wrap=document.getElementById('pfViewBtnWrap');
+    if(wrap) wrap.style.display=profileUnlocked?'none':'block';
   }catch(e){
     console.warn('Profile load failed:',e.message);
   }
@@ -251,6 +262,7 @@ function submitPin(){
   }
   if(entered===String(PF_PROFILE.pin)){
     profileUnlocked=true;
+    pfSetUnlocked(true);
     revealAllFields();
     closePinModal();
   } else {
@@ -267,6 +279,7 @@ function revealAllFields(){
 }
 function hideAllFields(){
   profileUnlocked=false;
+  pfSetUnlocked(false);
   document.querySelectorAll('.info-value[data-field]').forEach(function(el){
     el.textContent='•••••';
   });
@@ -274,10 +287,17 @@ function hideAllFields(){
   if(wrap) wrap.style.display='block';
 }
 // If the browser restores this page from bfcache on "back" navigation
-// (common on iOS Safari — the page reappears without re-running scripts),
-// force the mask back on rather than trusting whatever DOM state was
-// frozen at the moment of navigating away.
-window.addEventListener('pageshow',function(e){ if(e.persisted) hideAllFields(); });
+// (common on iOS Safari — the page reappears without re-running scripts,
+// e.g. tapping Cancel on profile-edit.html), resync the display from the
+// persisted sessionStorage flag instead of force-masking: the frozen DOM
+// may be stale, but the unlock state itself should carry over so Cancel
+// after Edit doesn't demand the PIN again.
+window.addEventListener('pageshow',function(e){
+  if(e.persisted){
+    profileUnlocked=pfIsUnlocked();
+    if(profileUnlocked) revealAllFields(); else hideAllFields();
+  }
+});
 
 loadProfilePage();
 </script>
