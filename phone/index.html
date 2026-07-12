@@ -68,6 +68,31 @@
   </div>
 </div>
 
+<!-- Best-effort SYNCHRONOUS guess, before anything else on the page parses
+     or paints: a returning user with a known prior session (the same
+     local-only, no-network zy-session/zy_token hint misc.js's own auth
+     gate already trusts) should see the PIN lock the INSTANT the app
+     opens — not the dashboard shell flashing first while the real (async)
+     checkAppLockOnLoad() in profile-account.js catches up several script
+     loads later. This only acts on that one high-confidence case; a fresh
+     login or a return trip from an in-app subpage (profile.html etc, see
+     zy_returning_from_subpage) is left exactly as-is (overlay stays
+     hidden, matching its default above), and so is a first-ever visit
+     with no session hint at all — those are for checkAppLockOnLoad() to
+     decide once it has actually verified the real Supabase session. -->
+<script>
+(function(){
+  try{
+    var justLoggedIn=sessionStorage.getItem('zy_just_logged_in')==='1';
+    var returningFromSubpage=sessionStorage.getItem('zy_returning_from_subpage')==='1';
+    var hadSession=!!(localStorage.getItem('zy-session')||localStorage.getItem('zy_token'));
+    if(hadSession && !justLoggedIn && !returningFromSubpage){
+      document.getElementById('appLockOverlay').style.display='flex';
+    }
+  }catch(e){}
+})();
+</script>
+
 <div class="app" style="position:relative;">
 
   <!-- STATUS BAR -->
