@@ -79,6 +79,12 @@ input,textarea,select{-webkit-user-select:text;user-select:text;}
 <script src="../assets/js/supabase-auth.js"></script>
 <script src="../assets/js/member-api.js"></script>
 <script>
+// Tell index.html's App Lock (assets/js/phone/profile-account.js) that
+// whenever the app is next reached again, it got here via a real round
+// trip through this in-app subpage — not a genuine close/backgrounding —
+// so it shouldn't demand the whole-app PIN again on the way back.
+try{ sessionStorage.setItem('zy_returning_from_subpage','1'); }catch(e){}
+
 var PFE_USER=null, PFE_PROFILE=null;
 
 // Field definitions per section — each becomes one "box" (label + input).

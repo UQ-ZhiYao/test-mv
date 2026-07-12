@@ -641,6 +641,25 @@ function applyEyeVisibility(){
 var appLockInitialCheckDone=false;
 var appLockEverBackgrounded=false;
 
+// Standalone pages like profile.html/profile-edit.html are reached from
+// index.html via a REAL navigation (location.href), not an SPA tab switch —
+// so tapping their back button either reloads index.html from scratch or
+// restores it from bfcache, and both paths look identical to "the app was
+// backgrounded" from here. Without this flag, going Profile -> Personal
+// Profile -> back demanded the PIN again every time, even though the app
+// was never actually closed or backgrounded. Those subpages set this flag
+// on load (sessionStorage, so it survives the round trip); it's consumed
+// exactly once, the next time index.html loads or is restored.
+function consumeSubpageReturnFlag(){
+  try{
+    if(sessionStorage.getItem('zy_returning_from_subpage')==='1'){
+      sessionStorage.removeItem('zy_returning_from_subpage');
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
 function checkAppLockOnLoad(){
   ['appLockVerifyBoxes','appLockNewBoxes','appLockConfirmBoxes'].forEach(setupPinBoxes);
   var justLoggedIn=false;
@@ -650,13 +669,14 @@ function checkAppLockOnLoad(){
       sessionStorage.removeItem('zy_just_logged_in'); // one-time only
     }
   }catch(e){}
-  // Skip the immediate PIN prompt only for this very first load right after
-  // a genuine password login — asking again seconds later is redundant.
-  // Every subsequent open/resume still locks normally (the flag above is
-  // single-use, and it's stored in sessionStorage, not localStorage, so a
-  // real new session — e.g. reopening after fully quitting the browser —
-  // won't carry it over anyway).
-  if(!justLoggedIn) verifySessionThenLock();
+  var justReturnedFromSubpage=consumeSubpageReturnFlag();
+  // Skip the immediate PIN prompt for this very first load right after a
+  // genuine password login (asking again seconds later is redundant), and
+  // for a return trip from an in-app subpage like Personal Profile (see
+  // consumeSubpageReturnFlag above). Every other open/resume still locks
+  // normally — both flags are single-use and stored in sessionStorage, not
+  // localStorage, so a real new session won't carry either over.
+  if(!justLoggedIn && !justReturnedFromSubpage) verifySessionThenLock();
   // Lock the INSTANT the app is actually backgrounded — not after detecting
   // a "return" event. Waiting to detect resume is fragile: if iOS suspends
   // or fully kills the backgrounded page (very common for PWAs to save
@@ -683,7 +703,10 @@ function checkAppLockOnLoad(){
   // these on "we've actually seen the app go to background at least once"
   // means they can never fire as a false positive on a fresh load — only
   // once a real backgrounding has genuinely happened first.
-  window.addEventListener('pageshow',function(){ if(appLockEverBackgrounded) verifySessionThenLock(); });
+  window.addEventListener('pageshow',function(){
+    if(consumeSubpageReturnFlag()){ hideAppLock(); return; }
+    if(appLockEverBackgrounded) verifySessionThenLock();
+  });
   window.addEventListener('focus',function(){ if(appLockEverBackgrounded && document.hidden===false) verifySessionThenLock(); });
 }
 
