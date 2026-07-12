@@ -337,11 +337,17 @@ async function mpSubmitRedemption(investorId, { amount, units, note }) {
 // profile) rather than a separate table, per how this project's Supabase
 // project is actually set up.
 async function mpLoadAdminBankAccount() {
+  // ilike (case-insensitive) in case the stored value isn't exactly
+  // lowercase "admin", and limit(1) + data[0] instead of maybeSingle() so
+  // this doesn't throw if more than one row happens to have that role —
+  // it just uses the first. If this still comes back empty, it's very
+  // likely a Row Level Security policy on profiles only allowing a member
+  // to read their own row, not the admin's.
   const { data, error } = await sb.from('profiles')
     .select('bank_name, bank_account_no, bank_account_holder')
-    .eq('role', 'admin').maybeSingle();
+    .ilike('role', 'admin').limit(1);
   if (error) throw error;
-  return data;
+  return (data && data[0]) || null;
 }
 
 // How many subscription/redemption requests this investor has already made
