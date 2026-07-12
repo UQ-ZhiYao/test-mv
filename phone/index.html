@@ -406,8 +406,26 @@
 
 
 
+<!-- Toast (showToastM() in profile-account.js) — element was previously
+     missing entirely, so every showToastM() call silently failed. -->
+<div class="toast" id="mToast"></div>
+
 <!-- Sheet scrim -->
 <div class="sheet-scrim" id="sheetScrim" onclick="closeSheet()"></div>
+
+<!-- Restricted Account Notice — shown instead of the Subscribe/Redeem sheet
+     when the account status is pending/suspended (ACCOUNT_RESTRICTED). -->
+<div class="sheet" id="restrictedSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <span class="sheet-title">Account Restricted</span>
+    <button class="sheet-x" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="sheet-body">
+    <p style="font-size:.88rem;color:var(--fg-2);line-height:1.6;margin-bottom:18px;">This account is not qualified for subscription or withdrawal. Please contact us at <a href="mailto:support@zy-invest.com" style="color:var(--blue);">support@zy-invest.com</a>.</p>
+    <button class="sheet-sub" style="background:var(--blue)" onclick="closeSheet()">OK</button>
+  </div>
+</div>
 
 <!-- Subscribe Sheet -->
 <div class="sheet" id="subSheet">
@@ -417,7 +435,7 @@
     <button class="sheet-x" onclick="closeSheet()">✕</button>
   </div>
   <div class="sheet-body">
-    <div class="sheet-field">
+    <div class="sheet-field" id="subAcctField">
       <label>Account</label>
       <div style="display:flex;gap:2px;background:var(--gray-100);border-radius:10px;padding:3px;">
         <button id="subAcct-pa" onclick="selectAcct('sub','pa')" style="flex:1;font:inherit;font-size:.8rem;font-weight:700;padding:8px;border:none;border-radius:8px;background:#fff;color:var(--blue);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);">Personal Account</button>
@@ -426,9 +444,10 @@
     </div>
     <div style="background:var(--gray-50);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.8rem;color:var(--fg-2)">
       <b style="color:var(--blue)">Fund Bank Account</b><br>
-      Maybank · ZY-Invest Fund Sdn Bhd<br>
-      <span style="font-family:monospace">5141 8827 3041</span><br>
-      Ref: <b>ZYI-2024-0014</b>
+      <span id="subBankName">—</span><br>
+      <span id="subBankHolder">—</span><br>
+      <span id="subBankAcctNo" style="font-family:monospace">—</span><br>
+      Ref: <b id="subRef">—</b>
     </div>
     <div class="sheet-field">
       <label>Subscription Amount (RM)</label>
@@ -440,10 +459,16 @@
       </div>
     </div>
     <div class="sheet-field">
-      <label>Indicative Units (NTA 1.0245)</label>
+      <label id="subNtaLbl">Indicative Units (NTA —)</label>
       <input class="sheet-inp" id="mSubUnits" value="—" disabled>
     </div>
-    <button class="sheet-sub" style="background:var(--blue)" onclick="submitSubM()">Submit Subscription</button>
+    <div class="sheet-field">
+      <label>Bank Transfer Receipt</label>
+      <input class="sheet-inp" type="file" id="mSubReceipt" accept="image/*,application/pdf" onchange="onSubReceiptChange()" style="padding:9px 13px;">
+      <div id="subReceiptErr" style="display:none;color:var(--red);font-size:.72rem;margin-top:4px;">Please attach your bank transfer receipt.</div>
+    </div>
+    <div id="subErr" style="display:none;color:var(--red);font-size:.78rem;margin-bottom:8px;"></div>
+    <button class="sheet-sub" style="background:var(--blue)" id="mSubBtn" onclick="submitSubM()">Submit Subscription</button>
   </div>
 </div>
 
@@ -455,7 +480,7 @@
     <button class="sheet-x" onclick="closeSheet()">✕</button>
   </div>
   <div class="sheet-body">
-    <div class="sheet-field">
+    <div class="sheet-field" id="redAcctField">
       <label>Account</label>
       <div style="display:flex;gap:2px;background:var(--gray-100);border-radius:10px;padding:3px;">
         <button id="redAcct-pa" onclick="selectAcct('red','pa')" style="flex:1;font:inherit;font-size:.8rem;font-weight:700;padding:8px;border:none;border-radius:8px;background:#fff;color:var(--blue);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.1);">Personal Account</button>
@@ -463,8 +488,8 @@
       </div>
     </div>
     <div style="background:var(--gray-50);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.8rem;color:var(--fg-2)">
-      <b>Payout to:</b> Maybank ···· 2048 · Tan Hui Mei<br>
-      <b>Units held:</b> <span id="redHeldUnits">59,763.79</span> · Value: MYR <span id="redHeldValue">61,228</span>
+      <b>Payout to:</b> <span id="redPayoutBank">—</span><br>
+      <b>Units held:</b> <span id="redHeldUnits">0.00</span> · Value: MYR <span id="redHeldValue">0.00</span>
     </div>
     <div class="sheet-field">
       <label>Withdrawal Amount (RM)</label>
@@ -476,10 +501,11 @@
       </div>
     </div>
     <div class="sheet-field">
-      <label>Indicative Units to Redeem</label>
+      <label id="redNtaLbl">Indicative Units to Redeem (NTA —)</label>
       <input class="sheet-inp" id="mRedUnits" value="—" disabled>
     </div>
-    <button class="sheet-sub" style="background:var(--red)" onclick="submitRedM()">Submit Redemption</button>
+    <div id="redErr" style="display:none;color:var(--red);font-size:.78rem;margin-bottom:8px;"></div>
+    <button class="sheet-sub" style="background:var(--red)" id="mRedBtn" onclick="submitRedM()">Submit Redemption</button>
   </div>
 </div>
 

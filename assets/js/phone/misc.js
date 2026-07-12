@@ -467,5 +467,6 @@ function renderFinDetail(){
     drawMChart('1d');renderMktList();drawKlciSparkline();updateMktTime();renderWatchlist();setTimeout(drawSparkline,100);setInterval(updateMktTime,1000);
     loadProfileData();
     loadAccountSummary();
+    loadAdminBankAccount();
   });
 })();
