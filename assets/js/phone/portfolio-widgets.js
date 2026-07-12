@@ -302,8 +302,34 @@ function switchAdPeriod(p,btn){
 // data here anymore.
 var subAcct='pa',redAcct='pa';
 var subReceiptFile=null;
+var subRefId=null,redRefId=null;
 function fmtRM(n){return (n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function acctData(a){ return a==='ja'?JA_ACCT:PA_ACCT; }
+
+// SUB-20260712-INV0042-001 / RED-20260712-INV0042-001 — type, issue date,
+// the member's own investor_id, and a running index (this member's Nth
+// request in that table) so two requests on the same day still get
+// distinct references.
+function genRequestRef(type,investorId,index){
+  var d=new Date();
+  var ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  return type+'-'+ds+'-'+(investorId||'UNKNOWN')+'-'+String(index).padStart(3,'0');
+}
+// Computed once when the sheet opens (not re-generated at submit time) so
+// the reference the member sees on screen — the one they'd write on their
+// bank transfer — is exactly the one that ends up on their request.
+async function refreshRequestRef(prefix,type,table){
+  var investorId=(PROFILE&&PROFILE.investor_id)||(AUTH_USER&&AUTH_USER.id);
+  var el=document.getElementById(prefix+'Ref');
+  if(el) el.textContent='—';
+  var ref=null;
+  try{
+    var count=await mpCountRequests(table,investorId);
+    ref=genRequestRef(type,investorId,count+1);
+  }catch(e){ console.warn('Reference ID lookup failed:', e.message); }
+  if(prefix==='sub') subRefId=ref; else redRefId=ref;
+  if(el) el.textContent=ref||'—';
+}
 
 function openSheet(type){
   if(typeof ACCOUNT_RESTRICTED!=='undefined' && ACCOUNT_RESTRICTED){
@@ -323,7 +349,6 @@ function openSheet(type){
     document.getElementById('subBankName').textContent=b.bank_name||'—';
     document.getElementById('subBankHolder').textContent=b.bank_account_holder||'—';
     document.getElementById('subBankAcctNo').textContent=b.bank_account_no||'—';
-    document.getElementById('subRef').textContent=(PROFILE&&PROFILE.investor_id)||'—';
     document.getElementById('subNtaLbl').textContent='Indicative Units (NTA '+(LATEST_NTA>0?LATEST_NTA.toFixed(4):'—')+')';
     document.getElementById('mSubAmt').value='';
     document.getElementById('mSubUnits').value='—';
@@ -332,6 +357,7 @@ function openSheet(type){
     document.getElementById('subReceiptErr').style.display='none';
     document.getElementById('subErr').style.display='none';
     selectAcct('sub','pa');
+    refreshRequestRef('sub','SUB','subscription_requests');
   } else {
     var P=PROFILE||{};
     var acctNo=P.bank_account_no?('···· '+String(P.bank_account_no).slice(-4)):null;
@@ -340,6 +366,7 @@ function openSheet(type){
     document.getElementById('redNtaLbl').textContent='Indicative Units to Redeem (NTA '+(LATEST_NTA>0?LATEST_NTA.toFixed(4):'—')+')';
     document.getElementById('redErr').style.display='none';
     selectAcct('red','pa');
+    refreshRequestRef('red','RED','redemption_requests');
   }
 }
 function closeSheet(){
@@ -386,12 +413,14 @@ async function submitSubM(){
   try{
     var investorId=(PROFILE&&PROFILE.investor_id)||(AUTH_USER&&AUTH_USER.id);
     var receiptUrl=await mpUploadReceipt(investorId,subReceiptFile);
-    // subscription_requests has no column for which account (PA/JA) the
-    // request is for, so it's recorded in the note instead.
-    var note=subAcct==='ja'?'Joint Account':null;
-    await mpSubmitSubscription(investorId,{amount:a,receiptUrl:receiptUrl,note:note});
+    // subscription_requests has no dedicated column for the reference ID
+    // shown on screen or for which account (PA/JA) the request is for, so
+    // both are recorded in the note instead.
+    var noteParts=['Ref: '+(subRefId||'—')];
+    if(subAcct==='ja') noteParts.push('Joint Account');
+    await mpSubmitSubscription(investorId,{amount:a,receiptUrl:receiptUrl,note:noteParts.join(' | ')});
     closeSheet();
-    setTimeout(function(){showToastM('Subscription of RM '+fmtRM(a)+' submitted for review');},200);
+    setTimeout(function(){showToastM('Subscription '+(subRefId||'')+' of RM '+fmtRM(a)+' submitted for review');},200);
   }catch(e){
     errEl.textContent='Submission failed: '+((e&&e.message)||'Unknown error');
     errEl.style.display='block';
@@ -410,10 +439,14 @@ async function submitRedM(){
   btn.disabled=true;btn.textContent='Submitting…';
   try{
     var investorId=(PROFILE&&PROFILE.investor_id)||(AUTH_USER&&AUTH_USER.id);
-    var note=redAcct==='ja'?'Joint Account':null;
-    await mpSubmitRedemption(investorId,{amount:a,units:units,note:note});
+    // redemption_requests has no dedicated column for the reference ID
+    // shown on screen or for which account (PA/JA) the request is for, so
+    // both are recorded in the note instead.
+    var noteParts=['Ref: '+(redRefId||'—')];
+    if(redAcct==='ja') noteParts.push('Joint Account');
+    await mpSubmitRedemption(investorId,{amount:a,units:units,note:noteParts.join(' | ')});
     closeSheet();
-    setTimeout(function(){showToastM('Redemption of RM '+fmtRM(a)+' submitted — 15 business days');},200);
+    setTimeout(function(){showToastM('Redemption '+(redRefId||'')+' of RM '+fmtRM(a)+' submitted — 15 business days');},200);
   }catch(e){
     errEl.textContent='Submission failed: '+((e&&e.message)||'Unknown error');
     errEl.style.display='block';

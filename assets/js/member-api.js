@@ -333,15 +333,27 @@ async function mpSubmitRedemption(investorId, { amount, units, note }) {
 }
 
 // The fund's own deposit-destination bank account — not a member's. Kept as
-// a single profiles row with status='admin' (same schema as a normal member
+// a single profiles row with role='admin' (same schema as a normal member
 // profile) rather than a separate table, per how this project's Supabase
 // project is actually set up.
 async function mpLoadAdminBankAccount() {
   const { data, error } = await sb.from('profiles')
     .select('bank_name, bank_account_no, bank_account_holder')
-    .eq('status', 'admin').maybeSingle();
+    .eq('role', 'admin').maybeSingle();
   if (error) throw error;
   return data;
+}
+
+// How many subscription/redemption requests this investor has already made
+// in the given table — used as the running index in their next request's
+// reference ID (see genRequestRef() in portfolio-widgets.js), so a member
+// submitting more than once in the same day still gets a distinct ref.
+async function mpCountRequests(table, investorId) {
+  const { count, error } = await sb.from(table)
+    .select('id', { count: 'exact', head: true })
+    .eq('investor_id', investorId);
+  if (error) throw error;
+  return count || 0;
 }
 
 // Uploads a subscription's bank-transfer-slip receipt to the
