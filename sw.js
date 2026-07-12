@@ -1,5 +1,15 @@
 /* ZY-Invest — root service worker */
-const CACHE = 'zy-v1';
+// Bump this string whenever cached files (SHELL below, or anything the
+// fetch handler has cached) need to be invalidated for everyone. The
+// browser only re-checks this file for changes on its own schedule (at
+// most once ~24h per the service worker spec) and only clears the old
+// cache once it detects sw.js's own bytes changed — a code fix to a file
+// in SHELL doesn't do that by itself. This is what actually happened after
+// the Yahoo Finance CORS proxy fallback fix (member-api.js, in SHELL):
+// the deployed fix was correct, but visitors with an already-installed
+// worker kept serving the pre-fix member-api.js from the 'zy-v1' cache
+// until this version bump forces a fresh install.
+const CACHE = 'zy-v2';
 const SHELL = ['/', 'index.html', 'login.html', 'desktop/dashboard.html', 'phone/login.html', 'manifest.webmanifest',
   'assets/css/site.css', 'assets/js/site.js', 'assets/js/supabase-auth.js',
   'assets/js/api.js', 'assets/js/member-api.js',
