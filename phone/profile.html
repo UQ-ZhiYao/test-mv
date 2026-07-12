@@ -181,6 +181,12 @@ a,a:hover{color:var(--blue);text-decoration:none;}
 // state in sessionStorage (not localStorage) fixes that: it survives a
 // same-tab reload, but not a real new session (closing and reopening the
 // app), matching "PIN required only on resume/reopen."
+// Tell index.html's App Lock (assets/js/phone/profile-account.js) that
+// whenever the app is next reached again, it got here via a real round
+// trip through this in-app subpage — not a genuine close/backgrounding —
+// so it shouldn't demand the whole-app PIN again on the way back.
+try{ sessionStorage.setItem('zy_returning_from_subpage','1'); }catch(e){}
+
 function pfIsUnlocked(){ try{ return sessionStorage.getItem('zy_profile_unlocked')==='1'; }catch(e){ return false; } }
 function pfSetUnlocked(v){ try{ if(v) sessionStorage.setItem('zy_profile_unlocked','1'); else sessionStorage.removeItem('zy_profile_unlocked'); }catch(e){} }
 var PF_USER=null, PF_PROFILE=null, profileUnlocked=pfIsUnlocked();
