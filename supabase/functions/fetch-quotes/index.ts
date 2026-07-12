@@ -6,6 +6,15 @@
 // Finance returns 403 (CORS), so this exists purely to run that fetch on
 // the server instead, where there's no CORS restriction at all.
 //
+// This deliberately uses the same v8/finance/chart endpoint as
+// fetch-historical (one request per symbol, run in parallel), not Yahoo's
+// v7/finance/quote batch endpoint — v7/finance/quote now requires a
+// crumb/cookie handshake and returns 401/403 for unauthenticated
+// server-to-server requests, which surfaced here as a 502. v8/finance/chart
+// doesn't need that and is already proven working by fetch-historical, so
+// price/change are derived from its "meta" block (regularMarketPrice vs.
+// previousClose) instead of a dedicated quote field.
+//
 // Used by assets/js/member-api.js's mpLoadQuotes() for the phone Market
 // screen's Indices/Forex/Crypto tabs.
 //
@@ -14,13 +23,13 @@
 //   POST /functions/v1/fetch-quotes  { "symbols": ["^KLSE","^GSPC","BTC-USD"] }
 //
 // Response (200):
-//   { "quotes": [ { "symbol": "^KLSE", "shortName": "FTSE Bursa Malaysia KLCI",
+//   { "quotes": [ { "symbol": "^KLSE", "shortName": "^KLSE",
 //       "regularMarketPrice": 1627.21, "regularMarketChange": 8.72,
 //       "regularMarketChangePercent": 0.54, "currency": "MYR" }, ... ] }
-//   (symbols Yahoo doesn't recognize are simply absent from the array, not
-//   an error — the caller renders "—" for any symbol missing from the
-//   response.)
-// Response (400/502/500):
+//   (symbols Yahoo doesn't recognize, or that fail individually, are simply
+//   absent from the array, not an error — the caller renders "—" for any
+//   symbol missing from the response.)
+// Response (400/500):
 //   { "error": "..." }
 
 const CORS_HEADERS = {
@@ -34,6 +43,39 @@ function jsonResponse(body: unknown, status: number): Response {
     status,
     headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
   });
+}
+
+async function fetchOneQuote(symbol: string) {
+  const yahooUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(symbol)
+    + "?interval=1d&range=1d";
+  try {
+    const res = await fetch(yahooUrl, {
+      headers: {
+        // Yahoo's chart endpoint sometimes blocks requests with no
+        // browser-like User-Agent even for legitimate server calls.
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      },
+    });
+    if (!res.ok) return null;
+    const json = await res.json().catch(() => null);
+    const meta = json?.chart?.result?.[0]?.meta;
+    if (!meta) return null;
+    const price = meta.regularMarketPrice;
+    const prevClose = meta.previousClose ?? meta.chartPreviousClose;
+    if (price == null || prevClose == null) return null;
+    const change = price - prevClose;
+    const changePercent = prevClose ? (change / prevClose) * 100 : null;
+    return {
+      symbol: meta.symbol || symbol,
+      shortName: meta.shortName || meta.longName || meta.symbol || symbol,
+      regularMarketPrice: price,
+      regularMarketChange: change,
+      regularMarketChangePercent: changePercent,
+      currency: meta.currency || null,
+    };
+  } catch (_e) {
+    return null;
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -62,40 +104,8 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Missing required 'symbols' parameter" }, 400);
   }
 
-  const yahooUrl = "https://query1.finance.yahoo.com/v7/finance/quote?symbols="
-    + encodeURIComponent(symbols.join(","));
-
-  let yahooRes: Response;
-  try {
-    yahooRes = await fetch(yahooUrl, {
-      headers: {
-        // Yahoo's quote endpoint sometimes blocks requests with no
-        // browser-like User-Agent even for legitimate server calls.
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
-    });
-  } catch (e) {
-    return jsonResponse({ error: "Could not reach Yahoo Finance: " + (e instanceof Error ? e.message : String(e)) }, 502);
-  }
-
-  if (!yahooRes.ok) {
-    return jsonResponse({ error: "Yahoo Finance request failed (" + yahooRes.status + ")" }, 502);
-  }
-
-  const json = await yahooRes.json().catch(() => null);
-  const results = json?.quoteResponse?.result;
-  if (!Array.isArray(results)) {
-    return jsonResponse({ error: "No data returned" }, 502);
-  }
-
-  const quotes = results.map((r: Record<string, unknown>) => ({
-    symbol: r.symbol,
-    shortName: r.shortName || r.longName || r.symbol,
-    regularMarketPrice: r.regularMarketPrice ?? null,
-    regularMarketChange: r.regularMarketChange ?? null,
-    regularMarketChangePercent: r.regularMarketChangePercent ?? null,
-    currency: r.currency || null,
-  }));
+  const results = await Promise.all(symbols.map(fetchOneQuote));
+  const quotes = results.filter((q) => q != null);
 
   return jsonResponse({ quotes }, 200);
 });

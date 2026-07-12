@@ -164,7 +164,7 @@ function renderDxList(){
 }
 
 // ── ASSET DETAILS ─────────────────────────────────────────────────────────────
-function drawAdDonut(){
+function drawAdDonut(retriesLeft){
   var c=document.getElementById('adDonut');
   if(!c)return;
   var paMv=PA_ACCT?PA_ACCT.mv:0, jaMv=JA_ACCT?JA_ACCT.mv:0;
@@ -179,6 +179,17 @@ function drawAdDonut(){
   var dpr=window.devicePixelRatio||1;
   var W=c.parentElement.parentElement.clientWidth-32;
   var size=Math.min(W,260);
+  // loadAccountSummary() (misc.js) calls this right after page fragments
+  // are injected, which can race the browser's layout pass — if the
+  // donut's container hasn't been laid out yet (e.g. still display:none on
+  // an inactive page), clientWidth is 0 and size goes negative, which
+  // crashes ctx.arc() with a negative-radius IndexSizeError. Retry a few
+  // times instead of drawing with a bogus size.
+  if(size<=0){
+    if(retriesLeft===undefined) retriesLeft=10;
+    if(retriesLeft>0) setTimeout(function(){drawAdDonut(retriesLeft-1);},100);
+    return;
+  }
   var H=size*0.58;
   c.width=size*dpr;c.height=H*dpr;
   c.style.width=size+'px';c.style.height=H+'px';
