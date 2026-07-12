@@ -517,15 +517,24 @@
      starting the next download. defer lets the browser fetch all of them
      in parallel while still running them in this exact order afterward, so
      a slow/flaky mobile connection to the Supabase CDN doesn't stall the
-     App Lock check (and everything else) behind a serial download chain. -->
+     App Lock check (and everything else) behind a serial download chain.
+
+     ?v=N on each local script: GitHub Pages serves these with a
+     several-minute Cache-Control max-age, so editing a file's contents
+     without changing its URL leaves visitors on the stale copy for a
+     while (this bit member-api.js's Yahoo Finance fix and then
+     profile-account.js's status-badge fix). Bump the ?v=N on whichever
+     file you just changed so its URL — and therefore its cache key —
+     actually changes. -->
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="../assets/js/supabase-auth.js" defer></script>
+<script src="../assets/js/supabase-auth.js?v=1" defer></script>
 <script src="../assets/js/member-api.js?v=4" defer></script>
-<script src="../assets/js/phone/profile-account.js" defer></script>
-<script src="../assets/js/phone/portfolio-widgets.js" defer></script>
-<script src="../assets/js/phone/markets-actions.js" defer></script>
-<script src="../assets/js/phone/financial-charts-1.js" defer></script>
-<script src="../assets/js/phone/financial-charts-2.js" defer></script>
-<script src="../assets/js/phone/misc.js" defer></script>
+<script src="../assets/js/phone/profile-account.js?v=1" defer></script>
+<script src="../assets/js/phone/portfolio-widgets.js?v=1" defer></script>
+<script src="../assets/js/phone/markets-actions.js?v=1" defer></script>
+<script src="../assets/js/phone/financial-charts-1.js?v=1" defer></script>
+<script src="../assets/js/phone/financial-charts-2.js?v=1" defer></script>
+<script src="../assets/js/phone/misc.js?v=1" defer></script>
 </body>
 </html>
