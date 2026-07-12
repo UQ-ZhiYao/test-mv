@@ -13,22 +13,74 @@
 <div class="standalone-shell">
   <div class="scroll" style="flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;">
 <div class="page" id="pg-market">
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:32px 24px;text-align:center;">
-        <div style="width:72px;height:72px;border-radius:20px;background:var(--orange-bg);display:flex;align-items:center;justify-content:center;margin-bottom:20px;">
-          <svg width="32" height="32" viewBox="0 0 24 24" stroke="var(--orange)" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+
+      <!-- ── MARKET TABS ── -->
+      <div style="display:flex;gap:0;padding:0 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:10;overflow-x:auto;scrollbar-width:none;">
+        <button id="mtab-indices-btn" onclick="switchMarketTab('indices')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--blue);background:none;border:none;border-bottom:2px solid var(--blue);padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Indices</button>
+        <button id="mtab-forex-btn" onclick="switchMarketTab('forex')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Forex</button>
+        <button id="mtab-crypto-btn" onclick="switchMarketTab('crypto')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Crypto</button>
+      </div>
+
+      <!-- ── INDICES ── -->
+      <div id="mtab-indices-body" style="display:block;padding:0 0 32px;">
+        <div style="padding:16px 16px 0;">
+          <div style="height:1em;"></div>
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">Headline</div>
         </div>
-        <div style="font-family:'DM Serif Display',serif;font-style:italic;font-size:1.5rem;color:var(--fg-1);margin-bottom:10px;">Coming Soon</div>
-        <div style="font-size:.88rem;color:var(--fg-3);line-height:1.7;max-width:260px;">Live market data, global indices, price charts and sector performance — launching soon.</div>
-        <div style="margin-top:28px;padding:14px 20px;background:var(--orange-bg);border-radius:12px;text-align:left;max-width:300px;width:100%;">
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--orange);margin-bottom:10px;">What's coming</div>
-          <div style="display:flex;flex-direction:column;gap:9px;">
-            <div style="display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--fg-2)"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0"></span>Live Bursa &amp; global indices</div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--fg-2)"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0"></span>Real-time price charts</div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--fg-2)"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0"></span>Sector &amp; commodity performance</div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--fg-2)"><span style="width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0"></span>Currency &amp; forex rates</div>
-          </div>
+        <div id="mktIndicesHeadline" style="border-top:1px solid var(--border);">
+          <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+        </div>
+
+        <div style="padding:20px 16px 0;">
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">Top</div>
+        </div>
+        <div id="mktIndices-top" style="border-top:1px solid var(--border);"></div>
+
+        <div style="padding:20px 16px 0;">
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">American</div>
+        </div>
+        <div id="mktIndices-american" style="border-top:1px solid var(--border);"></div>
+
+        <div style="padding:20px 16px 0;">
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">Asia</div>
+        </div>
+        <div id="mktIndices-asia" style="border-top:1px solid var(--border);"></div>
+
+        <div style="padding:20px 16px 0;">
+          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">European</div>
+        </div>
+        <div id="mktIndices-european" style="border-top:1px solid var(--border);"></div>
+      </div>
+
+      <!-- ── FOREX ── -->
+      <div id="mtab-forex-body" style="display:none;padding:0 0 32px;">
+        <div style="padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
+          <div style="font-size:.78rem;font-weight:600;color:var(--fg-2);">Base Currency</div>
+          <select id="mktFxBaseSelect" class="tx-acct-select" onchange="changeFxBase(this.value)">
+            <option value="MYR">MYR — Malaysian Ringgit</option>
+            <option value="USD">USD — US Dollar</option>
+            <option value="SGD">SGD — Singapore Dollar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="GBP">GBP — British Pound</option>
+            <option value="JPY">JPY — Japanese Yen</option>
+            <option value="CNY">CNY — Chinese Yuan</option>
+            <option value="AUD">AUD — Australian Dollar</option>
+            <option value="HKD">HKD — Hong Kong Dollar</option>
+            <option value="THB">THB — Thai Baht</option>
+          </select>
+        </div>
+        <div id="mktForexList">
+          <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
         </div>
       </div>
+
+      <!-- ── CRYPTO ── -->
+      <div id="mtab-crypto-body" style="display:none;padding:0 0 32px;">
+        <div id="mktCryptoList" style="border-top:1px solid var(--border);">
+          <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+        </div>
+      </div>
+
     </div>  </div>
 </div>
 </body>
