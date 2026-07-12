@@ -332,6 +332,31 @@ async function mpSubmitRedemption(investorId, { amount, units, note }) {
   if (error) throw error;
 }
 
+// The fund's own deposit-destination bank account — not a member's. Kept as
+// a single profiles row with status='admin' (same schema as a normal member
+// profile) rather than a separate table, per how this project's Supabase
+// project is actually set up.
+async function mpLoadAdminBankAccount() {
+  const { data, error } = await sb.from('profiles')
+    .select('bank_name, bank_account_no, bank_account_holder')
+    .eq('status', 'admin').maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+// Uploads a subscription's bank-transfer-slip receipt to the
+// capital-injection-docs Storage bucket, namespaced by investor id so
+// files from different members never collide, and returns its public URL
+// for storage in subscription_requests.receipt_url.
+async function mpUploadReceipt(investorId, file) {
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+  const path = investorId + '/' + Date.now() + '.' + ext;
+  const { error } = await sb.storage.from('capital-injection-docs').upload(path, file);
+  if (error) throw error;
+  const { data } = sb.storage.from('capital-injection-docs').getPublicUrl(path);
+  return data.publicUrl;
+}
+
 /* ── Shareholders (fund-wide, public/member-read) ────────── */
 /* ── Shareholders (units_held computed from capital_injection, since
    profiles.units_held isn't kept up to date) ────────────────────── */

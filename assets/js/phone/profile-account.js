@@ -62,6 +62,14 @@ loadProfileData();
 // rows are filed under that shared id rather than a person's id.
 var PA_ACCT=null, JA_ACCT=null, LATEST_NTA=0, LATEST_NTA_DATE=null;
 var PA_CI_ROWS=[], JA_CI_ROWS=[];
+// The fund's deposit-destination bank account, shown on the Subscribe
+// sheet — loaded independently of the account summary above so a failure
+// here (or there) never blocks the other.
+var ADMIN_BANK=null;
+async function loadAdminBankAccount(){
+  try{ ADMIN_BANK=await mpLoadAdminBankAccount(); }
+  catch(e){ console.warn('Admin bank account load failed:', e.message); }
+}
 
 function fmtMoney(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtUnits(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }

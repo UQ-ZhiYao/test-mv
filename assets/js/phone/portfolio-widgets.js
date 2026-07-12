@@ -297,16 +297,50 @@ function switchAdPeriod(p,btn){
 }
 
 // ── SUBSCRIBE / REDEEM ────────────────────────────────────────────────────────
-var NTA_P=1.0245;
-var ACCOUNTS={
-  pa:{label:'Personal Account',units:59763.79,value:61228},
-  ja:{label:'Joint Account',units:32500.00,value:30000}
-};
+// PA_ACCT/JA_ACCT/LATEST_NTA (assets/js/phone/profile-account.js) are the
+// same real, live figures shown on the Accounts screen — no separate demo
+// data here anymore.
 var subAcct='pa',redAcct='pa';
+var subReceiptFile=null;
+function fmtRM(n){return (n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function acctData(a){ return a==='ja'?JA_ACCT:PA_ACCT; }
+
 function openSheet(type){
+  if(typeof ACCOUNT_RESTRICTED!=='undefined' && ACCOUNT_RESTRICTED){
+    document.getElementById('sheetScrim').classList.add('vis');
+    document.getElementById('restrictedSheet').classList.add('vis');
+    return;
+  }
+  var prefix=type==='subscribe'?'sub':'red';
   document.getElementById('sheetScrim').classList.add('vis');
   document.getElementById(type==='subscribe'?'subSheet':'redSheet').classList.add('vis');
-  if(type==='subscribe')selectAcct('sub','pa');else selectAcct('red','pa');
+  // Personal Account is always available; the Joint Account toggle only
+  // shows up if the profile actually has one.
+  var jaBtn=document.getElementById(prefix+'Acct-ja');
+  if(jaBtn) jaBtn.style.display=(PROFILE&&PROFILE.joint_account_id)?'':'none';
+  if(type==='subscribe'){
+    var b=ADMIN_BANK||{};
+    document.getElementById('subBankName').textContent=b.bank_name||'—';
+    document.getElementById('subBankHolder').textContent=b.bank_account_holder||'—';
+    document.getElementById('subBankAcctNo').textContent=b.bank_account_no||'—';
+    document.getElementById('subRef').textContent=(PROFILE&&PROFILE.investor_id)||'—';
+    document.getElementById('subNtaLbl').textContent='Indicative Units (NTA '+(LATEST_NTA>0?LATEST_NTA.toFixed(4):'—')+')';
+    document.getElementById('mSubAmt').value='';
+    document.getElementById('mSubUnits').value='—';
+    subReceiptFile=null;
+    var fileEl=document.getElementById('mSubReceipt'); if(fileEl) fileEl.value='';
+    document.getElementById('subReceiptErr').style.display='none';
+    document.getElementById('subErr').style.display='none';
+    selectAcct('sub','pa');
+  } else {
+    var P=PROFILE||{};
+    var acctNo=P.bank_account_no?('···· '+String(P.bank_account_no).slice(-4)):null;
+    var parts=[P.bank_name,acctNo,P.bank_account_holder].filter(Boolean);
+    document.getElementById('redPayoutBank').textContent=parts.length?parts.join(' · '):'—';
+    document.getElementById('redNtaLbl').textContent='Indicative Units to Redeem (NTA '+(LATEST_NTA>0?LATEST_NTA.toFixed(4):'—')+')';
+    document.getElementById('redErr').style.display='none';
+    selectAcct('red','pa');
+  }
 }
 function closeSheet(){
   document.querySelectorAll('.sheet').forEach(function(s){s.classList.remove('vis');});
@@ -323,28 +357,69 @@ function selectAcct(sheet,acct){
     btn.style.boxShadow=on?'0 1px 4px rgba(0,0,0,.1)':'none';
   });
   if(sheet==='red'){
-    var acc=ACCOUNTS[acct];
-    document.getElementById('redHeldUnits').textContent=fmtRM(acc.units);
-    document.getElementById('redHeldValue').textContent=fmtRM(acc.value);
+    var acc=acctData(acct);
+    document.getElementById('redHeldUnits').textContent=fmtRM(acc?acc.units:0);
+    document.getElementById('redHeldValue').textContent=fmtRM(acc?acc.mv:0);
     document.getElementById('mRedAmt').value='';
     document.getElementById('mRedUnits').value='—';
   }
 }
-function fmtRM(n){return n.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function setSubAmt(v){document.getElementById('mSubAmt').value=v;document.getElementById('mSubUnits').value=fmtRM(v/NTA_P)+' units';}
-function calcSubUnits(){var a=parseFloat(document.getElementById('mSubAmt').value);document.getElementById('mSubUnits').value=a>0?fmtRM(a/NTA_P)+' units':'—';}
-function setRedPct(p){var acc=ACCOUNTS[redAcct];var a=acc.value*p/100;document.getElementById('mRedAmt').value=a.toFixed(2);document.getElementById('mRedUnits').value=fmtRM(acc.units*p/100)+' units';}
-function calcRedUnits(){var acc=ACCOUNTS[redAcct];var a=parseFloat(document.getElementById('mRedAmt').value);document.getElementById('mRedUnits').value=a>0?fmtRM(a/NTA_P)+' units':'—';}
-function submitSubM(){
-  var a=parseFloat(document.getElementById('mSubAmt').value);
-  if(!a||a<=0){showToastM('Please enter an amount');return;}
-  closeSheet();setTimeout(function(){showToastM('Subscription of RM '+fmtRM(a)+' submitted to '+ACCOUNTS[subAcct].label);},200);
+function setSubAmt(v){document.getElementById('mSubAmt').value=v;calcSubUnits();}
+function calcSubUnits(){var a=parseFloat(document.getElementById('mSubAmt').value);document.getElementById('mSubUnits').value=(a>0&&LATEST_NTA>0)?fmtRM(a/LATEST_NTA)+' units':'—';}
+function setRedPct(p){var acc=acctData(redAcct);if(!acc)return;var a=acc.mv*p/100;document.getElementById('mRedAmt').value=a.toFixed(2);document.getElementById('mRedUnits').value=fmtRM(acc.units*p/100)+' units';}
+function calcRedUnits(){var acc=acctData(redAcct);var a=parseFloat(document.getElementById('mRedAmt').value);document.getElementById('mRedUnits').value=(a>0&&LATEST_NTA>0)?fmtRM(a/LATEST_NTA)+' units':'—';}
+function onSubReceiptChange(){
+  var fileEl=document.getElementById('mSubReceipt');
+  subReceiptFile=(fileEl.files&&fileEl.files[0])||null;
+  if(subReceiptFile) document.getElementById('subReceiptErr').style.display='none';
 }
-function submitRedM(){
-  var acc=ACCOUNTS[redAcct];
+async function submitSubM(){
+  var a=parseFloat(document.getElementById('mSubAmt').value);
+  var errEl=document.getElementById('subErr');
+  errEl.style.display='none';
+  var ok=true;
+  if(!a||a<=0){errEl.textContent='Please enter an amount.';errEl.style.display='block';ok=false;}
+  if(!subReceiptFile){document.getElementById('subReceiptErr').style.display='block';ok=false;}
+  if(!ok)return;
+  var btn=document.getElementById('mSubBtn'),orig=btn.textContent;
+  btn.disabled=true;btn.textContent='Submitting…';
+  try{
+    var investorId=(PROFILE&&PROFILE.investor_id)||(AUTH_USER&&AUTH_USER.id);
+    var receiptUrl=await mpUploadReceipt(investorId,subReceiptFile);
+    // subscription_requests has no column for which account (PA/JA) the
+    // request is for, so it's recorded in the note instead.
+    var note=subAcct==='ja'?'Joint Account':null;
+    await mpSubmitSubscription(investorId,{amount:a,receiptUrl:receiptUrl,note:note});
+    closeSheet();
+    setTimeout(function(){showToastM('Subscription of RM '+fmtRM(a)+' submitted for review');},200);
+  }catch(e){
+    errEl.textContent='Submission failed: '+((e&&e.message)||'Unknown error');
+    errEl.style.display='block';
+  }finally{
+    btn.disabled=false;btn.textContent=orig;
+  }
+}
+async function submitRedM(){
+  var acc=acctData(redAcct);
   var a=parseFloat(document.getElementById('mRedAmt').value);
-  if(!a||a<=0||a>acc.value){showToastM('Please enter a valid amount');return;}
-  closeSheet();setTimeout(function(){showToastM('Redemption of RM '+fmtRM(a)+' submitted from '+acc.label);},200);
+  var errEl=document.getElementById('redErr');
+  errEl.style.display='none';
+  if(!acc||!a||a<=0||a>acc.mv){errEl.textContent='Please enter a valid amount.';errEl.style.display='block';return;}
+  var units=LATEST_NTA>0?(a/LATEST_NTA):0;
+  var btn=document.getElementById('mRedBtn'),orig=btn.textContent;
+  btn.disabled=true;btn.textContent='Submitting…';
+  try{
+    var investorId=(PROFILE&&PROFILE.investor_id)||(AUTH_USER&&AUTH_USER.id);
+    var note=redAcct==='ja'?'Joint Account':null;
+    await mpSubmitRedemption(investorId,{amount:a,units:units,note:note});
+    closeSheet();
+    setTimeout(function(){showToastM('Redemption of RM '+fmtRM(a)+' submitted — 15 business days');},200);
+  }catch(e){
+    errEl.textContent='Submission failed: '+((e&&e.message)||'Unknown error');
+    errEl.style.display='block';
+  }finally{
+    btn.disabled=false;btn.textContent=orig;
+  }
 }
 
 var MARKETS={
