@@ -82,15 +82,23 @@ function fmtDateShort(d){
 
 // Computes units/VWAP/MV/Cost/Realized/Return for one account id (either a
 // profile's own id for PA, or a joint account id for JA) from capital_injection.
+// The returned rows are every row regardless of status (the Transaction
+// list needs Pending ones too, to show as "Pending" rather than omit them
+// entirely) — but the units/value totals below only ever count Approved
+// rows, matching the same status filter used everywhere else this table
+// is queried (mpLoadCapitalSummary, mpLoadShareholders, etc. in
+// member-api.js), so a still-Pending request never inflates the member's
+// displayed holdings before it's actually been approved.
 async function computeAccountFromCapitalInjection(acctId, latestNta){
   if(!acctId) return {rows:[],result:null};
-  var { data, error } = await sb.from('capital_injection').select('units, amount, date').eq('uid', acctId);
+  var { data, error } = await sb.from('capital_injection').select('reference_id, type, units, amount, date, status').eq('uid', acctId);
   if(error){ console.warn('[Account Summary] capital_injection load failed for', acctId, ':', error.message); return {rows:[],result:null}; }
   var rows=data||[];
   console.log('[Account Summary] capital_injection rows for uid='+acctId+':', rows.length);
   if(!rows.length) console.warn('[Account Summary] No rows returned for uid='+acctId+'. If this account should have transactions, check the capital_injection RLS policy allows reading rows where uid matches profiles.joint_account_id (not just auth.uid()).');
   var units=0, buyUnits=0, buyAmount=0;
   rows.forEach(function(r){
+    if(r.status!=='Approved') return;
     var u=parseFloat(r.units)||0;
     var a=parseFloat(r.amount)||0;
     units+=u;
