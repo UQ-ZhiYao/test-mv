@@ -38,7 +38,8 @@ function applyProfileToUI(){
   // profiles has no separate investor_id column — id (the profile's own
   // uuid) is the only real per-member identifier in this schema.
   var shortId=P.id?String(P.id).slice(0,8).toUpperCase():'—';
-  document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent='Verified Investor · '+shortId;});
+  var badgeLabel=P.status==='pending'?'USER':'Verified Investor';
+  document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent=badgeLabel+' · '+shortId;});
   if(typeof updatePinDisplay==='function') updatePinDisplay();
   ACCOUNT_RESTRICTED=(P.status==='pending'||P.status==='suspended');
   if(typeof applyFundRestriction==='function') applyFundRestriction();
