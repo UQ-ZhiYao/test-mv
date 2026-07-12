@@ -674,44 +674,24 @@ async function mpLoadNtaWeekly() {
   return order.map(function(key) { return byWeek[key]; });
 }
 
-/* ── External index weekly series via Yahoo Finance, proxied through a
-   public CORS proxy — a direct browser call to Yahoo Finance returns 403
-   (same CORS workaround used by the admin NTA engine for price lookups).
-   Free public proxies come and go / rate-limit unpredictably (this is the
-   most likely reason FBM KLCI/STI/MSCI intermittently vanish from the Fund
-   page's correlation matrix and Sharpe chart, and from desktop's
-   Comparison page, which both call this same function) — so this tries a
-   short list of independent proxies in turn instead of hard-depending on
-   just one. Returns ascending [{date:'YYYY-MM-DD', close:Number}].       */
-var YAHOO_CORS_PROXIES = [
-  function(url){ return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
-  function(url){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
-  function(url){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url); }
-];
+/* ── External index weekly series via Yahoo Finance, through our own
+   fetch-historical Supabase Edge Function (supabase/functions/
+   fetch-historical/index.ts) — a direct browser call to Yahoo Finance
+   returns 403 (CORS), and every public-proxy workaround tried before this
+   (corsproxy.io, then a multi-proxy fallback chain) turned out to be
+   unreliable in production; FBM KLCI/STI/MSCI kept intermittently
+   vanishing from the Fund page's correlation matrix and Sharpe chart, and
+   from desktop's Comparison page, which both call this same function.
+   Running the Yahoo call server-side avoids the CORS problem entirely
+   instead of working around it. Returns ascending
+   [{date:'YYYY-MM-DD', close:Number}].                                  */
 async function mpLoadYahooWeekly(symbol) {
-  const yahooUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol)
-    + '?interval=1wk&range=5y';
-  let lastErr = null;
-  for (const makeProxyUrl of YAHOO_CORS_PROXIES) {
-    try {
-      const res = await fetch(makeProxyUrl(yahooUrl));
-      if (!res.ok) throw new Error('Yahoo Finance request failed for ' + symbol + ' (' + res.status + ')');
-      const json = await res.json();
-      const result = json && json.chart && json.chart.result && json.chart.result[0];
-      if (!result || !result.timestamp) throw new Error('No data returned for ' + symbol);
-      const ts = result.timestamp;
-      const closes = (result.indicators && result.indicators.quote && result.indicators.quote[0] && result.indicators.quote[0].close) || [];
-      const out = [];
-      for (let i = 0; i < ts.length; i++) {
-        if (closes[i] == null) continue;
-        out.push({ date: new Date(ts[i] * 1000).toISOString().slice(0, 10), close: closes[i] });
-      }
-      return out;
-    } catch (e) {
-      lastErr = e; // try the next proxy
-    }
-  }
-  throw lastErr || new Error('All CORS proxies failed for ' + symbol);
+  const { data, error } = await sb.functions.invoke('fetch-historical', {
+    body: { symbol: symbol, interval: '1wk', range: '5y' }
+  });
+  if (error) throw new Error('fetch-historical failed for ' + symbol + ': ' + error.message);
+  if (data && data.error) throw new Error(data.error);
+  return ((data && data.points) || []).map(function(p) { return { date: p.date, close: p.close }; });
 }
 
 /* ── Distributions by FY (fund-wide, Paid only) — for the Fund Overview
