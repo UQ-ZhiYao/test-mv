@@ -303,41 +303,60 @@ function switchAdPeriod(p,btn){
 // ── SUBSCRIBE / REDEEM ────────────────────────────────────────────────────────
 // PA_ACCT/JA_ACCT/LATEST_NTA (assets/js/phone/profile-account.js) are the
 // same real, live figures shown on the Accounts screen — no separate demo
-// data here anymore.
+// data here anymore. There's no separate subscription_requests/
+// redemption_requests table in the real schema — a Pending request is a
+// capital_injection row (see mpSubmitCapitalInjectionRequest() in
+// member-api.js).
 var subAcct='pa',redAcct='pa';
 var subReceiptFile=null;
 var subRefId=null,redRefId=null;
+var jaDisplayName=null; // cached per sheet-open, see acctFullName()
 function fmtRM(n){return (n||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function acctData(a){ return a==='ja'?JA_ACCT:PA_ACCT; }
+// capital_injection.uid: a personal profile's own id for Personal Account,
+// or profile.joint_account_id for Joint Account.
+function acctUid(a){ return a==='ja'?(PROFILE&&PROFILE.joint_account_id):(PROFILE&&PROFILE.id); }
+async function acctFullName(a){
+  if(a==='pa') return (PROFILE&&PROFILE.full_name)||null;
+  if(jaDisplayName===null && PROFILE && PROFILE.joint_account_id){
+    try{ jaDisplayName=await mpLoadJointAccountName(PROFILE.joint_account_id); }
+    catch(e){ console.warn('Joint account name lookup failed:', e.message); }
+  }
+  return jaDisplayName||null;
+}
 
-// SUB-20260712-INV0042-001 / RED-20260712-INV0042-001 — type, issue date,
-// the member's own investor_id, and a running index (this member's Nth
-// request in that table) so two requests on the same day still get
-// distinct references.
-// Fixed at 12 characters: 1 (type) + 6 (YYMMDD) + 3 (investor id) + 2 (index).
-function genRequestRef(type,investorId,index){
+// S26071204201 / R26071204201 — type, issue date, and a running index (this
+// account's Nth capital_injection row of that type) so two requests for
+// the same account on the same day still get distinct references.
+// Fixed at 12 characters: 1 (type) + 6 (YYMMDD) + 3 (from the account's own
+// id — profiles has no separate short investor code, so this uses the
+// last 3 hex characters of the uuid) + 2 (index).
+function genRequestRef(type,uid,index){
   var d=new Date();
   var yy=String(d.getFullYear()).slice(-2);
   var mm=String(d.getMonth()+1).padStart(2,'0');
   var dd=String(d.getDate()).padStart(2,'0');
   var t=(type||'?').charAt(0).toUpperCase();
-  var idDigits=String(investorId||'').replace(/\D/g,'');
-  var idPart=(idDigits.slice(-3)||'000').padStart(3,'0');
+  var idHex=String(uid||'').replace(/[^0-9a-fA-F]/g,'');
+  var idPart=(idHex.slice(-3)||'000').toUpperCase().padStart(3,'0');
   var idxPart=String(index%100).padStart(2,'0');
   return t+yy+mm+dd+idPart+idxPart;
 }
-// Computed once when the sheet opens (not re-generated at submit time) so
-// the reference the member sees on screen — the one they'd write on their
-// bank transfer — is exactly the one that ends up on their request.
-async function refreshRequestRef(prefix,type,table){
-  var investorId=(PROFILE&&PROFILE.investor_id)||(AUTH_USER&&AUTH_USER.id);
+// Computed whenever the sheet opens or the account selection changes (not
+// re-generated at submit time) so the reference the member sees on screen
+// — the one they'd write on their bank transfer — is exactly the one that
+// ends up on their request.
+async function refreshRequestRef(prefix,type,acct){
+  var uid=acctUid(acct);
   var el=document.getElementById(prefix+'Ref');
   if(el) el.textContent='—';
   var ref=null;
-  try{
-    var count=await mpCountRequests(table,investorId);
-    ref=genRequestRef(type,investorId,count+1);
-  }catch(e){ console.warn('Reference ID lookup failed:', e.message); }
+  if(uid){
+    try{
+      var count=await mpCountCapitalInjectionRequests(uid,type);
+      ref=genRequestRef(type,uid,count+1);
+    }catch(e){ console.warn('Reference ID lookup failed:', e.message); }
+  }
   if(prefix==='sub') subRefId=ref; else redRefId=ref;
   if(el) el.textContent=ref||'—';
 }
@@ -349,6 +368,7 @@ function openSheet(type){
     return;
   }
   var prefix=type==='subscribe'?'sub':'red';
+  jaDisplayName=null;
   document.getElementById('sheetScrim').classList.add('vis');
   document.getElementById(type==='subscribe'?'subSheet':'redSheet').classList.add('vis');
   // Personal Account is always available; the Joint Account toggle only
@@ -368,7 +388,6 @@ function openSheet(type){
     document.getElementById('subReceiptErr').style.display='none';
     document.getElementById('subErr').style.display='none';
     selectAcct('sub','pa');
-    refreshRequestRef('sub','SUB','subscription_requests');
   } else {
     var P=PROFILE||{};
     var acctNo=P.bank_account_no?('···· '+String(P.bank_account_no).slice(-4)):null;
@@ -377,7 +396,6 @@ function openSheet(type){
     document.getElementById('redNtaLbl').textContent='Indicative Units to Redeem (NTA '+(LATEST_NTA>0?LATEST_NTA.toFixed(4):'—')+')';
     document.getElementById('redErr').style.display='none';
     selectAcct('red','pa');
-    refreshRequestRef('red','RED','redemption_requests');
   }
 }
 function closeSheet(){
@@ -401,6 +419,10 @@ function selectAcct(sheet,acct){
     document.getElementById('mRedAmt').value='';
     document.getElementById('mRedUnits').value='—';
   }
+  // The reference's account-id segment (and the running index behind it)
+  // depend on which account is selected, so it's recomputed on every
+  // switch, not just once when the sheet first opens.
+  refreshRequestRef(sheet,sheet==='sub'?'Subscription':'Redemption',acct);
 }
 function setSubAmt(v){document.getElementById('mSubAmt').value=v;calcSubUnits();}
 function calcSubUnits(){var a=parseFloat(document.getElementById('mSubAmt').value);document.getElementById('mSubUnits').value=(a>0&&LATEST_NTA>0)?fmtRM(a/LATEST_NTA)+' units':'—';}
@@ -422,14 +444,11 @@ async function submitSubM(){
   var btn=document.getElementById('mSubBtn'),orig=btn.textContent;
   btn.disabled=true;btn.textContent='Submitting…';
   try{
-    var investorId=(PROFILE&&PROFILE.investor_id)||(AUTH_USER&&AUTH_USER.id);
-    var receiptUrl=await mpUploadReceipt(investorId,subReceiptFile);
-    // subscription_requests has no dedicated column for the reference ID
-    // shown on screen or for which account (PA/JA) the request is for, so
-    // both are recorded in the note instead.
-    var noteParts=['Ref: '+(subRefId||'—')];
-    if(subAcct==='ja') noteParts.push('Joint Account');
-    await mpSubmitSubscription(investorId,{amount:a,receiptUrl:receiptUrl,note:noteParts.join(' | ')});
+    var uid=acctUid(subAcct);
+    var uploaderId=(PROFILE&&PROFILE.id)||(AUTH_USER&&AUTH_USER.id);
+    var receiptUrl=await mpUploadReceipt(uploaderId,subReceiptFile);
+    var fullName=await acctFullName(subAcct);
+    await mpSubmitCapitalInjectionRequest(uid,{fullName:fullName,type:'Subscription',amount:a,document:receiptUrl,referenceId:subRefId});
     closeSheet();
     setTimeout(function(){showToastM('Subscription '+(subRefId||'')+' of RM '+fmtRM(a)+' submitted for review');},200);
   }catch(e){
@@ -445,17 +464,12 @@ async function submitRedM(){
   var errEl=document.getElementById('redErr');
   errEl.style.display='none';
   if(!acc||!a||a<=0||a>acc.mv){errEl.textContent='Please enter a valid amount.';errEl.style.display='block';return;}
-  var units=LATEST_NTA>0?(a/LATEST_NTA):0;
   var btn=document.getElementById('mRedBtn'),orig=btn.textContent;
   btn.disabled=true;btn.textContent='Submitting…';
   try{
-    var investorId=(PROFILE&&PROFILE.investor_id)||(AUTH_USER&&AUTH_USER.id);
-    // redemption_requests has no dedicated column for the reference ID
-    // shown on screen or for which account (PA/JA) the request is for, so
-    // both are recorded in the note instead.
-    var noteParts=['Ref: '+(redRefId||'—')];
-    if(redAcct==='ja') noteParts.push('Joint Account');
-    await mpSubmitRedemption(investorId,{amount:a,units:units,note:noteParts.join(' | ')});
+    var uid=acctUid(redAcct);
+    var fullName=await acctFullName(redAcct);
+    await mpSubmitCapitalInjectionRequest(uid,{fullName:fullName,type:'Redemption',amount:a,document:null,referenceId:redRefId});
     closeSheet();
     setTimeout(function(){showToastM('Redemption '+(redRefId||'')+' of RM '+fmtRM(a)+' submitted — 15 business days');},200);
   }catch(e){
