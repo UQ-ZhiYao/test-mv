@@ -3,18 +3,23 @@
 // fetch handler has cached) need to be invalidated for everyone. The
 // browser only re-checks this file for changes on its own schedule (at
 // most once ~24h per the service worker spec) and only clears the old
-// cache once it detects sw.js's own bytes changed — a code fix to a file
-// in SHELL doesn't do that by itself. This is what actually happened after
-// the Yahoo Finance CORS proxy fallback fix (member-api.js, in SHELL):
-// the deployed fix was correct, but visitors with an already-installed
-// worker kept serving the pre-fix member-api.js from the 'zy-v1' cache
-// until a version bump forced a fresh install. member-api.js changed again
-// (Yahoo fetch now goes through the fetch-historical edge function instead
-// of CORS proxies), so bump again here for the same reason.
-const CACHE = 'zy-v3';
+// cache once it detects sw.js's own bytes changed.
+const CACHE = 'zy-v4';
+// member-api.js is NOT in this list on purpose. It used to be, and every
+// time it changed, visitors kept getting the old copy for a while even
+// after this cache was bumped — because the fetch handler below is
+// network-first (`fetch(e.request)` before falling back to cache), and a
+// plain `fetch()` still honors the page's normal HTTP cache-control
+// headers. GitHub Pages serves static files with a several-minutes
+// max-age, so the browser's *HTTP* cache — not this Cache Storage — was
+// quietly serving the stale file regardless of CACHE. The actual fix is
+// the versioned query string on member-api.js's <script src> tags (e.g.
+// member-api.js?v=4): a changed URL is a cache miss everywhere, HTTP cache
+// included. Bump that query string, not (only) this file, when
+// member-api.js changes again.
 const SHELL = ['/', 'index.html', 'login.html', 'desktop/dashboard.html', 'phone/login.html', 'manifest.webmanifest',
   'assets/css/site.css', 'assets/js/site.js', 'assets/js/supabase-auth.js',
-  'assets/js/api.js', 'assets/js/member-api.js',
+  'assets/js/api.js',
   'assets/img/logo.png', 'assets/img/icon-192.png', 'assets/img/icon-512.png'];
 
 self.addEventListener('install', e => {
