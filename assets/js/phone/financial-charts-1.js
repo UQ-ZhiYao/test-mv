@@ -65,14 +65,16 @@ function updateFundMarketValue(){
   var outstandingShares=(IS.length?IS[IS.length-1].outstandingShares:0)||0;
   var marketCap=outstandingShares*lastNta;
   if(mvEl){ mvEl.setAttribute('data-real', fmtCompactM(marketCap)); mvEl.textContent=(typeof ACCOUNT_RESTRICTED!=='undefined'&&ACCOUNT_RESTRICTED)?'••••••':fmtCompactM(marketCap); }
-  // foFundSize/poMarketCap intentionally left unmasked: foFundSize lives on
-  // the Fund page's own "Profile" tab, which is excluded from restriction,
-  // and poMarketCap lives inside the Portfolio tab, which gets the full
-  // blur+lock overlay via applyFundRestriction() instead.
+  // foFundSize and poMarketCap both live on the Fund page's "Profile" tab,
+  // which (unlike Results/Portfolio/Shareholder) isn't fully blurred+locked
+  // for restricted accounts — but the figures themselves are still
+  // sensitive (one sits inline in a sentence, the other in a table row), so
+  // they get the same dot-mask as the header instead of a full tab lock.
+  var restrictedNow=(typeof ACCOUNT_RESTRICTED!=='undefined'&&ACCOUNT_RESTRICTED);
   var fundSizeEl=document.getElementById('foFundSize');
-  if(fundSizeEl) fundSizeEl.textContent='RM '+fmtCompactM(marketCap);
+  if(fundSizeEl){ var fsTxt='RM '+fmtCompactM(marketCap); fundSizeEl.setAttribute('data-real', fsTxt); fundSizeEl.textContent=restrictedNow?'••••••':fsTxt; }
   var poEl=document.getElementById('poMarketCap');
-  if(poEl) poEl.textContent='RM '+fmtCompactM(marketCap);
+  if(poEl){ var poTxt='RM '+fmtCompactM(marketCap); poEl.setAttribute('data-real', poTxt); poEl.textContent=restrictedNow?'••••••':poTxt; }
   return marketCap;
 }
 function fmtCompactM(v){
@@ -86,9 +88,10 @@ function applySharesAndDividend(){
   if(IS.length){
     var lastIS=IS[IS.length-1];
     var sharesTxt=fmtCompactM(lastIS.outstandingShares||0).replace(/\.00 M/,' M');
-    if(sharesEl){ sharesEl.setAttribute('data-real', sharesTxt); sharesEl.textContent=(typeof ACCOUNT_RESTRICTED!=='undefined'&&ACCOUNT_RESTRICTED)?'••••••':sharesTxt; }
-    // foIssuedUnits lives on the excluded "Profile" tab — left unmasked, see note in updateFundMarketValue().
-    if(issuedEl) issuedEl.textContent=sharesTxt+' units';
+    var restrictedShares=(typeof ACCOUNT_RESTRICTED!=='undefined'&&ACCOUNT_RESTRICTED);
+    if(sharesEl){ sharesEl.setAttribute('data-real', sharesTxt); sharesEl.textContent=restrictedShares?'••••••':sharesTxt; }
+    // foIssuedUnits lives on the Profile tab's Fund Overview table — dot-masked like foFundSize/poMarketCap above.
+    if(issuedEl){ var issuedTxt=sharesTxt+' units'; issuedEl.setAttribute('data-real', issuedTxt); issuedEl.textContent=restrictedShares?'••••••':issuedTxt; }
   }
   if(typeof mpLoadDistributionsByFy==='function'){
     mpLoadDistributionsByFy().then(function(distByFy){
@@ -113,7 +116,7 @@ function applySharesAndDividend(){
 var FUND_LOCK_TABS=['results','portfolio','shareholder'];
 function applyFundRestriction(){
   var restricted=(typeof ACCOUNT_RESTRICTED!=='undefined'&&ACCOUNT_RESTRICTED);
-  ['fsMarketValue','fsShares'].forEach(function(id){
+  ['fsMarketValue','fsShares','foFundSize','poMarketCap','foIssuedUnits'].forEach(function(id){
     var el=document.getElementById(id);
     if(!el) return;
     var real=el.getAttribute('data-real');
