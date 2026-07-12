@@ -8,8 +8,10 @@
 // the Yahoo Finance CORS proxy fallback fix (member-api.js, in SHELL):
 // the deployed fix was correct, but visitors with an already-installed
 // worker kept serving the pre-fix member-api.js from the 'zy-v1' cache
-// until this version bump forces a fresh install.
-const CACHE = 'zy-v2';
+// until a version bump forced a fresh install. member-api.js changed again
+// (Yahoo fetch now goes through the fetch-historical edge function instead
+// of CORS proxies), so bump again here for the same reason.
+const CACHE = 'zy-v3';
 const SHELL = ['/', 'index.html', 'login.html', 'desktop/dashboard.html', 'phone/login.html', 'manifest.webmanifest',
   'assets/css/site.css', 'assets/js/site.js', 'assets/js/supabase-auth.js',
   'assets/js/api.js', 'assets/js/member-api.js',
