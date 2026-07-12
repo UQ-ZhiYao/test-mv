@@ -694,6 +694,22 @@ async function mpLoadYahooWeekly(symbol) {
   return ((data && data.points) || []).map(function(p) { return { date: p.date, close: p.close }; });
 }
 
+/* ── Live quote snapshots (indices/forex/crypto) via our own fetch-quotes
+   Supabase Edge Function (supabase/functions/fetch-quotes/index.ts) — same
+   server-side-fetch pattern as mpLoadYahooWeekly()/fetch-historical, for
+   the same CORS reason. Used by the phone Market screen's Indices/Forex/
+   Crypto tabs. Returns an array of {symbol, shortName, regularMarketPrice,
+   regularMarketChange, regularMarketChangePercent, currency} — symbols
+   Yahoo doesn't recognize are simply absent, not an error. */
+async function mpLoadQuotes(symbols) {
+  const { data, error } = await sb.functions.invoke('fetch-quotes', {
+    body: { symbols: symbols }
+  });
+  if (error) throw new Error('fetch-quotes failed: ' + error.message);
+  if (data && data.error) throw new Error(data.error);
+  return (data && data.quotes) || [];
+}
+
 /* ── Distributions by FY (fund-wide, Paid only) — for the Fund Overview
    "Distribution Summary" & "Distribution History" cards. Buckets each
    Paid distribution into interimDps / finalDps by matching distributions.type

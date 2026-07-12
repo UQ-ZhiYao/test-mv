@@ -283,7 +283,7 @@ function switchTab(tab){
   pgEl.classList.add('active');
   document.getElementById('mainScroll').scrollTop=0;
   activeTab=tab;
-  if(tab==='market'){renderMktList();drawKlciSparkline();updateMktTime();}
+  if(tab==='market'){renderMktList();drawKlciSparkline();updateMktTime();if(typeof switchMarketTab==='function')switchMarketTab(MKT_ACTIVE_TAB||'indices');}
   if(tab==='watchlist'){renderWatchlist();}
   if(tab==='transaction'){renderTxList();}
   if(tab==='distribution'){renderDxList();}
