@@ -310,10 +310,17 @@ function acctData(a){ return a==='ja'?JA_ACCT:PA_ACCT; }
 // the member's own investor_id, and a running index (this member's Nth
 // request in that table) so two requests on the same day still get
 // distinct references.
+// Fixed at 12 characters: 1 (type) + 6 (YYMMDD) + 3 (investor id) + 2 (index).
 function genRequestRef(type,investorId,index){
   var d=new Date();
-  var ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
-  return type+'-'+ds+'-'+(investorId||'UNKNOWN')+'-'+String(index).padStart(3,'0');
+  var yy=String(d.getFullYear()).slice(-2);
+  var mm=String(d.getMonth()+1).padStart(2,'0');
+  var dd=String(d.getDate()).padStart(2,'0');
+  var t=(type||'?').charAt(0).toUpperCase();
+  var idDigits=String(investorId||'').replace(/\D/g,'');
+  var idPart=(idDigits.slice(-3)||'000').padStart(3,'0');
+  var idxPart=String(index%100).padStart(2,'0');
+  return t+yy+mm+dd+idPart+idxPart;
 }
 // Computed once when the sheet opens (not re-generated at submit time) so
 // the reference the member sees on screen — the one they'd write on their
