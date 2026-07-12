@@ -57,16 +57,20 @@ function fmtTxDate(d){
 }
 // Builds the transaction list directly from the same capital_injection rows
 // already loaded for Account Summary (PA_CI_ROWS/JA_CI_ROWS) — no separate
-// query needed, and guarantees the two views can never disagree.
+// query needed, and guarantees the two views can never disagree. Unlike
+// the Account Summary totals, this list includes every row regardless of
+// status — a still-Pending request should show up as Pending, not vanish.
 function buildTxDataFromCi(){
   var rows=[];
   function addRows(ciRows,acct){
     (ciRows||[]).forEach(function(r){
       var u=parseFloat(r.units)||0, a=parseFloat(r.amount)||0;
+      var type=r.type||(u>=0?'Subscription':'Redemption');
       rows.push({
         date:fmtTxDate(r.date), _sortDate:r.date,
-        type:u>=0?'Subscription':'Redemption', acct:acct,
-        kind:u>=0?'deposit':'withdrawal',
+        ref:r.reference_id||'—', acct:acct,
+        kind:type==='Redemption'?'withdrawal':'deposit',
+        approved:r.status==='Approved',
         amt:Math.abs(a), units:Math.abs(u)
       });
     });
@@ -95,8 +99,8 @@ function renderTxList(){
   if(!rows.length){list.innerHTML='<div class="tx-empty">No transactions found</div>';return;}
   list.innerHTML=rows.map(function(t){
     return '<div class="tx-row">'
-      +'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.type+'</div></div>'
-      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+fmtTxRM(t.units)+' units</div></div>'
+      +'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.ref+'</div></div>'
+      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?(fmtTxRM(t.units)+' units'):'Pending')+'</div></div>'
       +'</div>';
   }).join('');
 }

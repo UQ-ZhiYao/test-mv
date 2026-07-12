@@ -107,14 +107,14 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 // the shared TX_DATA/renderTxList/setTxFilter in index.html's main script take over.
 if(typeof switchTab==='undefined'){
 var TX_DATA=[
-  {date:'02 Jul 2026',type:'Subscription',acct:'pa',kind:'deposit',amt:10000.00,units:9760.86},
-  {date:'28 Jun 2026',type:'Redemption',acct:'ja',kind:'withdrawal',amt:5000.00,units:5416.67},
-  {date:'19 Jun 2026',type:'Subscription',acct:'ja',kind:'deposit',amt:15000.00,units:16250.00},
-  {date:'11 Jun 2026',type:'Redemption',acct:'pa',kind:'withdrawal',amt:3200.00,units:3123.48},
-  {date:'02 Jun 2026',type:'Subscription',acct:'pa',kind:'deposit',amt:20000.00,units:19521.72},
-  {date:'24 May 2026',type:'Subscription',acct:'ja',kind:'deposit',amt:10000.00,units:10833.33},
-  {date:'15 May 2026',type:'Redemption',acct:'pa',kind:'withdrawal',amt:8000.00,units:7808.69},
-  {date:'03 May 2026',type:'Subscription',acct:'pa',kind:'deposit',amt:50000.00,units:48804.29}
+  {date:'02 Jul 2026',ref:'S26070204201',acct:'pa',kind:'deposit',approved:false,amt:10000.00,units:9760.86},
+  {date:'28 Jun 2026',ref:'R26062804201',acct:'ja',kind:'withdrawal',approved:true,amt:5000.00,units:5416.67},
+  {date:'19 Jun 2026',ref:'S26061904201',acct:'ja',kind:'deposit',approved:true,amt:15000.00,units:16250.00},
+  {date:'11 Jun 2026',ref:'R26061104201',acct:'pa',kind:'withdrawal',approved:true,amt:3200.00,units:3123.48},
+  {date:'02 Jun 2026',ref:'S26060204201',acct:'pa',kind:'deposit',approved:true,amt:20000.00,units:19521.72},
+  {date:'24 May 2026',ref:'S26052404201',acct:'ja',kind:'deposit',approved:true,amt:10000.00,units:10833.33},
+  {date:'15 May 2026',ref:'R26051504201',acct:'pa',kind:'withdrawal',approved:true,amt:8000.00,units:7808.69},
+  {date:'03 May 2026',ref:'S26050304201',acct:'pa',kind:'deposit',approved:true,amt:50000.00,units:48804.29}
 ];
 var txFilter='all';
 window.setTxFilter=function(f){
@@ -132,8 +132,8 @@ window.renderTxList=function(){
   if(!rows.length){list.innerHTML='<div class="tx-empty">No transactions found</div>';return;}
   list.innerHTML=rows.map(function(t){
     return '<div class="tx-row">'
-      +'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.type+'</div></div>'
-      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+fmtTxRM(t.units)+' units</div></div>'
+      +'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.ref+'</div></div>'
+      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?(fmtTxRM(t.units)+' units'):'Pending')+'</div></div>'
       +'</div>';
   }).join('');
 };
