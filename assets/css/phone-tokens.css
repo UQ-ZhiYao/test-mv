@@ -193,7 +193,10 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 .ad-seg{display:flex;gap:2px;background:var(--gray-100);border-radius:8px;padding:3px;}
 .ad-seg button{font:inherit;font-size:.72rem;font-weight:600;padding:4px 8px;border:none;background:none;border-radius:6px;color:var(--fg-3);cursor:pointer;}
 .ad-seg button.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
-.ad-trend-lbls{display:flex;justify-content:space-between;margin-top:4px;font-size:.68rem;color:var(--fg-3);}
+.ad-trend-lbls{display:flex;justify-content:space-between;margin-top:4px;font-size:.68rem;color:var(--fg-3);padding-left:38px;}
+.ad-trend-row{display:flex;align-items:stretch;gap:6px;}
+.ad-trend-yaxis{width:32px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between;padding:2px 0;box-sizing:border-box;}
+.ad-trend-yaxis span{font-size:.62rem;color:var(--fg-3);line-height:1;text-align:right;white-space:nowrap;}
 
 /* When embedded, the persistent topbar handles back+title, so each page's own back-bar is redundant */
 .scroll .back-bar{display:none;}

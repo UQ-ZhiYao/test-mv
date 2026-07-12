@@ -46,7 +46,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .ad-seg{display:flex;gap:2px;background:var(--gray-100);border-radius:8px;padding:3px;}
 .ad-seg button{font:inherit;font-size:.72rem;font-weight:600;padding:4px 8px;border:none;background:none;border-radius:6px;color:var(--fg-3);cursor:pointer;}
 .ad-seg button.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
-.ad-trend-lbls{display:flex;justify-content:space-between;margin-top:4px;font-size:.68rem;color:var(--fg-3);}
+.ad-trend-lbls{display:flex;justify-content:space-between;margin-top:4px;font-size:.68rem;color:var(--fg-3);padding-left:38px;}
+.ad-trend-row{display:flex;align-items:stretch;gap:6px;}
+.ad-trend-yaxis{width:32px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between;padding:2px 0;box-sizing:border-box;}
+.ad-trend-yaxis span{font-size:.62rem;color:var(--fg-3);line-height:1;text-align:right;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -91,7 +94,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
               <span class="ad-legend-label">Personal</span>
               <span class="ad-legend-value" id="adLegendPersonal">0.0%</span>
             </div>
-            <div class="ad-legend-item" id="adLegendJointWrap">
+            <div class="ad-legend-item" id="adLegendJointWrap" style="display:none;">
               <span class="ad-legend-dot" style="background:#B39DDB;"></span>
               <span class="ad-legend-label">Joint</span>
               <span class="ad-legend-value" id="adLegendJoint">0.0%</span>
@@ -115,7 +118,14 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
             <button onclick="switchAdPeriod('all',this)">ALL</button>
           </div>
         </div>
-        <canvas id="adTrendChart" style="width:100%;height:150px;display:block;"></canvas>
+        <div class="ad-trend-row">
+          <div class="ad-trend-yaxis">
+            <span id="adTrendY0"></span>
+            <span id="adTrendY1"></span>
+            <span id="adTrendY2"></span>
+          </div>
+          <canvas id="adTrendChart" style="flex:1;min-width:0;height:150px;display:block;"></canvas>
+        </div>
         <div class="ad-trend-lbls">
           <span id="adTrendL0"></span>
           <span id="adTrendL1"></span>
@@ -153,6 +163,10 @@ function drawAdDonut(){
   });
   var txt=document.getElementById('adDonutText');
   if(txt){txt.style.top=(cy-6)+'px';txt.style.transform='translateY(-100%)';}
+  // Demo data above always includes a joint share — reveal the legend item
+  // that's hidden by default (see its style= in the markup).
+  var jWrap=document.getElementById('adLegendJointWrap');
+  if(jWrap) jWrap.style.display='';
 }
 var AD_TREND={
   ytd:{v:[76200,78100,79850,81200,83400,85100,86300,88000],l:['Jan','Mar','May','Jul']},
@@ -162,17 +176,39 @@ var AD_TREND={
   all:{v:[42000,51200,58900,66700,73900,79850,84900,88000],l:['2022','2024','2026']}
 };
 var adPeriod='ytd';
+// Rounds an axis value to a "nice" figure (nearest 10/100/1000/10000/... based
+// on its own magnitude) and formats it compactly (K/M), instead of the raw
+// value with two decimal places (e.g. 12123.32 -> "12K").
+function niceAxisValue(v){
+  var av=Math.abs(v);
+  var step=av>=1000000?100000:av>=100000?10000:av>=10000?1000:av>=1000?100:av>=100?10:1;
+  return Math.round(v/step)*step;
+}
+function fmtAxisLabel(v){
+  var r=niceAxisValue(v);
+  if(Math.abs(r)>=1000000) return (r/1000000).toFixed(r%1000000?1:0)+'M';
+  if(Math.abs(r)>=1000) return (r/1000).toFixed(r%1000?1:0)+'K';
+  return String(r);
+}
 function drawAdTrend(period){
   var canvas=document.getElementById('adTrendChart');
   var ctx=canvas.getContext('2d');
   var data=AD_TREND[period];
   var dpr=window.devicePixelRatio||1;
-  var W=canvas.parentElement.clientWidth-32,H=150;
+  // Measured directly off the canvas's own flex-resolved box (it sits next
+  // to the Y-axis label column in a flex row) rather than computed from a
+  // fixed padding offset, so the chart's drawing area is exactly whatever
+  // space is actually available to it — unchanged by adding the axis.
+  var W=canvas.clientWidth||canvas.getBoundingClientRect().width,H=150;
   canvas.width=W*dpr;canvas.height=H*dpr;
   canvas.style.width=W+'px';canvas.style.height=H+'px';
   ctx.scale(dpr,dpr);
   var vals=data.v,n=vals.length;
   var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),rng=(mx-mn)||1;
+  var y0=document.getElementById('adTrendY0'),y1=document.getElementById('adTrendY1'),y2=document.getElementById('adTrendY2');
+  if(y0)y0.textContent=fmtAxisLabel(mx);
+  if(y1)y1.textContent=fmtAxisLabel((mn+mx)/2);
+  if(y2)y2.textContent=fmtAxisLabel(mn);
   var padX=4,padY=10;
   function px(i){return padX+(i/(n-1))*(W-padX*2);}
   function py(v){return H-padY-((v-mn)/rng)*(H-padY*2);}

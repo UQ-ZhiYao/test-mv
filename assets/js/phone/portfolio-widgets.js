@@ -225,24 +225,47 @@ function sampleAdLabels(dates){
   var fmt=function(d){ return new Date(d+'T00:00:00').toLocaleDateString('en-MY',{month:'short',year:'2-digit'}); };
   return [fmt(dates[0]), fmt(dates[Math.floor(dates.length/2)]), fmt(dates[dates.length-1])];
 }
+// Rounds an axis value to a "nice" figure (nearest 10/100/1000/10000/... based
+// on its own magnitude) and formats it compactly (K/M), instead of the raw
+// value with two decimal places (e.g. 12123.32 -> "12K").
+function niceAxisValue(v){
+  var av=Math.abs(v);
+  var step=av>=1000000?100000:av>=100000?10000:av>=10000?1000:av>=1000?100:av>=100?10:1;
+  return Math.round(v/step)*step;
+}
+function fmtAxisLabel(v){
+  var r=niceAxisValue(v);
+  if(Math.abs(r)>=1000000) return (r/1000000).toFixed(r%1000000?1:0)+'M';
+  if(Math.abs(r)>=1000) return (r/1000).toFixed(r%1000?1:0)+'K';
+  return String(r);
+}
 async function drawAdTrend(period){
   var canvas=document.getElementById('adTrendChart');
   if(!canvas)return;
   var data=await loadAdTrendData(period);
   var ctx=canvas.getContext('2d');
   var dpr=window.devicePixelRatio||1;
-  var W=canvas.parentElement.clientWidth-32,H=150;
+  // Measured directly off the canvas's own flex-resolved box (it sits next
+  // to the Y-axis label column in a flex row) rather than computed from a
+  // fixed padding offset, so the chart's drawing area is exactly whatever
+  // space is actually available to it — unchanged by adding the axis.
+  var W=canvas.clientWidth||canvas.getBoundingClientRect().width,H=150;
   canvas.width=W*dpr;canvas.height=H*dpr;
   canvas.style.width=W+'px';canvas.style.height=H+'px';
   ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,W,H);
   var vals=data.v,n=vals.length;
+  var y0e=document.getElementById('adTrendY0'),y1e=document.getElementById('adTrendY1'),y2e=document.getElementById('adTrendY2');
   if(n<2){
     var l0e=document.getElementById('adTrendL0'),l1e=document.getElementById('adTrendL1'),l2e=document.getElementById('adTrendL2');
     if(l0e)l0e.textContent=''; if(l1e)l1e.textContent='No data'; if(l2e)l2e.textContent='';
+    if(y0e)y0e.textContent=''; if(y1e)y1e.textContent=''; if(y2e)y2e.textContent='';
     return;
   }
   var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),rng=(mx-mn)||1;
+  if(y0e)y0e.textContent=fmtAxisLabel(mx);
+  if(y1e)y1e.textContent=fmtAxisLabel((mn+mx)/2);
+  if(y2e)y2e.textContent=fmtAxisLabel(mn);
   var padX=4,padY=10;
   function px(i){return padX+(i/(n-1))*(W-padX*2);}
   function py(v){return H-padY-((v-mn)/rng)*(H-padY*2);}

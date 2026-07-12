@@ -221,6 +221,14 @@ function updateTopbarChrome(tab){
   var noBorderTabs=['portfolio','assetdetails','fund','market','watchlist','discover','all'];
   if(bar) bar.style.borderBottom=(noBorderTabs.indexOf(tab)>=0)?'none':'1px solid var(--border)';
 }
+// switchTab() is what normally calls updateTopbarChrome(), but it only ever
+// runs on an actual tab click — the default tab (Accounts/portfolio) is
+// already marked active in the raw HTML, so nothing calls it on a fresh
+// load. Without this, the topbar's divider line (present in the static
+// CSS) stayed visible on the very first screen the app shows until the
+// user switched tabs and back. Run it once, immediately, for whatever tab
+// is actually active on load.
+updateTopbarChrome(activeTab);
 function switchFundTab(tab){
   document.querySelectorAll('.ftab').forEach(function(b){b.classList.remove('active');});
   document.getElementById('ftab-'+tab).classList.add('active');
