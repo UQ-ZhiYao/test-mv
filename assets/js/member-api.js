@@ -674,27 +674,44 @@ async function mpLoadNtaWeekly() {
   return order.map(function(key) { return byWeek[key]; });
 }
 
-/* ── External index weekly series via Yahoo Finance, proxied through
-   corsproxy.io — a direct browser call to Yahoo Finance returns 403
+/* ── External index weekly series via Yahoo Finance, proxied through a
+   public CORS proxy — a direct browser call to Yahoo Finance returns 403
    (same CORS workaround used by the admin NTA engine for price lookups).
-   Returns ascending [{date:'YYYY-MM-DD', close:Number}].                 */
+   Free public proxies come and go / rate-limit unpredictably (this is the
+   most likely reason FBM KLCI/STI/MSCI intermittently vanish from the Fund
+   page's correlation matrix and Sharpe chart, and from desktop's
+   Comparison page, which both call this same function) — so this tries a
+   short list of independent proxies in turn instead of hard-depending on
+   just one. Returns ascending [{date:'YYYY-MM-DD', close:Number}].       */
+var YAHOO_CORS_PROXIES = [
+  function(url){ return 'https://corsproxy.io/?url=' + encodeURIComponent(url); },
+  function(url){ return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url); },
+  function(url){ return 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url); }
+];
 async function mpLoadYahooWeekly(symbol) {
   const yahooUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(symbol)
     + '?interval=1wk&range=5y';
-  const proxied = 'https://corsproxy.io/?url=' + encodeURIComponent(yahooUrl);
-  const res = await fetch(proxied);
-  if (!res.ok) throw new Error('Yahoo Finance request failed for ' + symbol + ' (' + res.status + ')');
-  const json = await res.json();
-  const result = json && json.chart && json.chart.result && json.chart.result[0];
-  if (!result || !result.timestamp) throw new Error('No data returned for ' + symbol);
-  const ts = result.timestamp;
-  const closes = (result.indicators && result.indicators.quote && result.indicators.quote[0] && result.indicators.quote[0].close) || [];
-  const out = [];
-  for (let i = 0; i < ts.length; i++) {
-    if (closes[i] == null) continue;
-    out.push({ date: new Date(ts[i] * 1000).toISOString().slice(0, 10), close: closes[i] });
+  let lastErr = null;
+  for (const makeProxyUrl of YAHOO_CORS_PROXIES) {
+    try {
+      const res = await fetch(makeProxyUrl(yahooUrl));
+      if (!res.ok) throw new Error('Yahoo Finance request failed for ' + symbol + ' (' + res.status + ')');
+      const json = await res.json();
+      const result = json && json.chart && json.chart.result && json.chart.result[0];
+      if (!result || !result.timestamp) throw new Error('No data returned for ' + symbol);
+      const ts = result.timestamp;
+      const closes = (result.indicators && result.indicators.quote && result.indicators.quote[0] && result.indicators.quote[0].close) || [];
+      const out = [];
+      for (let i = 0; i < ts.length; i++) {
+        if (closes[i] == null) continue;
+        out.push({ date: new Date(ts[i] * 1000).toISOString().slice(0, 10), close: closes[i] });
+      }
+      return out;
+    } catch (e) {
+      lastErr = e; // try the next proxy
+    }
   }
-  return out;
+  throw lastErr || new Error('All CORS proxies failed for ' + symbol);
 }
 
 /* ── Distributions by FY (fund-wide, Paid only) — for the Fund Overview

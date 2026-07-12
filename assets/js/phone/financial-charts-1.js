@@ -239,8 +239,22 @@ async function loadFundCorrelationAndSharpe(){
     var klci=(results[1].status==='fulfilled')?(results[1].value||[]):[];
     var sti=(results[2].status==='fulfilled')?(results[2].value||[]):[];
     var msci=(results[3].status==='fulfilled')?(results[3].value||[]):[];
-    var series=[{name:'ZY-Invest',color:'#1565C0',pts:zy},{name:'FBM KLCI',color:'#90A4AE',pts:klci},{name:'STI',color:'#78909C',pts:sti},{name:'MSCI',color:'#546E7A',pts:msci}]
-      .filter(function(s){return s.pts&&s.pts.length;});
+    var allSeries=[{name:'ZY-Invest',color:'#1565C0',pts:zy},{name:'FBM KLCI',color:'#90A4AE',pts:klci},{name:'STI',color:'#78909C',pts:sti},{name:'MSCI',color:'#546E7A',pts:msci}];
+    var series=allSeries.filter(function(s){return s.pts&&s.pts.length;});
+    // The benchmark indices load from Yahoo Finance through a public CORS
+    // proxy (mpLoadYahooWeekly in member-api.js), which can fail
+    // independently of the fund's own NTA data — surface that instead of
+    // silently just not showing the missing benchmark(s).
+    var missingNames=allSeries.filter(function(s){return !s.pts||!s.pts.length;}).map(function(s){return s.name;});
+    var noticeEl=document.getElementById('corrDataNotice');
+    if(noticeEl){
+      if(missingNames.length){
+        noticeEl.textContent=missingNames.join(', ')+' data is temporarily unavailable.';
+        noticeEl.style.display='block';
+      } else {
+        noticeEl.style.display='none';
+      }
+    }
     if(!series.length) return;
 
     // Align onto a shared weekly date axis (forward-fill), same approach
