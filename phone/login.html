@@ -231,7 +231,10 @@ async function doLogin(){
     // cards when a joint_account_id is present.
     var prof=null, jaInfo=null;
     try{
-      var profRes=await sb.from('profiles').select('id, investor_id, full_name, joint_account_id').eq('id',uid).single();
+      // profiles has no investor_id column (there's no separate short
+      // investor code in this schema) — id (the auth uid) is the only real
+      // per-member identifier, so that's what's used everywhere downstream.
+      var profRes=await sb.from('profiles').select('id, full_name, joint_account_id').eq('id',uid).single();
       if(!profRes.error) prof=profRes.data;
     }catch(pe){}
     if(prof && prof.joint_account_id){
@@ -245,7 +248,7 @@ async function doLogin(){
       access_token:       res.data.session.access_token,
       role:               res.data.user.user_metadata?.role||'member',
       name:               (prof&&prof.full_name)||res.data.user.user_metadata?.full_name||email,
-      investor_id:        (prof&&prof.investor_id)||res.data.user.user_metadata?.investor_id||uid,
+      investor_id:        uid,
       joint_account_id:   (prof&&prof.joint_account_id)||'',
       joint_account_name: (jaInfo&&jaInfo.display_name)||''
     });

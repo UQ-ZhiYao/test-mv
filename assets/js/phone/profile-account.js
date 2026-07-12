@@ -35,7 +35,10 @@ function applyProfileToUI(){
   document.querySelectorAll('.prof-name').forEach(function(el){el.textContent=name;});
   document.querySelectorAll('.prof-email').forEach(function(el){el.textContent=email;});
   document.querySelectorAll('.prof-av-lg,.avatar-sm').forEach(function(el){el.textContent=initials;});
-  document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent='Verified Investor · '+(P.investor_id||'—');});
+  // profiles has no separate investor_id column — id (the profile's own
+  // uuid) is the only real per-member identifier in this schema.
+  var shortId=P.id?String(P.id).slice(0,8).toUpperCase():'—';
+  document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent='Verified Investor · '+shortId;});
   if(typeof updatePinDisplay==='function') updatePinDisplay();
   ACCOUNT_RESTRICTED=(P.status==='pending'||P.status==='suspended');
   if(typeof applyFundRestriction==='function') applyFundRestriction();

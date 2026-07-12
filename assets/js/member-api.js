@@ -22,6 +22,14 @@ async function mpLoadProfile(userId) {
   return data;
 }
 
+async function mpLoadJointAccountName(jointAccountId) {
+  if (!jointAccountId) return null;
+  const { data, error } = await sb.from('joint_accounts')
+    .select('display_name').eq('id', jointAccountId).maybeSingle();
+  if (error) throw error;
+  return (data && data.display_name) || null;
+}
+
 async function mpSaveProfile(userId, updates) {
   const { error } = await sb.from('profiles')
     .update(updates).eq('id', userId);
@@ -307,27 +315,27 @@ async function mpDeleteNominee(nomineeId) {
   if (error) throw error;
 }
 
-/* ── Subscribe / Redeem ──────────────────────────────────── */
-async function mpSubmitSubscription(investorId, { amount, receiptUrl, note }) {
-  const { error } = await sb.from('subscription_requests').insert({
-    investor_id: investorId,
-    amount:      parseFloat(amount),
-    receipt_url: receiptUrl || null,
-    note:        note || null,
-    status:      'Pending',
-    requested_at: new Date().toISOString()
-  });
-  if (error) throw error;
-}
-
-async function mpSubmitRedemption(investorId, { amount, units, note }) {
-  const { error } = await sb.from('redemption_requests').insert({
-    investor_id: investorId,
-    amount:      parseFloat(amount),
-    units:       parseFloat(units),
-    note:        note || null,
-    status:      'Pending',
-    requested_at: new Date().toISOString()
+/* ── Subscribe / Redeem ──────────────────────────────────────────────────
+   There is no separate subscription_requests/redemption_requests table in
+   this project's actual Supabase schema (confirmed against the real DB —
+   an earlier version of this code assumed those tables existed and every
+   submission was silently failing). A Pending request IS a capital_injection
+   row: the same table already carries status ('Pending'/'Approved'),
+   reference_id, document (receipt URL), and gets its units/nta filled in
+   once approved — see the Transaction page's Pending-vs-approved-units
+   distinction in assets/js/phone/portfolio-widgets.js. */
+async function mpSubmitCapitalInjectionRequest(uid, { fullName, type, amount, document, referenceId }) {
+  const { error } = await sb.from('capital_injection').insert({
+    uid:          uid,
+    full_name:    fullName || null,
+    date:         new Date().toISOString().slice(0, 10),
+    type:         type, // 'Subscription' | 'Redemption'
+    amount:       parseFloat(amount),
+    nta:          null,   // filled in by admin once approved
+    units:        null,   // filled in by admin once approved
+    status:       'Pending',
+    document:     document || null,
+    reference_id: referenceId || null
   });
   if (error) throw error;
 }
@@ -350,25 +358,26 @@ async function mpLoadAdminBankAccount() {
   return (data && data[0]) || null;
 }
 
-// How many subscription/redemption requests this investor has already made
-// in the given table — used as the running index in their next request's
-// reference ID (see genRequestRef() in portfolio-widgets.js), so a member
-// submitting more than once in the same day still gets a distinct ref.
-async function mpCountRequests(table, investorId) {
-  const { count, error } = await sb.from(table)
+// How many Subscription/Redemption capital_injection rows this account
+// (uid — a personal profile id or a joint account id) already has — used
+// as the running index in the account's next request's reference ID (see
+// genRequestRef() in portfolio-widgets.js), so more than one request for
+// the same account on the same day still gets a distinct ref.
+async function mpCountCapitalInjectionRequests(uid, type) {
+  const { count, error } = await sb.from('capital_injection')
     .select('id', { count: 'exact', head: true })
-    .eq('investor_id', investorId);
+    .eq('uid', uid).eq('type', type);
   if (error) throw error;
   return count || 0;
 }
 
 // Uploads a subscription's bank-transfer-slip receipt to the
-// capital-injection-docs Storage bucket, namespaced by investor id so
-// files from different members never collide, and returns its public URL
-// for storage in subscription_requests.receipt_url.
-async function mpUploadReceipt(investorId, file) {
+// capital-injection-docs Storage bucket, namespaced by the submitting
+// member's own profile id so files from different members never collide,
+// and returns its public URL for storage in capital_injection.document.
+async function mpUploadReceipt(uid, file) {
   const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
-  const path = investorId + '/' + Date.now() + '.' + ext;
+  const path = uid + '/' + Date.now() + '.' + ext;
   const { error } = await sb.storage.from('capital-injection-docs').upload(path, file);
   if (error) throw error;
   const { data } = sb.storage.from('capital-injection-docs').getPublicUrl(path);
