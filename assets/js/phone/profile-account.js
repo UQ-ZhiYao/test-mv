@@ -41,6 +41,20 @@ function applyProfileToUI(){
   if(typeof applyFundRestriction==='function') applyFundRestriction();
 }
 
+// Kick off the session/profile check — and therefore the App Lock decision
+// in checkAppLockOnLoad() below — immediately on script load, rather than
+// waiting for misc.js's loadPages() to first fetch and mount all of the
+// Fund/Discover/Market/Watchlist/etc. page fragments (several parallel
+// network requests that can take a while on a slow connection). Previously
+// the App Lock check only ran after all of that finished, so the
+// already-rendered dashboard shell stayed visible far longer than
+// necessary before the PIN lock (or an invalid-session redirect) appeared.
+// This call and the one loadPages() still makes afterward (to re-run
+// applyProfileToUI() against the .prof-name/.prof-email/etc. elements that
+// only exist once those fragments are mounted) are both safe to run twice:
+// checkAppLockOnLoad() itself is guarded by appLockInitialCheckDone below.
+loadProfileData();
+
 // ── ACCOUNT SUMMARY (real data) ─────────────────────────────────────────────
 // PA: capital_injection rows where uid = profiles.id (the logged-in user's
 // own account). JA: same computation, but keyed on profiles.joint_account_id
