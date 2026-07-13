@@ -115,6 +115,27 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 </style>
 </head>
 <body>
+<!-- ── BOOT SPLASH ── plain white screen, visible by default, covering the
+     login card below until we actually know a login form is needed. The
+     script at the bottom of this page still checks for an existing
+     session (async — needs Supabase) and redirects straight to
+     index.html when one exists; without this splash, the login card
+     underneath would render and be visible for a moment first even for an
+     already-logged-in visitor bouncing straight back to index.html. A
+     safety-net timeout guards against the splash getting stuck up if a
+     script fails to load or the session check hangs. Same idea as
+     index.html's own #bootSplash. -->
+<div id="loginBootSplash" style="position:fixed;inset:0;background:#fff;z-index:10000;display:flex;align-items:center;justify-content:center;">
+  <img src="../assets/img/logo.png" alt="ZY" style="width:52px;height:52px;">
+</div>
+<script>
+setTimeout(function(){
+  try{
+    var splash=document.getElementById('loginBootSplash');
+    if(splash && splash.style.display!=='none') splash.style.display='none';
+  }catch(e){}
+},10000);
+</script>
 <div class="app">
 
   <!-- BG decoration -->
@@ -181,8 +202,15 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 <script src="../assets/js/supabase-auth.js"></script>
 <script src="../assets/js/api.js"></script>
 <script>
-// Already logged in?
+// Already logged in? If so, redirect straight to index.html without ever
+// revealing the login card below — the splash (loginBootSplash) stays up
+// the whole time a redirect is happening. Only hide it, and let the login
+// form actually show, once we've confirmed there's genuinely no session.
 (async function(){
+  function showLoginForm(){
+    var splash=document.getElementById('loginBootSplash');
+    if(splash) splash.style.display='none';
+  }
   try{
     if(typeof sb!=='undefined'&&sb){
       var s=await sb.auth.getSession();
@@ -192,8 +220,12 @@ input,textarea{-webkit-user-select:text;user-select:text;}
         return;
       }
     }
-    if(localStorage.getItem('zy-session')||localStorage.getItem('zy_token')){window.location.replace('index.html');}
-  }catch(e){}
+    if(localStorage.getItem('zy-session')||localStorage.getItem('zy_token')){
+      window.location.replace('index.html');
+      return;
+    }
+    showLoginForm();
+  }catch(e){ showLoginForm(); }
 })();
 </script>
 <script>
