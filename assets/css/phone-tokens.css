@@ -16,14 +16,21 @@ button,a{touch-action:manipulation;}
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --tab-h:60px;
 }
-html,body{height:100%;height:100dvh;overflow:hidden;font-family:var(--font-body);background:#fff;color:var(--fg-1);
+html,body{height:100%;height:100dvh;height:var(--app-vh,100dvh);overflow:hidden;font-family:var(--font-body);background:#fff;color:var(--fg-1);
   touch-action:pan-y;overscroll-behavior:none;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
 }
 input,textarea{-webkit-user-select:text;user-select:text;}
 
 /* ── SHELL ── */
-.app{display:flex;flex-direction:column;height:100%;height:100dvh;max-width:430px;margin:0 auto;background:#fff;position:relative;box-shadow:0 0 40px rgba(0,0,0,.12);}
+/* --app-vh (set in phone/index.html, from window.visualViewport.height) is
+   the actual fix; 100dvh is the fallback for the instant before that JS
+   runs, and for any page that doesn't set it. Several mobile browsers
+   don't reliably recompute 100dvh after the on-screen keyboard closes or
+   on rotation, which left a gap of stale space below the tabbar the size
+   of wherever the keyboard/chrome used to be — visualViewport's height
+   doesn't have that lag. */
+.app{display:flex;flex-direction:column;height:100%;height:100dvh;height:var(--app-vh,100dvh);max-width:430px;margin:0 auto;background:#fff;position:relative;box-shadow:0 0 40px rgba(0,0,0,.12);}
 
 /* ── TOP BAR ── */
 .topbar{height:calc(52px + var(--safe-top));padding:var(--safe-top) 18px 0;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
