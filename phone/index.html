@@ -10,6 +10,14 @@
 <meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<!-- Opens the connection (DNS + TLS) to both the CDN and Supabase before
+     the deferred scripts at the bottom of this page even start fetching
+     from them — the boot splash above can't hide itself until sb exists
+     (needs the CDN script) and the session/profile checks resolve (needs
+     Supabase), so shaving connection-setup time off both directly shortens
+     how long that white screen sits on screen. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://wvaibdjkjnnesefantjc.supabase.co" crossorigin>
 <title>ZY-Invest</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/css/phone-tokens.css">
@@ -532,7 +540,7 @@ setTimeout(function(){
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="../assets/js/supabase-auth.js?v=1" defer></script>
 <script src="../assets/js/member-api.js?v=5" defer></script>
-<script src="../assets/js/phone/profile-account.js?v=3" defer></script>
+<script src="../assets/js/phone/profile-account.js?v=4" defer></script>
 <script src="../assets/js/phone/portfolio-widgets.js?v=2" defer></script>
 <script src="../assets/js/phone/markets-actions.js?v=1" defer></script>
 <script src="../assets/js/phone/financial-charts-1.js?v=2" defer></script>
