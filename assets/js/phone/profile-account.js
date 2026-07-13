@@ -13,9 +13,10 @@ function mpInitialsPhone(name){
   return ((parts[0]||'')[0]||'').toUpperCase()+((parts[1]||'')[0]||'').toUpperCase();
 }
 async function loadProfileData(){
+  var sess=null;
   try{
     if(typeof sb==='undefined'||!sb) return;
-    var sess=await sb.auth.getSession();
+    sess=await sb.auth.getSession();
     var user=sess.data&&sess.data.session&&sess.data.session.user;
     if(!user) return;
     AUTH_USER=user;
@@ -24,7 +25,14 @@ async function loadProfileData(){
   applyProfileToUI();
   if(!appLockInitialCheckDone){
     appLockInitialCheckDone=true;
-    if(typeof checkAppLockOnLoad==='function') checkAppLockOnLoad();
+    // Pass the session already confirmed a couple lines up straight through,
+    // instead of having checkAppLockOnLoad()/verifySessionThenLock() await
+    // sb.auth.getSession() a second time — that redundant round trip was
+    // part of why the boot splash (index.html) sat there longer than it
+    // needed to on a slow connection. Every OTHER call to
+    // verifySessionThenLock() (resume from background, focus, etc.) still
+    // does a fresh real check, since time has actually passed for those.
+    if(typeof checkAppLockOnLoad==='function') checkAppLockOnLoad(sess);
   }
 }
 function applyProfileToUI(){
@@ -702,7 +710,7 @@ function consumeSubpageReturnFlag(){
   return false;
 }
 
-function checkAppLockOnLoad(){
+function checkAppLockOnLoad(preConfirmedSession){
   ['appLockVerifyBoxes','appLockNewBoxes','appLockConfirmBoxes'].forEach(setupPinBoxes);
   var justLoggedIn=false;
   try{
@@ -718,7 +726,7 @@ function checkAppLockOnLoad(){
   // consumeSubpageReturnFlag above). Every other open/resume still locks
   // normally — both flags are single-use and stored in sessionStorage, not
   // localStorage, so a real new session won't carry either over.
-  if(!justLoggedIn && !justReturnedFromSubpage) verifySessionThenLock();
+  if(!justLoggedIn && !justReturnedFromSubpage) verifySessionThenLock(preConfirmedSession);
   else hideBootSplash(); // no lock needed — reveal the account straight away
   // Lock the INSTANT the app is actually backgrounded — not after detecting
   // a "return" event. Waiting to detect resume is fragile: if iOS suspends
@@ -758,9 +766,22 @@ function checkAppLockOnLoad(){
 // with the user solving a PIN puzzle for nothing before being bounced to
 // login anyway. Check the real session first; only show the lock screen if
 // it's still valid, otherwise go straight to login.
-function verifySessionThenLock(){
+//
+// preConfirmedSession lets the very first call (from checkAppLockOnLoad(),
+// right after loadProfileData() already awaited sb.auth.getSession() a
+// moment ago) skip doing that same check a second time — on a slow
+// connection that redundant round trip was adding to how long the boot
+// splash sat on screen before revealing the PIN lock. Every other caller
+// (resume from background, focus, etc.) omits it and gets a fresh real
+// check, since real time has actually passed since the last one.
+function verifySessionThenLock(preConfirmedSession){
   try{
     if(typeof sb==='undefined'||!sb){ showAppLock(); return; }
+    if(preConfirmedSession){
+      if(preConfirmedSession.data&&preConfirmedSession.data.session){ showAppLock(); }
+      else { window.location.href='login.html'; }
+      return;
+    }
     sb.auth.getSession().then(function(s){
       if(s&&s.data&&s.data.session){ showAppLock(); }
       else { window.location.href='login.html'; }

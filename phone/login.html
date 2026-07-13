@@ -10,6 +10,12 @@
 <meta name="theme-color" content="#0D47A1">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="../assets/img/apple-touch-icon.png">
+<!-- Opens the connection to both the CDN and Supabase early — the
+     already-logged-in check under loginBootSplash can't resolve until sb
+     exists and the session check completes, so this shortens how long
+     that splash sits up before either redirecting or showing the form. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://wvaibdjkjnnesefantjc.supabase.co" crossorigin>
 <title>ZY-Invest — Login</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
