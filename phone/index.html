@@ -68,29 +68,31 @@
   </div>
 </div>
 
-<!-- Best-effort SYNCHRONOUS guess, before anything else on the page parses
-     or paints: a returning user with a known prior session (the same
-     local-only, no-network zy-session/zy_token hint misc.js's own auth
-     gate already trusts) should see the PIN lock the INSTANT the app
-     opens — not the dashboard shell flashing first while the real (async)
-     checkAppLockOnLoad() in profile-account.js catches up several script
-     loads later. This only acts on that one high-confidence case; a fresh
-     login or a return trip from an in-app subpage (profile.html etc, see
-     zy_returning_from_subpage) is left exactly as-is (overlay stays
-     hidden, matching its default above), and so is a first-ever visit
-     with no session hint at all — those are for checkAppLockOnLoad() to
-     decide once it has actually verified the real Supabase session. -->
+<!-- ── BOOT SPLASH ── plain white screen, visible by default (no JS needed
+     to show it — it's just the page's normal initial state), covering
+     everything below until the real, final decision is made: log in
+     (redirect to login.html), unlock (show appLockOverlay), or go straight
+     to the account (revealApp() in profile-account.js). Replaces an
+     earlier optimistic guess that showed the PIN lock immediately based
+     only on a local-storage hint, before the real Supabase session check
+     had actually resolved — if that guess turned out wrong (session
+     actually expired, or actually didn't need a PIN after all), the app
+     visibly jumped between the PIN screen, the dashboard, and login.html
+     as the real check caught up. Waiting for the one real determination
+     before showing anything else means there's nothing to jump between.
+     hideBootSplash() (profile-account.js) is the only thing that hides
+     this; the safety-net timeout below exists purely so a stuck network
+     call or blocked script can't leave this up forever. -->
+<div id="bootSplash" style="position:fixed;inset:0;background:#fff;z-index:10000;display:flex;align-items:center;justify-content:center;">
+  <img src="../assets/img/logo.png" alt="ZY" style="width:52px;height:52px;">
+</div>
 <script>
-(function(){
+setTimeout(function(){
   try{
-    var justLoggedIn=sessionStorage.getItem('zy_just_logged_in')==='1';
-    var returningFromSubpage=sessionStorage.getItem('zy_returning_from_subpage')==='1';
-    var hadSession=!!(localStorage.getItem('zy-session')||localStorage.getItem('zy_token'));
-    if(hadSession && !justLoggedIn && !returningFromSubpage){
-      document.getElementById('appLockOverlay').style.display='flex';
-    }
+    var splash=document.getElementById('bootSplash');
+    if(splash && splash.style.display!=='none') splash.style.display='none';
   }catch(e){}
-})();
+},10000);
 </script>
 
 <div class="app" style="position:relative;">
@@ -530,8 +532,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="../assets/js/supabase-auth.js?v=1" defer></script>
 <script src="../assets/js/member-api.js?v=5" defer></script>
-<script src="../assets/js/phone/profile-account.js?v=2" defer></script>
-<script src="../assets/js/phone/portfolio-widgets.js?v=1" defer></script>
+<script src="../assets/js/phone/profile-account.js?v=3" defer></script>
+<script src="../assets/js/phone/portfolio-widgets.js?v=2" defer></script>
 <script src="../assets/js/phone/markets-actions.js?v=1" defer></script>
 <script src="../assets/js/phone/financial-charts-1.js?v=2" defer></script>
 <script src="../assets/js/phone/financial-charts-2.js?v=1" defer></script>

@@ -719,6 +719,7 @@ function checkAppLockOnLoad(){
   // normally — both flags are single-use and stored in sessionStorage, not
   // localStorage, so a real new session won't carry either over.
   if(!justLoggedIn && !justReturnedFromSubpage) verifySessionThenLock();
+  else hideBootSplash(); // no lock needed — reveal the account straight away
   // Lock the INSTANT the app is actually backgrounded — not after detecting
   // a "return" event. Waiting to detect resume is fragile: if iOS suspends
   // or fully kills the backgrounded page (very common for PWAs to save
@@ -767,9 +768,21 @@ function verifySessionThenLock(){
   }catch(e){ showAppLock(); }
 }
 
+// Hides the boot-splash white screen (index.html) — the one thing that
+// reveals whatever's actually supposed to be visible underneath, whether
+// that's the appLockOverlay (showAppLock()) or the account itself
+// (hideAppLock(), or the no-lock-needed branch in checkAppLockOnLoad()).
+// Never called on the redirect-to-login branch of verifySessionThenLock()
+// on purpose — the splash should stay up until that navigation actually
+// happens, not flash the account first.
+function hideBootSplash(){
+  var splash=document.getElementById('bootSplash');
+  if(splash) splash.style.display='none';
+}
 function showAppLock(){
   var overlay=document.getElementById('appLockOverlay');
   if(!overlay) return;
+  hideBootSplash();
   var hasPin=!!(PROFILE && PROFILE.pin);
   overlay.style.display='flex';
   var verifyEl=document.getElementById('appLockVerify'), setEl=document.getElementById('appLockSet');
@@ -793,6 +806,7 @@ function showAppLock(){
 function hideAppLock(){
   var overlay=document.getElementById('appLockOverlay');
   if(overlay) overlay.style.display='none';
+  hideBootSplash();
 }
 function appLockVerifySubmit(){
   var entered=getPinBoxesValue('appLockVerifyBoxes');
