@@ -63,6 +63,12 @@ var MKT_FX_CURRENCIES=[
 ];
 var MKT_FX_BASE='MYR';
 var MKT_ACTIVE_TAB='indices';
+// Flag shown in front of the country name on the Indices tab's subline.
+var MKT_FLAGS={
+  'Malaysia':'🇲🇾','United States':'🇺🇸','Hong Kong':'🇭🇰','Japan':'🇯🇵','United Kingdom':'🇬🇧',
+  'Canada':'🇨🇦','Brazil':'🇧🇷','China':'🇨🇳','Singapore':'🇸🇬','South Korea':'🇰🇷','India':'🇮🇳',
+  'Australia':'🇦🇺','Germany':'🇩🇪','France':'🇫🇷','Eurozone':'🇪🇺','Netherlands':'🇳🇱','Switzerland':'🇨🇭'
+};
 
 function mktFmtPrice(v){
   if(v==null||isNaN(v)) return '—';
@@ -73,6 +79,14 @@ function mktFmtChangePct(v){
   if(v==null||isNaN(v)) return {txt:'—',color:'var(--fg-3)'};
   var sign=v>=0?'+':'';
   return {txt:sign+v.toFixed(2)+'%', color:v>=0?'var(--green)':'var(--red)'};
+}
+// Indices tab's right subline: absolute change and change% combined on one
+// line, e.g. "+8.72 (+0.54%)".
+function mktFmtChangeCombined(change,changePct){
+  if(change==null||changePct==null||isNaN(change)||isNaN(changePct)) return {txt:'—',color:'var(--fg-3)'};
+  var sign=change>=0?'+':'';
+  var pctSign=changePct>=0?'+':'';
+  return {txt:sign+mktFmtPrice(Math.abs(change))+' ('+pctSign+changePct.toFixed(2)+'%)', color:change>=0?'var(--green)':'var(--red)'};
 }
 function mktQuoteBySymbol(quotes,symbol){
   for(var i=0;i<quotes.length;i++){ if(quotes[i].symbol===symbol) return quotes[i]; }
@@ -107,11 +121,14 @@ function switchMarketTab(tab){
 }
 
 // ── INDICES ──────────────────────────────────────────────────────────────
+// Ticker/code is deliberately not shown — the index's full name is the
+// main line, country (with its flag) is the only subline.
 function renderIndexRow(idx,quotes){
   var q=mktQuoteBySymbol(quotes,idx.symbol);
   var price=q?mktFmtPrice(q.regularMarketPrice):'—';
-  var chg=q?mktFmtChangePct(q.regularMarketChangePercent):{txt:'—',color:'var(--fg-3)'};
-  return mktRenderRow(idx.symbol,idx.name,idx.country,price,chg);
+  var chg=q?mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent):{txt:'—',color:'var(--fg-3)'};
+  var flag=MKT_FLAGS[idx.country]||'';
+  return mktRenderRow(idx.name,(flag?flag+' ':'')+idx.country,null,price,chg);
 }
 function renderMarketIndices(quotes){
   var headEl=document.getElementById('mktIndicesHeadline');
@@ -138,16 +155,37 @@ async function loadMarketIndices(){
 }
 
 // ── FOREX ────────────────────────────────────────────────────────────────
+// No dropdown — the base currency is just whichever row the user last
+// double-clicked. That row is pinned to the top of the list and
+// highlighted; changeFxBase() (called via each row's ondblclick) re-renders
+// with the new base.
+function mktRenderFxRow(c,rate,chgObj,isBase){
+  return '<div ondblclick="changeFxBase(\''+c.code+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;background:'+(isBase?'var(--blue-bg)':'transparent')+';">'
+    +'<div style="min-width:0;">'
+    +'<div style="font-size:.84rem;font-weight:700;color:'+(isBase?'var(--blue)':'var(--fg-1)')+';">'+c.code
+    +(isBase?' <span style="font-size:.62rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;">· Base</span>':'')
+    +'</div>'
+    +'<div style="font-size:.71rem;color:var(--fg-3);margin-top:2px;">'+c.name+'</div>'
+    +'</div>'
+    +'<div style="text-align:right;flex-shrink:0;padding-left:10px;">'
+    +'<div style="font-size:.86rem;font-weight:700;color:var(--fg-1);">'+rate+'</div>'
+    +'<div style="font-size:.72rem;font-weight:600;color:'+chgObj.color+';margin-top:2px;">'+chgObj.txt+'</div>'
+    +'</div>'
+    +'</div>';
+}
 function renderMarketForex(quotes,others){
   var el=document.getElementById('mktForexList');
   if(!el) return;
-  el.innerHTML=others.map(function(c){
+  var baseC=MKT_FX_CURRENCIES.filter(function(c){return c.code===MKT_FX_BASE;})[0];
+  var html=baseC?mktRenderFxRow(baseC,'1.0000',{txt:'Base currency',color:'var(--fg-3)'},true):'';
+  html+=others.map(function(c){
     var symbol=MKT_FX_BASE+c.code+'=X';
     var q=mktQuoteBySymbol(quotes,symbol);
     var rate=q?mktFmtPrice(q.regularMarketPrice):'—';
     var chg=q?mktFmtChangePct(q.regularMarketChangePercent):{txt:'—',color:'var(--fg-3)'};
-    return mktRenderRow(c.code,c.name,null,rate,chg);
+    return mktRenderFxRow(c,rate,chg,false);
   }).join('');
+  el.innerHTML=html;
 }
 async function loadMarketForex(){
   if(typeof sb==='undefined'||!sb) return;
@@ -162,6 +200,7 @@ async function loadMarketForex(){
   }
 }
 function changeFxBase(code){
+  if(code===MKT_FX_BASE) return;
   MKT_FX_BASE=code;
   loadMarketForex();
 }

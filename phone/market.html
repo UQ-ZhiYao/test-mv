@@ -54,22 +54,11 @@
 
       <!-- ── FOREX ── -->
       <div id="mtab-forex-body" style="display:none;padding:0 0 32px;">
-        <div style="padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
-          <div style="font-size:.78rem;font-weight:600;color:var(--fg-2);">Base Currency</div>
-          <select id="mktFxBaseSelect" class="tx-acct-select" onchange="changeFxBase(this.value)">
-            <option value="MYR">MYR — Malaysian Ringgit</option>
-            <option value="USD">USD — US Dollar</option>
-            <option value="SGD">SGD — Singapore Dollar</option>
-            <option value="EUR">EUR — Euro</option>
-            <option value="GBP">GBP — British Pound</option>
-            <option value="JPY">JPY — Japanese Yen</option>
-            <option value="CNY">CNY — Chinese Yuan</option>
-            <option value="AUD">AUD — Australian Dollar</option>
-            <option value="HKD">HKD — Hong Kong Dollar</option>
-            <option value="THB">THB — Thai Baht</option>
-          </select>
+        <div style="padding:16px 16px 8px;">
+          <div style="height:1em;"></div>
+          <div style="font-size:.71rem;color:var(--fg-3);line-height:1.5;">Double-tap any currency to set it as the base — it moves to the top and everything else is shown relative to it.</div>
         </div>
-        <div id="mktForexList">
+        <div id="mktForexList" style="border-top:1px solid var(--border);">
           <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
         </div>
       </div>
