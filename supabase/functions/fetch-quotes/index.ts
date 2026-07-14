@@ -25,10 +25,15 @@
 // Response (200):
 //   { "quotes": [ { "symbol": "^KLSE", "shortName": "^KLSE",
 //       "regularMarketPrice": 1627.21, "regularMarketChange": 8.72,
-//       "regularMarketChangePercent": 0.54, "currency": "MYR" }, ... ] }
+//       "regularMarketChangePercent": 0.54, "currency": "MYR",
+//       "regularMarketDayHigh": 1630.0, "regularMarketDayLow": 1620.5,
+//       "fiftyTwoWeekHigh": 1650.2, "fiftyTwoWeekLow": 1450.8,
+//       "previousClose": 1618.49 }, ... ] }
 //   (symbols Yahoo doesn't recognize, or that fail individually, are simply
 //   absent from the array, not an error — the caller renders "—" for any
-//   symbol missing from the response.)
+//   symbol missing from the response. The range/previousClose fields are
+//   used by the Market screen's per-index detail summary — mostly along
+//   for the ride when this is just used for the list rows.)
 // Response (400/500):
 //   { "error": "..." }
 
@@ -72,6 +77,11 @@ async function fetchOneQuote(symbol: string) {
       regularMarketChange: change,
       regularMarketChangePercent: changePercent,
       currency: meta.currency || null,
+      regularMarketDayHigh: meta.regularMarketDayHigh ?? null,
+      regularMarketDayLow: meta.regularMarketDayLow ?? null,
+      fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh ?? null,
+      fiftyTwoWeekLow: meta.fiftyTwoWeekLow ?? null,
+      previousClose: prevClose,
     };
   } catch (_e) {
     return null;
