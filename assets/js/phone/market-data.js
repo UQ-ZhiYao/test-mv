@@ -15,7 +15,8 @@ var MKT_INDICES={
     {symbol:'^DJI',name:'Dow Jones Industrial Average',country:'United States'},
     {symbol:'^RUT',name:'Russell 2000',country:'United States'},
     {symbol:'^GSPTSE',name:'S&P/TSX Composite',country:'Canada'},
-    {symbol:'^BVSP',name:'Bovespa',country:'Brazil'}
+    {symbol:'^BVSP',name:'Bovespa',country:'Brazil'},
+    {symbol:'^COLCAP',name:'COLCAP',country:'Colombia'}
   ],
   asia:[
     {symbol:'^N225',name:'Nikkei 225',country:'Japan'},
@@ -24,7 +25,9 @@ var MKT_INDICES={
     {symbol:'^STI',name:'Straits Times Index',country:'Singapore'},
     {symbol:'^KS11',name:'KOSPI',country:'South Korea'},
     {symbol:'^NSEI',name:'Nifty 50',country:'India'},
-    {symbol:'^AXJO',name:'ASX 200',country:'Australia'}
+    {symbol:'^AXJO',name:'ASX 200',country:'Australia'},
+    {symbol:'^JKSE',name:'IDX Composite',country:'Indonesia'},
+    {symbol:'^SET.BK',name:'SET Index',country:'Thailand'}
   ],
   european:[
     {symbol:'^FTSE',name:'FTSE 100',country:'United Kingdom'},
@@ -32,7 +35,9 @@ var MKT_INDICES={
     {symbol:'^FCHI',name:'CAC 40',country:'France'},
     {symbol:'^STOXX50E',name:'Euro Stoxx 50',country:'Eurozone'},
     {symbol:'^AEX',name:'AEX',country:'Netherlands'},
-    {symbol:'^SSMI',name:'SMI',country:'Switzerland'}
+    {symbol:'^SSMI',name:'SMI',country:'Switzerland'},
+    {symbol:'PFTS',name:'PFTS Index',country:'Ukraine'},
+    {symbol:'IMOEX.ME',name:'MOEX Russia Index',country:'Russia'}
   ]
 };
 var MKT_CRYPTO=[
@@ -55,7 +60,11 @@ var MKT_FX_CURRENCIES=[
   {code:'CNY',name:'Chinese Yuan'},
   {code:'AUD',name:'Australian Dollar'},
   {code:'HKD',name:'Hong Kong Dollar'},
-  {code:'THB',name:'Thai Baht'}
+  {code:'THB',name:'Thai Baht'},
+  {code:'COP',name:'Colombian Peso'},
+  {code:'IDR',name:'Indonesian Rupiah'},
+  {code:'UAH',name:'Ukrainian Hryvnia'},
+  {code:'RUB',name:'Russian Ruble'}
 ];
 var MKT_FX_BASE='MYR';
 var MKT_ACTIVE_TAB='indices';
@@ -63,7 +72,8 @@ var MKT_ACTIVE_TAB='indices';
 var MKT_FLAGS={
   'Malaysia':'🇲🇾','United States':'🇺🇸','Hong Kong':'🇭🇰','Japan':'🇯🇵','United Kingdom':'🇬🇧',
   'Canada':'🇨🇦','Brazil':'🇧🇷','China':'🇨🇳','Singapore':'🇸🇬','South Korea':'🇰🇷','India':'🇮🇳',
-  'Australia':'🇦🇺','Germany':'🇩🇪','France':'🇫🇷','Eurozone':'🇪🇺','Netherlands':'🇳🇱','Switzerland':'🇨🇭'
+  'Australia':'🇦🇺','Germany':'🇩🇪','France':'🇫🇷','Eurozone':'🇪🇺','Netherlands':'🇳🇱','Switzerland':'🇨🇭',
+  'Colombia':'🇨🇴','Indonesia':'🇮🇩','Thailand':'🇹🇭','Ukraine':'🇺🇦','Russia':'🇷🇺'
 };
 
 function mktFmtPrice(v){
@@ -91,8 +101,10 @@ function mktQuoteBySymbol(quotes,symbol){
 // Shared row: left = code (bold) + up to 2 sublines; right = value (bold) +
 // change subline. bg is an optional background color (e.g. a light tint
 // marking a region group, or the accent color for a pinned/base row).
-function mktRenderRow(left1,left2,left3,right1,right2Obj,bg){
-  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:'+(bg||'transparent')+';">'
+// onclickAttr is an optional inline onclick="..." string (used by Indices
+// rows to open the detail drill-down; omitted by Crypto/Forex rows).
+function mktRenderRow(left1,left2,left3,right1,right2Obj,bg,onclickAttr){
+  return '<div'+(onclickAttr?' onclick="'+onclickAttr+'" style="cursor:pointer;':' style="')+'display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:'+(bg||'transparent')+';">'
     +'<div style="min-width:0;">'
     +'<div style="font-size:.84rem;font-weight:700;color:var(--fg-1);">'+left1+'</div>'
     +(left2?'<div style="font-size:.71rem;color:var(--fg-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+left2+'</div>':'')
@@ -129,12 +141,22 @@ function switchMarketTab(tab){
 // background tint (alternating) so the boundaries read visually without
 // needing text headers.
 var MKT_REGION_BG=[null,'var(--gray-50)',null];
+function mktIndexBySymbol(symbol){
+  if(MKT_INDICES_HEADLINE.symbol===symbol) return MKT_INDICES_HEADLINE;
+  for(var i=0;i<MKT_REGIONS.length;i++){
+    var list=MKT_INDICES[MKT_REGIONS[i]];
+    for(var j=0;j<list.length;j++){ if(list[j].symbol===symbol) return list[j]; }
+  }
+  return null;
+}
+// Each row is a one-tap entry point into openIndexDetail() (chart +
+// summary drill-down, see the "INDEX DETAIL" section below).
 function renderIndexRow(idx,quotes,bg){
   var q=mktQuoteBySymbol(quotes,idx.symbol);
   var price=q?mktFmtPrice(q.regularMarketPrice):'—';
   var chg=q?mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent):{txt:'—',color:'var(--fg-3)'};
   var flag=MKT_FLAGS[idx.country]||'';
-  return mktRenderRow(idx.name,(flag?flag+' ':'')+idx.country,null,price,chg,bg);
+  return mktRenderRow(idx.name,(flag?flag+' ':'')+idx.country,null,price,chg,bg,"openIndexDetail('"+idx.symbol.replace(/'/g,"\\'")+"')");
 }
 function mktIndexQuoteValue(idx,quotes){
   var q=mktQuoteBySymbol(quotes,idx.symbol);
@@ -166,6 +188,147 @@ async function loadMarketIndices(){
     console.warn('[Market] indices load failed:', e.message);
     renderMarketIndices([]);
   }
+}
+
+// ── INDEX DETAIL (one-tap drill-down: chart + period switcher + summary) ─
+var MKT_IDX_PERIODS=[
+  {key:'1D',range:'1d',interval:'5m'},
+  {key:'1W',range:'5d',interval:'30m'},
+  {key:'1M',range:'1mo',interval:'1d'},
+  {key:'3M',range:'3mo',interval:'1d'},
+  {key:'1Y',range:'1y',interval:'1wk'},
+  {key:'5Y',range:'5y',interval:'1mo'}
+];
+var MKT_IDX_DETAIL_SYMBOL=null;
+var MKT_IDX_DETAIL_PERIOD='1M';
+function openIndexDetail(symbol){
+  var idx=mktIndexBySymbol(symbol);
+  if(!idx) return;
+  MKT_IDX_DETAIL_SYMBOL=symbol;
+  var flag=MKT_FLAGS[idx.country]||'';
+  var titleEl=document.getElementById('mktIndexDetailTitle');
+  if(titleEl) titleEl.textContent=idx.name;
+  var subEl=document.getElementById('mktIndexDetailSub');
+  if(subEl) subEl.textContent=(flag?flag+' ':'')+idx.country;
+  var listWrap=document.getElementById('mktIndicesListWrap');
+  var detail=document.getElementById('mktIndexDetail');
+  if(listWrap) listWrap.style.display='none';
+  if(detail) detail.style.display='block';
+  switchIndexPeriod(MKT_IDX_DETAIL_PERIOD);
+}
+function closeIndexDetail(){
+  var listWrap=document.getElementById('mktIndicesListWrap');
+  var detail=document.getElementById('mktIndexDetail');
+  if(detail) detail.style.display='none';
+  if(listWrap) listWrap.style.display='block';
+}
+function switchIndexPeriod(periodKey){
+  MKT_IDX_DETAIL_PERIOD=periodKey;
+  document.querySelectorAll('.mkt-idx-period-btn').forEach(function(b){
+    var on=b.getAttribute('data-period')===periodKey;
+    b.style.color=on?'var(--blue)':'var(--fg-3)';
+    b.style.background=on?'var(--blue-bg)':'transparent';
+  });
+  loadIndexDetailData();
+}
+async function loadIndexDetailData(){
+  if(!MKT_IDX_DETAIL_SYMBOL) return;
+  var symbol=MKT_IDX_DETAIL_SYMBOL;
+  var periodKey=MKT_IDX_DETAIL_PERIOD;
+  var period=null;
+  for(var i=0;i<MKT_IDX_PERIODS.length;i++){ if(MKT_IDX_PERIODS[i].key===periodKey){ period=MKT_IDX_PERIODS[i]; break; } }
+  if(!period) period=MKT_IDX_PERIODS[2];
+  try{
+    var results=await Promise.all([
+      mpLoadHistorical(symbol,period.interval,period.range),
+      mpLoadQuotes([symbol])
+    ]);
+    // The symbol changed (user opened a different index) or another period
+    // was tapped and already finished loading while this request was still
+    // in flight — either way a newer call already rendered (or will), so
+    // drop this now-stale one instead of overwriting it.
+    if(symbol!==MKT_IDX_DETAIL_SYMBOL||periodKey!==MKT_IDX_DETAIL_PERIOD) return;
+    drawIndexDetailChart(results[0]);
+    renderIndexDetailSummary(mktQuoteBySymbol(results[1],symbol));
+  }catch(e){
+    console.warn('[Market] index detail load failed:', e.message);
+    if(symbol!==MKT_IDX_DETAIL_SYMBOL||periodKey!==MKT_IDX_DETAIL_PERIOD) return;
+    drawIndexDetailChart([]);
+    renderIndexDetailSummary(null);
+  }
+}
+function drawIndexDetailChart(points){
+  var c=document.getElementById('mktIndexDetailChart');
+  if(!c) return;
+  var dpr=window.devicePixelRatio||1;
+  var W=c.parentElement.clientWidth;
+  var H=160;
+  var ctx=c.getContext('2d');
+  if(W<=0){
+    // Container not laid out yet (e.g. tab just became visible) — same
+    // class of timing issue fixed for the Account Summary donut; skip
+    // this draw rather than sizing the canvas to 0.
+    return;
+  }
+  c.width=W*dpr; c.height=H*dpr;
+  c.style.width=W+'px'; c.style.height=H+'px';
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  var closes=(points||[]).map(function(p){return p.close;}).filter(function(v){return v!=null&&!isNaN(v);});
+  if(closes.length<2){
+    ctx.fillStyle='#94A3B8';
+    ctx.font='12px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('No data available',W/2,H/2);
+    return;
+  }
+  var mn=Math.min.apply(null,closes), mx=Math.max.apply(null,closes);
+  var rng=(mx-mn)||1;
+  var pad={l:4,r:4,t:12,b:12};
+  var innerW=W-pad.l-pad.r, innerH=H-pad.t-pad.b;
+  var up=closes[closes.length-1]>=closes[0];
+  var lineColor=up?'#2E7D32':'#DC2626';
+  var fillColor=up?'rgba(46,125,50,.08)':'rgba(220,38,38,.08)';
+  ctx.beginPath();
+  closes.forEach(function(v,i){
+    var x=pad.l+(i/(closes.length-1))*innerW;
+    var y=pad.t+innerH-((v-mn)/rng)*innerH;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.lineJoin='round';
+  ctx.lineWidth=1.75;
+  ctx.strokeStyle=lineColor;
+  ctx.stroke();
+  ctx.lineTo(pad.l+innerW,pad.t+innerH);
+  ctx.lineTo(pad.l,pad.t+innerH);
+  ctx.closePath();
+  ctx.fillStyle=fillColor;
+  ctx.fill();
+}
+function mktSummaryRow(label,value){
+  return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">'
+    +'<div style="font-size:.76rem;color:var(--fg-3);">'+label+'</div>'
+    +'<div style="font-size:.78rem;font-weight:600;color:var(--fg-1);">'+value+'</div>'
+    +'</div>';
+}
+function renderIndexDetailSummary(q){
+  var el=document.getElementById('mktIndexDetailSummary');
+  if(!el) return;
+  if(!q){
+    el.innerHTML='<div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;">No data available</div>';
+    return;
+  }
+  var chg=mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent);
+  el.innerHTML=''
+    +'<div style="text-align:center;padding:8px 0 16px;">'
+    +'<div style="font-size:1.6rem;font-weight:700;color:var(--fg-1);">'+mktFmtPrice(q.regularMarketPrice)+'</div>'
+    +'<div style="font-size:.82rem;font-weight:600;color:'+chg.color+';margin-top:2px;">'+chg.txt+'</div>'
+    +'</div>'
+    +mktSummaryRow('Previous Close',mktFmtPrice(q.previousClose))
+    +mktSummaryRow('Day Range',mktFmtPrice(q.regularMarketDayLow)+' – '+mktFmtPrice(q.regularMarketDayHigh))
+    +mktSummaryRow('52-Week Range',mktFmtPrice(q.fiftyTwoWeekLow)+' – '+mktFmtPrice(q.fiftyTwoWeekHigh))
+    +mktSummaryRow('Currency',q.currency||'—');
 }
 
 // ── FOREX ────────────────────────────────────────────────────────────────

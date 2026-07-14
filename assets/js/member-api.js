@@ -694,6 +694,20 @@ async function mpLoadYahooWeekly(symbol) {
   return ((data && data.points) || []).map(function(p) { return { date: p.date, close: p.close }; });
 }
 
+/* ── Same fetch-historical edge function as mpLoadYahooWeekly(), but with
+   caller-chosen interval/range instead of the fixed weekly/5y window —
+   used by the Market screen's per-index detail chart (openIndexDetail()
+   in market-data.js), which needs several different period lengths
+   (1D/1W/1M/3M/1Y/5Y) from the same symbol. */
+async function mpLoadHistorical(symbol, interval, range) {
+  const { data, error } = await sb.functions.invoke('fetch-historical', {
+    body: { symbol: symbol, interval: interval || '1wk', range: range || '5y' }
+  });
+  if (error) throw new Error('fetch-historical failed for ' + symbol + ': ' + error.message);
+  if (data && data.error) throw new Error(data.error);
+  return ((data && data.points) || []).map(function(p) { return { date: p.date, close: p.close }; });
+}
+
 /* ── Live quote snapshots (indices/forex/crypto) via our own fetch-quotes
    Supabase Edge Function (supabase/functions/fetch-quotes/index.ts) — same
    server-side-fetch pattern as mpLoadYahooWeekly()/fetch-historical, for

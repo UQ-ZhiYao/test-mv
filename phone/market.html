@@ -26,10 +26,48 @@
            always pinned first (highlighted), the rest are grouped by
            region and sorted by market size within each region — see
            renderMarketIndices() in market-data.js, which also applies the
-           alternating light region-band backgrounds inline per row. -->
+           alternating light region-band backgrounds inline per row. Each
+           row is a one-tap entry point into the detail panel below
+           (chart + summary, openIndexDetail() in market-data.js). -->
       <div id="mtab-indices-body" style="display:block;padding:0 0 32px;">
-        <div id="mktIndicesList" style="border-top:1px solid var(--border);">
-          <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+        <div id="mktIndicesListWrap">
+          <div id="mktIndicesList" style="border-top:1px solid var(--border);">
+            <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+          </div>
+        </div>
+
+        <!-- ── INDEX DETAIL (chart + period switcher + summary) ── -->
+        <div id="mktIndexDetail" style="display:none;">
+          <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--border);">
+            <button onclick="closeIndexDetail()" style="background:none;border:none;padding:4px 4px 4px 0;cursor:pointer;color:var(--fg-1);display:flex;align-items:center;">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <div>
+              <div id="mktIndexDetailTitle" style="font-size:.88rem;font-weight:700;color:var(--fg-1);">—</div>
+              <div id="mktIndexDetailSub" style="font-size:.71rem;color:var(--fg-3);">—</div>
+            </div>
+          </div>
+
+          <div style="padding:16px 16px 0;">
+            <canvas id="mktIndexDetailChart" style="width:100%;display:block;"></canvas>
+            <div style="display:flex;gap:6px;margin-top:14px;">
+              <button class="mkt-idx-period-btn" data-period="1D" onclick="switchIndexPeriod('1D')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">1D</button>
+              <button class="mkt-idx-period-btn" data-period="1W" onclick="switchIndexPeriod('1W')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">1W</button>
+              <button class="mkt-idx-period-btn" data-period="1M" onclick="switchIndexPeriod('1M')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--blue);background:var(--blue-bg);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">1M</button>
+              <button class="mkt-idx-period-btn" data-period="3M" onclick="switchIndexPeriod('3M')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">3M</button>
+              <button class="mkt-idx-period-btn" data-period="1Y" onclick="switchIndexPeriod('1Y')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">1Y</button>
+              <button class="mkt-idx-period-btn" data-period="5Y" onclick="switchIndexPeriod('5Y')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">5Y</button>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--border);margin:20px 16px 0;"></div>
+          <div style="padding:16px 16px 32px;">
+            <div style="height:1em;"></div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;">Summary</div>
+            <div id="mktIndexDetailSummary">
+              <div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+            </div>
+          </div>
         </div>
       </div>
 
