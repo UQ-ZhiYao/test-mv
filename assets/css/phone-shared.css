@@ -190,3 +190,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .fund-tab-lock-icon svg{width:20px;height:20px;stroke:var(--fg-3);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 .fund-tab-lock-title{font-size:.9rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;}
 .fund-tab-lock-sub{font-size:.78rem;color:var(--fg-3);line-height:1.5;max-width:240px;}
+
+/* App Feedback — subject selector */
+.fb-subject-opt.selected{border-color:var(--blue)!important;background:var(--blue-bg)!important;}
+.fb-subject-opt.selected .fb-subject-dot{border-color:var(--blue)!important;}
+.fb-subject-opt.selected .fb-subject-dot::after{content:'';position:absolute;top:3px;left:3px;width:10px;height:10px;border-radius:50%;background:var(--blue);}
