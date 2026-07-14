@@ -257,6 +257,12 @@ async function loadIndexDetailData(){
     renderIndexDetailSummary(null);
   }
 }
+// Left axis = price, right axis = % change from the first point of the
+// currently-selected period — both share the same 3 horizontal gridlines
+// (high/mid/low of the price range), since %-change is just an affine
+// transform of price (pct = (price/firstClose - 1) * 100), so the two
+// axes are guaranteed to overlap at every tick rather than needing a
+// second line.
 function drawIndexDetailChart(points){
   var c=document.getElementById('mktIndexDetailChart');
   if(!c) return;
@@ -285,11 +291,33 @@ function drawIndexDetailChart(points){
   }
   var mn=Math.min.apply(null,closes), mx=Math.max.apply(null,closes);
   var rng=(mx-mn)||1;
-  var pad={l:4,r:4,t:12,b:12};
+  var firstClose=closes[0];
+  // Room for the price labels (left) and %-change labels (right).
+  var pad={l:40,r:46,t:12,b:12};
   var innerW=W-pad.l-pad.r, innerH=H-pad.t-pad.b;
   var up=closes[closes.length-1]>=closes[0];
   var lineColor=up?'#2E7D32':'#DC2626';
   var fillColor=up?'rgba(46,125,50,.08)':'rgba(220,38,38,.08)';
+
+  var ticks=[mx,(mn+mx)/2,mn];
+  ctx.font='9px sans-serif';
+  ticks.forEach(function(v){
+    var y=pad.t+innerH-((v-mn)/rng)*innerH;
+    ctx.beginPath();
+    ctx.moveTo(pad.l,y);
+    ctx.lineTo(pad.l+innerW,y);
+    ctx.strokeStyle='rgba(100,116,139,.15)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+    var pct=firstClose?((v-firstClose)/firstClose*100):0;
+    ctx.fillStyle='#64748B';
+    ctx.textBaseline='middle';
+    ctx.textAlign='right';
+    ctx.fillText(mktFmtPrice(v),pad.l-6,y);
+    ctx.textAlign='left';
+    ctx.fillText((pct>=0?'+':'')+pct.toFixed(1)+'%',pad.l+innerW+6,y);
+  });
+
   ctx.beginPath();
   closes.forEach(function(v,i){
     var x=pad.l+(i/(closes.length-1))*innerW;
