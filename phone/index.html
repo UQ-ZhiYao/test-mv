@@ -434,19 +434,15 @@ setTimeout(function(){
     </div>
     <div id="searchResults" style="display:none;">
       <div style="padding:14px 16px 8px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Results</div>
+      <!-- "No matching instruments" (when a search has zero instrument
+           hits) renders inline inside this list, below the always-pinned
+           ZY-Invest row — see globalSearch() in search-instruments.js —
+           rather than swapping to a separate empty-state panel, since
+           ZY-Invest itself means the list is never truly empty. -->
       <div id="searchResultsList" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"></div>
     </div>
-    <div id="searchEmpty" style="display:none;text-align:center;padding:48px 24px;font-size:.84rem;color:var(--fg-3);">No results for this search</div>
   </div>
 </div>
-
-
-<!-- ── STOCK DETAIL SHEET ── -->
-<div class="sheet" id="stockSheet" style="max-height:92vh;overflow-y:auto;scrollbar-width:none;">
-  <div class="sheet-handle"></div>
-  <div id="stockSheetContent" style="padding:0 0 32px;"></div>
-</div>
-
 
 
 <!-- Toast (showToastM() in profile-account.js) — element was previously
@@ -572,13 +568,14 @@ setTimeout(function(){
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="../assets/js/supabase-auth.js?v=1" defer></script>
-<script src="../assets/js/member-api.js?v=8" defer></script>
-<script src="../assets/js/phone/profile-account.js?v=7" defer></script>
+<script src="../assets/js/member-api.js?v=9" defer></script>
+<script src="../assets/js/phone/profile-account.js?v=8" defer></script>
 <script src="../assets/js/phone/portfolio-widgets.js?v=2" defer></script>
-<script src="../assets/js/phone/markets-actions.js?v=1" defer></script>
+<script src="../assets/js/phone/markets-actions.js?v=2" defer></script>
 <script src="../assets/js/phone/financial-charts-1.js?v=2" defer></script>
 <script src="../assets/js/phone/financial-charts-2.js?v=1" defer></script>
-<script src="../assets/js/phone/market-data.js?v=8" defer></script>
-<script src="../assets/js/phone/misc.js?v=6" defer></script>
+<script src="../assets/js/phone/market-data.js?v=9" defer></script>
+<script src="../assets/js/phone/search-instruments.js?v=1" defer></script>
+<script src="../assets/js/phone/misc.js?v=7" defer></script>
 </body>
 </html>

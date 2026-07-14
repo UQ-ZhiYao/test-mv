@@ -220,16 +220,21 @@ var DRILL_PAGES={
   distribution:{title:'Distribution',back:'all'},
   assetdetails:{title:'Asset Details',back:'portfolio'},
   inquiry:{title:'Online Inquiry',back:'profile'},
-  feedback:{title:'App Feedback',back:'profile'}
+  feedback:{title:'App Feedback',back:'profile'},
+  // title is a placeholder — openInstrumentDetail() (search-instruments.js)
+  // overwrites #topbarBackTitle with the actual instrument's name right
+  // after switchTab('instrument') runs.
+  instrument:{title:'Instrument',back:'discover'}
 };
 function topbarBackClick(){
   var d=DRILL_PAGES[activeTab];
   if(!d){ switchTab('portfolio'); return; }
-  // Password & Security can be opened from more than one place (Me page or
-  // All Services) — its back destination follows wherever it was actually
-  // opened from, rather than a single hardcoded tab. Other drill pages only
-  // have one real entry point, so their fixed "back" is left as-is.
-  var dest=(activeTab==='password')?lastMainTab:d.back;
+  // Password & Security, and the Instrument Detail page opened from global
+  // search, can both be reached from more than one place — their back
+  // destination follows wherever it was actually opened from (lastMainTab)
+  // rather than a single hardcoded tab. Other drill pages only have one
+  // real entry point, so their fixed "back" is left as-is.
+  var dest=(activeTab==='password'||activeTab==='instrument')?lastMainTab:d.back;
   switchTab(dest);
 }
 function updateTopbarChrome(tab){

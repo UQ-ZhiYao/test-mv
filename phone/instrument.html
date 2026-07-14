@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ZY-Invest · Instrument</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/phone-shared.css?v=1">
+</head>
+<body>
+<div class="standalone-shell">
+  <div class="scroll" style="flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;">
+<div class="page" id="pg-instrument">
+
+      <!-- Back bar (standalone fallback only — embedded use gets its back
+           button + dynamic title from the shared topbar; see
+           openInstrumentDetail() in search-instruments.js, which sets
+           #topbarBackTitle to the instrument's name right after
+           switchTab('instrument') runs). -->
+      <div class="back-bar">
+        <button class="back-btn" onclick="typeof switchTab!=='undefined'?switchTab('discover'):history.back()">
+          <svg width="18" height="18" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">ZY-Invest</span>
+        <div style="width:60px;"></div>
+      </div>
+
+      <div style="padding:14px 16px 0;">
+        <div id="instName" style="font-size:1.1rem;font-weight:700;color:var(--fg-1);">—</div>
+        <div id="instSub" style="font-size:.76rem;color:var(--fg-3);margin-top:2px;">—</div>
+      </div>
+
+      <!-- Chart + period switcher — same fetch (mpLoadHistorical), draw
+           (drawDetailChart(), shared with the Market screen's index
+           detail) and summary (mpLoadQuotes) pipeline as Market's index
+           detail, since both are just "chart for a symbol". -->
+      <div style="padding:16px 16px 0;">
+        <canvas id="instChart" style="width:100%;display:block;"></canvas>
+        <div style="display:flex;gap:6px;margin-top:14px;">
+          <button class="inst-period-btn" data-period="1D" onclick="switchInstrumentPeriod('1D')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">1D</button>
+          <button class="inst-period-btn" data-period="1W" onclick="switchInstrumentPeriod('1W')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">1W</button>
+          <button class="inst-period-btn" data-period="1M" onclick="switchInstrumentPeriod('1M')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--blue);background:var(--blue-bg);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">1M</button>
+          <button class="inst-period-btn" data-period="3M" onclick="switchInstrumentPeriod('3M')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">3M</button>
+          <button class="inst-period-btn" data-period="1Y" onclick="switchInstrumentPeriod('1Y')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">1Y</button>
+          <button class="inst-period-btn" data-period="5Y" onclick="switchInstrumentPeriod('5Y')" style="font:inherit;font-size:.72rem;font-weight:600;color:var(--fg-3);background:transparent;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;">5Y</button>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);margin:20px 16px 0;"></div>
+      <div style="padding:16px 16px 0;">
+        <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;">Summary</div>
+        <div id="instSummary">
+          <div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+        </div>
+      </div>
+
+      <div style="padding:8px 16px 0;">
+        <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;">About</div>
+        <div class="info-list">
+          <div class="info-row"><span class="info-label">Ticker / Code</span><span class="info-value" id="instAboutTicker">—</span></div>
+          <div class="info-row"><span class="info-label">Sector</span><span class="info-value" id="instAboutSector">—</span></div>
+          <div class="info-row"><span class="info-label">Product</span><span class="info-value" id="instAboutProduct">—</span></div>
+          <div class="info-row"><span class="info-label">Currency</span><span class="info-value" id="instAboutCurrency">—</span></div>
+        </div>
+      </div>
+
+      <div style="height:16px;"></div>
+
+    </div>  </div>
+</div>
+</body>
+</html>
