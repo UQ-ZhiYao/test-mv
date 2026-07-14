@@ -272,9 +272,11 @@ async function loadIndexDetailData(){
 // (high/mid/low of the price range), since %-change is just an affine
 // transform of price (pct = (price/firstClose - 1) * 100), so the two
 // axes are guaranteed to overlap at every tick rather than needing a
-// second line.
-function drawIndexDetailChart(points){
-  var c=document.getElementById('mktIndexDetailChart');
+// second line. Generalized over canvasId so the Instrument Detail page
+// (search-instruments.js) can reuse the exact same chart instead of
+// duplicating this — drawIndexDetailChart() is now a thin wrapper below.
+function drawDetailChart(canvasId,points){
+  var c=document.getElementById(canvasId);
   if(!c) return;
   var dpr=window.devicePixelRatio||1;
   // The canvas's OWN clientWidth (matching its CSS width:100%), not its
@@ -365,6 +367,7 @@ function drawIndexDetailChart(points){
   ctx.fillStyle=fillColor;
   ctx.fill();
 }
+function drawIndexDetailChart(points){ drawDetailChart('mktIndexDetailChart',points); }
 function mktSummaryRow(label,value){
   return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">'
     +'<div style="font-size:.76rem;color:var(--fg-3);">'+label+'</div>'

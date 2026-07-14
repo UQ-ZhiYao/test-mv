@@ -134,6 +134,19 @@ async function mpLoadHoldings(investorId) {
   return ordered;
 }
 
+/* ── Instruments under the "Securities" product — for the phone app's
+   global search (assets/js/phone/search-instruments.js). Every other
+   product (Cash Funds, REIT Trusts, ...) is excluded; only this fund's
+   own entry ("ZY-Invest") is shown alongside these in the search UI, and
+   that's a hardcoded pinned row, not a DB row. */
+async function mpLoadSecuritiesInstruments() {
+  const { data, error } = await sb.from('instruments')
+    .select('name, ticker, code, product, sector, currency')
+    .eq('product', 'Securities');
+  if (error) throw error;
+  return data || [];
+}
+
 /* ── Capital Summary (Units Held, AVCO Avg Cost, Total Cost) ──
    Units Held = direct sum of signed units from Approved capital_injection.
    Avg Cost   = AVCO over the same Approved rows in date order:
