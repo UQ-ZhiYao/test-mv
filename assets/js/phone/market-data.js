@@ -292,17 +292,33 @@ function drawIndexDetailChart(points){
   var mn=Math.min.apply(null,closes), mx=Math.max.apply(null,closes);
   var rng=(mx-mn)||1;
   var firstClose=closes[0];
-  // Room for the price labels (left) and %-change labels (right).
-  var pad={l:40,r:46,t:12,b:12};
+  // The plot itself uses ~99% of the available width — the axis labels
+  // are drawn overlapping directly on top of the chart (near its left/
+  // right edges, inside the plotted area) instead of living in a reserved
+  // side margin that would shrink the line/gridlines to make room.
+  var pad={l:1,r:1,t:14,b:14};
   var innerW=W-pad.l-pad.r, innerH=H-pad.t-pad.b;
   var up=closes[closes.length-1]>=closes[0];
   var lineColor=up?'#2E7D32':'#DC2626';
   var fillColor=up?'rgba(46,125,50,.08)':'rgba(220,38,38,.08)';
 
+  // Small translucent backing behind each label so it stays legible where
+  // it overlaps the line, fill, or gridline underneath it.
+  function drawAxisLabel(text,x,align){
+    ctx.font='9px sans-serif';
+    var tw=ctx.measureText(text).width;
+    var boxX=align==='left'?x-3:x-tw-3;
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.fillRect(boxX,y-7,tw+6,14);
+    ctx.fillStyle='#64748B';
+    ctx.textBaseline='middle';
+    ctx.textAlign=align;
+    ctx.fillText(text,x,y);
+  }
   var ticks=[mx,(mn+mx)/2,mn];
-  ctx.font='9px sans-serif';
+  var y;
   ticks.forEach(function(v){
-    var y=pad.t+innerH-((v-mn)/rng)*innerH;
+    y=pad.t+innerH-((v-mn)/rng)*innerH;
     ctx.beginPath();
     ctx.moveTo(pad.l,y);
     ctx.lineTo(pad.l+innerW,y);
@@ -310,12 +326,8 @@ function drawIndexDetailChart(points){
     ctx.lineWidth=1;
     ctx.stroke();
     var pct=firstClose?((v-firstClose)/firstClose*100):0;
-    ctx.fillStyle='#64748B';
-    ctx.textBaseline='middle';
-    ctx.textAlign='right';
-    ctx.fillText(mktFmtPrice(v),pad.l-6,y);
-    ctx.textAlign='left';
-    ctx.fillText((pct>=0?'+':'')+pct.toFixed(1)+'%',pad.l+innerW+6,y);
+    drawAxisLabel(mktFmtPrice(v),pad.l+4,'left');
+    drawAxisLabel((pct>=0?'+':'')+pct.toFixed(1)+'%',pad.l+innerW-4,'right');
   });
 
   ctx.beginPath();
