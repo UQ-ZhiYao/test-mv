@@ -734,7 +734,21 @@ async function mpSendFeedback(subject, content, memberEmail, memberName) {
   const { data, error } = await sb.functions.invoke('send-feedback', {
     body: { subject: subject, content: content, memberEmail: memberEmail, memberName: memberName }
   });
-  if (error) throw new Error('send-feedback failed: ' + error.message);
+  if (error) {
+    // supabase-js's error.message for a non-2xx Edge Function response is a
+    // generic "non-2xx status code" string — the actual reason (e.g. which
+    // Resend call failed, or that RESEND_API_KEY isn't set) is in the JSON
+    // body of that response, reachable via error.context, so surface that
+    // instead of the useless generic message wherever possible.
+    var detail = error.message || 'unknown error';
+    if (error.context && typeof error.context.json === 'function') {
+      try {
+        var errBody = await error.context.json();
+        if (errBody && errBody.error) detail = errBody.error;
+      } catch (_e) { /* context body already consumed or not JSON — keep generic message */ }
+    }
+    throw new Error(detail);
+  }
   if (data && data.error) throw new Error(data.error);
   return true;
 }

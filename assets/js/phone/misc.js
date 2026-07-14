@@ -530,7 +530,9 @@ async function submitFeedback(){
     if(typeof showToastM==='function') showToastM('Thanks! Your feedback has been sent.');
     if(typeof switchTab!=='undefined') switchTab('profile');
   }catch(e){
-    if(typeof showToastM==='function') showToastM('Could not send feedback — please try again.');
+    console.error('submitFeedback failed:',e);
+    var reason=(e&&e.message)?e.message:'please try again';
+    if(typeof showToastM==='function') showToastM('Could not send feedback: '+reason.slice(0,100));
   }finally{
     if(btn){ btn.disabled=false; btn.textContent=btnLabel; }
   }
