@@ -218,7 +218,8 @@ var DRILL_PAGES={
   password:{title:'Password & Security',back:'profile'},
   transaction:{title:'Transaction',back:'all'},
   distribution:{title:'Distribution',back:'all'},
-  assetdetails:{title:'Asset Details',back:'portfolio'}
+  assetdetails:{title:'Asset Details',back:'portfolio'},
+  inquiry:{title:'Online Inquiry',back:'profile'}
 };
 function topbarBackClick(){
   var d=DRILL_PAGES[activeTab];

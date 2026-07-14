@@ -430,8 +430,8 @@ function renderFinDetail(){
 
 // ── PAGE LOADER ──
 (function loadPages(){
-  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails"];
-  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html"};
+  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails","pg-inquiry"];
+  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html","pg-inquiry":"inquiry.html"};
   var mount=document.getElementById('pages-mount');
   Promise.all(pages.map(function(id){
     return fetch(srcMap[id]).then(function(r){return r.text();}).then(function(html){
