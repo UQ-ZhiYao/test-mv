@@ -122,51 +122,9 @@ function toggleJointExpand(){
   if(btn)btn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
 }
 
-function wlSearch(q){
-  var res=document.getElementById('wlSearchResults');
-  var emp=document.getElementById('wlSearchEmpty');
-  if(!res) return;
-  var hits=WL_UNIVERSE.filter(function(u){
-    return !q || u.sym.toLowerCase().includes(q.toLowerCase()) || u.name.toLowerCase().includes(q.toLowerCase());
-  });
-  if(!hits.length){res.innerHTML='';emp.style.display='block';return;}
-  emp.style.display='none';
-  res.innerHTML=hits.map(function(d,i){
-    var inWl=WL_ITEMS.indexOf(d.sym)!==-1;
-    var sign=d.up?'+':'';
-    var clr=d.up?'var(--green)':'var(--red)';
-    return '<div style="display:flex;align-items:center;padding:11px 14px;border-bottom:'+(i<hits.length-1?'1px solid var(--border)':'none')+';">'
-      +'<div style="flex:1;min-width:0;">'
-        +'<div style="font-size:.86rem;font-weight:600;color:var(--fg-1);">'+d.name+'</div>'
-        +'<div style="font-size:.7rem;color:var(--fg-3);margin-top:1px;">'+d.sym+' · '+d.type+'</div>'
-      +'</div>'
-      +'<div style="font-size:.82rem;font-weight:700;color:'+clr+';margin-right:12px;">'+sign+d.cp.toFixed(2)+'%</div>'
-      +'<button data-add="1" data-sym-add="'+d.sym+'" style="font:inherit;font-size:.75rem;font-weight:700;padding:6px 12px;border-radius:99px;border:1.5px solid '+(inWl?'var(--red)':'var(--blue)')+';background:'+(inWl?'var(--red-bg)':'var(--blue-bg)')+';color:'+(inWl?'var(--red)':'var(--blue)')+';cursor:pointer;flex-shrink:0;">'+(inWl?'Remove':'+ Add')+'</button>'
-      +'</div>';
-  }).join('');
-}
+// Watchlist screen logic (real "watchlist" table data) lives in
+// assets/js/phone/watchlist-actions.js.
 
-function toggleWlItem(sym){
-  var idx=WL_ITEMS.indexOf(sym);
-  if(idx===-1){
-    if(WL_ITEMS.length>=20){showToastM('Max 20 items in watchlist');return;}
-    WL_ITEMS.push(sym);
-    showToastM('Added to watchlist');
-  } else {
-    WL_ITEMS.splice(idx,1);
-    showToastM('Removed from watchlist');
-  }
-  wlSearch(document.getElementById('wlSearchInput').value);
-  renderWatchlist();
-}
-
-// Event delegation for watchlist buttons
-document.addEventListener('click',function(e){
-  var rm=e.target.closest('[data-rm]');
-  if(rm){removeWlItem(rm.getAttribute('data-sym-rm'));return;}
-  var add=e.target.closest('[data-add]');
-  if(add){toggleWlItem(add.getAttribute('data-sym-add'));return;}
-});
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 function doLogout(){
   // Wipe the real Supabase session token directly and synchronously — do
