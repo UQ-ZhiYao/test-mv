@@ -264,8 +264,35 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
       <div style="height:24px;"></div>
 
+      <!-- Market Section -->
+      <div style="padding:0 16px 8px;">
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Market</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <div onclick="switchTab('market');setTimeout(function(){switchMarketTab('indices');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+            <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Indices</span>
+          </div>
+          <div onclick="switchTab('market');setTimeout(function(){switchMarketTab('forex');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+            <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10h11l-3-3"/><path d="M17 14H6l3 3"/></svg>
+            </div>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Forex</span>
+          </div>
+          <div onclick="switchTab('market');setTimeout(function(){switchMarketTab('crypto');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+            <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E65100" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M9 9.7c0-1.1 1.2-1.7 3-1.7s3 .8 3 2-1.6 1.5-3 1.5-3 .4-3 1.7 1.4 2 3 2 3-.6 3-1.7"/></svg>
+            </div>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Crypto</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:24px;"></div>
+
       <!-- Account Section -->
-      <div style="padding:0 16px 24px;">
+      <div style="padding:0 16px 8px;">
         <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Me</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <div onclick="location.href='profile.html'" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
@@ -289,6 +316,33 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
         </div>
       </div>
 
+      <div style="height:24px;"></div>
+
+      <!-- Others Section -->
+      <div style="padding:0 16px 24px;">
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Others</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <div onclick="switchTab('inquiry')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+            <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Online Inquiry</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:default;opacity:.5;">
+            <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Help Center</span>
+          </div>
+          <div onclick="switchTab('feedback')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+            <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E65100" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path d="M17.5 3.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 8.5-8.5z"/></svg>
+            </div>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">App Feedback</span>
+          </div>
+        </div>
+      </div>
+
     </div>  </div>
 </div>
 <script>
@@ -297,6 +351,7 @@ if(typeof switchTab==='undefined'){
     var map={
       'portfolio':'index.html','fund':'fund.html','market':'market.html',
       'watchlist':'watchlist.html','discover':'discover.html','profile':'me.html','password':'password.html','transaction':'transaction.html','distribution':'distribution.html',
+      'inquiry':'inquiry.html','feedback':'feedback.html',
       'all':'all.html'
     };
     if(map[tab]) location.href=map[tab];
