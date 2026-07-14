@@ -4,15 +4,11 @@
 // page's preview widget (MARKETS in portfolio-widgets.js), extended with
 // real Yahoo Finance tickers and country labels for the full Market page.
 var MKT_INDICES_HEADLINE={symbol:'^KLSE',name:'FTSE Bursa Malaysia KLCI',country:'Malaysia'};
+// Region display order for the flat list below the pinned KLCI headline —
+// no "Top" highlight list anymore (it just duplicated entries from these
+// three and didn't fit "sort by region").
+var MKT_REGIONS=['american','asia','european'];
 var MKT_INDICES={
-  top:[
-    {symbol:'^GSPC',name:'S&P 500',country:'United States'},
-    {symbol:'^IXIC',name:'Nasdaq Composite',country:'United States'},
-    {symbol:'^DJI',name:'Dow Jones Industrial Average',country:'United States'},
-    {symbol:'^HSI',name:'Hang Seng Index',country:'Hong Kong'},
-    {symbol:'^N225',name:'Nikkei 225',country:'Japan'},
-    {symbol:'^FTSE',name:'FTSE 100',country:'United Kingdom'}
-  ],
   american:[
     {symbol:'^GSPC',name:'S&P 500',country:'United States'},
     {symbol:'^IXIC',name:'Nasdaq Composite',country:'United States'},
@@ -92,9 +88,11 @@ function mktQuoteBySymbol(quotes,symbol){
   for(var i=0;i<quotes.length;i++){ if(quotes[i].symbol===symbol) return quotes[i]; }
   return null;
 }
-// Shared row: left = code (bold) + up to 2 sublines; right = value (bold) + change subline.
-function mktRenderRow(left1,left2,left3,right1,right2Obj){
-  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);">'
+// Shared row: left = code (bold) + up to 2 sublines; right = value (bold) +
+// change subline. bg is an optional background color (e.g. a light tint
+// marking a region group, or the accent color for a pinned/base row).
+function mktRenderRow(left1,left2,left3,right1,right2Obj,bg){
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:'+(bg||'transparent')+';">'
     +'<div style="min-width:0;">'
     +'<div style="font-size:.84rem;font-weight:700;color:var(--fg-1);">'+left1+'</div>'
     +(left2?'<div style="font-size:.71rem;color:var(--fg-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+left2+'</div>':'')
@@ -122,28 +120,44 @@ function switchMarketTab(tab){
 
 // ── INDICES ──────────────────────────────────────────────────────────────
 // Ticker/code is deliberately not shown — the index's full name is the
-// main line, country (with its flag) is the only subline.
-function renderIndexRow(idx,quotes){
+// main line, country (with its flag) is the only subline. One flat table,
+// no category headers: FTSE Bursa Malaysia KLCI is always pinned at the
+// top (highlighted), then every other index is grouped by region (in
+// MKT_REGIONS order) and, within each region, sorted by market
+// size — the index's own price/value, descending, since indices don't
+// have a traditional market cap. Each region group gets its own light
+// background tint (alternating) so the boundaries read visually without
+// needing text headers.
+var MKT_REGION_BG=[null,'var(--gray-50)',null];
+function renderIndexRow(idx,quotes,bg){
   var q=mktQuoteBySymbol(quotes,idx.symbol);
   var price=q?mktFmtPrice(q.regularMarketPrice):'—';
   var chg=q?mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent):{txt:'—',color:'var(--fg-3)'};
   var flag=MKT_FLAGS[idx.country]||'';
-  return mktRenderRow(idx.name,(flag?flag+' ':'')+idx.country,null,price,chg);
+  return mktRenderRow(idx.name,(flag?flag+' ':'')+idx.country,null,price,chg,bg);
+}
+function mktIndexQuoteValue(idx,quotes){
+  var q=mktQuoteBySymbol(quotes,idx.symbol);
+  return (q&&q.regularMarketPrice!=null)?q.regularMarketPrice:-Infinity;
 }
 function renderMarketIndices(quotes){
-  var headEl=document.getElementById('mktIndicesHeadline');
-  if(headEl) headEl.innerHTML=renderIndexRow(MKT_INDICES_HEADLINE,quotes);
-  ['top','american','asia','european'].forEach(function(g){
-    var el=document.getElementById('mktIndices-'+g);
-    if(!el) return;
-    el.innerHTML=MKT_INDICES[g].map(function(idx){ return renderIndexRow(idx,quotes); }).join('');
+  var el=document.getElementById('mktIndicesList');
+  if(!el) return;
+  var html=renderIndexRow(MKT_INDICES_HEADLINE,quotes,'var(--blue-bg)');
+  MKT_REGIONS.forEach(function(region,ri){
+    var bg=MKT_REGION_BG[ri%MKT_REGION_BG.length];
+    var sorted=MKT_INDICES[region].slice().sort(function(a,b){
+      return mktIndexQuoteValue(b,quotes)-mktIndexQuoteValue(a,quotes);
+    });
+    sorted.forEach(function(idx){ html+=renderIndexRow(idx,quotes,bg); });
   });
+  el.innerHTML=html;
 }
 async function loadMarketIndices(){
   if(typeof sb==='undefined'||!sb) return;
   var allSymbols=[MKT_INDICES_HEADLINE.symbol];
-  ['top','american','asia','european'].forEach(function(g){
-    MKT_INDICES[g].forEach(function(idx){ if(allSymbols.indexOf(idx.symbol)===-1) allSymbols.push(idx.symbol); });
+  MKT_REGIONS.forEach(function(region){
+    MKT_INDICES[region].forEach(function(idx){ if(allSymbols.indexOf(idx.symbol)===-1) allSymbols.push(idx.symbol); });
   });
   try{
     var quotes=await mpLoadQuotes(allSymbols);
