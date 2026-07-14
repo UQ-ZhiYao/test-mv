@@ -52,6 +52,7 @@ Deno.serve(async (req: Request) => {
 
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
+    console.error("send-feedback: RESEND_API_KEY secret is not set");
     return jsonResponse({ error: "Email service is not configured" }, 500);
   }
 
@@ -59,6 +60,7 @@ Deno.serve(async (req: Request) => {
   try {
     body = await req.json();
   } catch (_e) {
+    console.error("send-feedback: request body was not valid JSON");
     return jsonResponse({ error: "Invalid request body" }, 400);
   }
 
@@ -68,6 +70,7 @@ Deno.serve(async (req: Request) => {
   const memberName = typeof body.memberName === "string" ? body.memberName.trim() : "";
 
   if (!subject || !content) {
+    console.error("send-feedback: missing subject or content in request body");
     return jsonResponse({ error: "Missing required 'subject' or 'content'" }, 400);
   }
 
@@ -92,10 +95,13 @@ Deno.serve(async (req: Request) => {
     });
     if (!res.ok) {
       const errBody = await res.text().catch(() => "");
+      console.error("send-feedback: Resend API error (" + res.status + "): " + errBody);
       return jsonResponse({ error: "Resend API error (" + res.status + "): " + errBody }, 502);
     }
   } catch (e) {
-    return jsonResponse({ error: "Failed to reach email service: " + (e instanceof Error ? e.message : String(e)) }, 502);
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("send-feedback: failed to reach Resend: " + msg);
+    return jsonResponse({ error: "Failed to reach email service: " + msg }, 502);
   }
 
   return jsonResponse({ ok: true }, 200);
