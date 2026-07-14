@@ -150,11 +150,11 @@ async function loadInstrumentDetailData(){
   var code=INST_DETAIL_CODE, periodKey=INST_DETAIL_PERIOD;
   var inst=instrumentByCode(code);
   if(!inst) return;
-  // Prefer ticker as the Yahoo-fetchable symbol, falling back to code —
-  // same tk||co precedence already used for holdings' display subline
-  // (member-api.js's mpLoadHoldings), since there's no other signal for
-  // which field actually holds a market-recognizable symbol.
-  var symbol=(inst.ticker&&inst.ticker.trim())||(inst.code&&inst.code.trim());
+  // "code" is the Yahoo-fetchable market symbol (confirmed against real
+  // instruments data — "ticker" can hold a non-fetchable label like
+  // "ZETRIX" that 502s against fetch-historical/fetch-quotes). Falls back
+  // to ticker only if code is somehow blank.
+  var symbol=(inst.code&&inst.code.trim())||(inst.ticker&&inst.ticker.trim());
   if(!symbol){ drawInstrumentDetailChart([]); renderInstrumentDetailSummary(null); return; }
   var period=null;
   for(var i=0;i<MKT_IDX_PERIODS.length;i++){ if(MKT_IDX_PERIODS[i].key===periodKey){ period=MKT_IDX_PERIODS[i]; break; } }
