@@ -156,11 +156,12 @@ async function loadMarketIndices(){
 
 // ── FOREX ────────────────────────────────────────────────────────────────
 // No dropdown — the base currency is just whichever row the user last
-// double-clicked. That row is pinned to the top of the list and
-// highlighted; changeFxBase() (called via each row's ondblclick) re-renders
-// with the new base.
+// tapped. That row is pinned to the top of the list and highlighted;
+// changeFxBase() (called via each row's onclick) re-renders with the new
+// base. Was double-click/double-tap, but dblclick doesn't fire reliably
+// across mobile touch browsers/WebViews, so a single tap is used instead.
 function mktRenderFxRow(c,rate,chgObj,isBase){
-  return '<div ondblclick="changeFxBase(\''+c.code+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;background:'+(isBase?'var(--blue-bg)':'transparent')+';">'
+  return '<div onclick="changeFxBase(\''+c.code+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;background:'+(isBase?'var(--blue-bg)':'transparent')+';">'
     +'<div style="min-width:0;">'
     +'<div style="font-size:.84rem;font-weight:700;color:'+(isBase?'var(--blue)':'var(--fg-1)')+';">'+c.code
     +(isBase?' <span style="font-size:.62rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;">· Base</span>':'')
