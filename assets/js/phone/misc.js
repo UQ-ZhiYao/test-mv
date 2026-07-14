@@ -495,31 +495,43 @@ function zyFillSupportEmailText(){
 }
 
 // ── APP FEEDBACK ─────────────────────────────────────────────────────────
-// No backend for sending arbitrary mail — submitting opens the member's
-// own email app via a mailto: link, prefilled with subject/body, so the
-// message is genuinely sent from their own address rather than relayed
-// through some service account.
-var feedbackSubject=null;
-function selectFeedbackSubject(el){
-  document.querySelectorAll('.fb-subject-opt').forEach(function(o){o.classList.remove('selected');});
-  el.classList.add('selected');
-  feedbackSubject=el.getAttribute('data-subject');
+// Submitting calls mpSendFeedback() (member-api.js), which invokes the
+// send-feedback Supabase Edge Function — the email to support@zy-invest.com
+// is sent server-side via Resend, so this is a silent submit with no mail
+// app involved. The member's own address goes along as Reply-To.
+function clearFeedbackSubjectErr(){
   var err=document.getElementById('feedbackSubjectErr');
   if(err) err.style.display='none';
 }
-function submitFeedback(){
+async function submitFeedback(){
+  var subjectEl=document.getElementById('feedbackSubjectSelect');
+  var subject=subjectEl?subjectEl.value:'';
   var contentEl=document.getElementById('feedbackContent');
   var content=contentEl?contentEl.value.trim():'';
   var subjectErr=document.getElementById('feedbackSubjectErr');
   var contentErr=document.getElementById('feedbackContentErr');
   var ok=true;
-  if(!feedbackSubject){ if(subjectErr) subjectErr.style.display='block'; ok=false; }
+  if(!subject){ if(subjectErr) subjectErr.style.display='block'; ok=false; }
   else if(subjectErr) subjectErr.style.display='none';
   if(!content){ if(contentErr) contentErr.style.display='block'; ok=false; }
   else if(contentErr) contentErr.style.display='none';
   if(!ok) return;
+
+  var btn=document.getElementById('feedbackSubmitBtn');
+  var btnLabel=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+
   var name=(typeof PROFILE!=='undefined'&&PROFILE&&PROFILE.full_name)?PROFILE.full_name:'';
-  var body=(name?'From: '+name+'\n\n':'')+content;
-  var mailSubject='App Feedback: '+feedbackSubject;
-  window.location.href='mailto:'+ZY_SUPPORT_EMAIL+'?subject='+encodeURIComponent(mailSubject)+'&body='+encodeURIComponent(body);
+  var email=(typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.email)?AUTH_USER.email:'';
+  try{
+    await mpSendFeedback(subject,content,email,name);
+    if(contentEl) contentEl.value='';
+    if(subjectEl) subjectEl.value='';
+    if(typeof showToastM==='function') showToastM('Thanks! Your feedback has been sent.');
+    if(typeof switchTab!=='undefined') switchTab('profile');
+  }catch(e){
+    if(typeof showToastM==='function') showToastM('Could not send feedback — please try again.');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent=btnLabel; }
+  }
 }

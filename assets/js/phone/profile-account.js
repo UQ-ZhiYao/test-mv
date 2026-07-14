@@ -250,6 +250,19 @@ function updateTopbarChrome(tab){
   // Details drill-in — every other page keeps the usual border.
   var noBorderTabs=['portfolio','assetdetails','fund','market','watchlist','discover','all'];
   if(bar) bar.style.borderBottom=(noBorderTabs.indexOf(tab)>=0)?'none':'1px solid var(--border)';
+
+  // App Feedback's fixed Submit button takes over the bottom tab bar's
+  // slot while that page is active, instead of floating in the scrollable
+  // content above a still-visible tab bar.
+  var tabbar=document.querySelector('.tabbar');
+  var feedbackFooter=document.getElementById('feedbackFooterBar');
+  if(tab==='feedback'){
+    if(tabbar) tabbar.style.display='none';
+    if(feedbackFooter) feedbackFooter.style.display='flex';
+  } else {
+    if(tabbar) tabbar.style.display='';
+    if(feedbackFooter) feedbackFooter.style.display='none';
+  }
 }
 // switchTab() is what normally calls updateTopbarChrome(), but it only ever
 // runs on an actual tab click — the default tab (Accounts/portfolio) is
