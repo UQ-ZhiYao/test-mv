@@ -22,34 +22,15 @@
       </div>
 
       <!-- ── INDICES ── -->
+      <!-- One flat table, no category headers: FTSE Bursa Malaysia KLCI is
+           always pinned first (highlighted), the rest are grouped by
+           region and sorted by market size within each region — see
+           renderMarketIndices() in market-data.js, which also applies the
+           alternating light region-band backgrounds inline per row. -->
       <div id="mtab-indices-body" style="display:block;padding:0 0 32px;">
-        <div style="padding:16px 16px 0;">
-          <div style="height:1em;"></div>
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">Headline</div>
-        </div>
-        <div id="mktIndicesHeadline" style="border-top:1px solid var(--border);">
+        <div id="mktIndicesList" style="border-top:1px solid var(--border);">
           <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
         </div>
-
-        <div style="padding:20px 16px 0;">
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">Top</div>
-        </div>
-        <div id="mktIndices-top" style="border-top:1px solid var(--border);"></div>
-
-        <div style="padding:20px 16px 0;">
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">American</div>
-        </div>
-        <div id="mktIndices-american" style="border-top:1px solid var(--border);"></div>
-
-        <div style="padding:20px 16px 0;">
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">Asia</div>
-        </div>
-        <div id="mktIndices-asia" style="border-top:1px solid var(--border);"></div>
-
-        <div style="padding:20px 16px 0;">
-          <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;">European</div>
-        </div>
-        <div id="mktIndices-european" style="border-top:1px solid var(--border);"></div>
       </div>
 
       <!-- ── FOREX ── -->
