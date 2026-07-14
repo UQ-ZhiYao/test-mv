@@ -83,25 +83,32 @@ async function drawWatchlistList(){
   }
 }
 
+// Full-width, no card, no icon badge — same flat row treatment as the
+// Market screen's list (mktRenderRow() in market-data.js): left = name +
+// ticker subline, right = price + change. The only addition over
+// mktRenderRow itself is the optional trailing remove button in edit
+// mode, which that shared helper has no slot for.
 function wlRowHTML(d,i,total,q){
-  var priceHTML=q
-    ? '<div style="font-size:.92rem;font-weight:700;color:var(--fg-1);">'+mktFmtPrice(q.regularMarketPrice)+'</div>'
-      +'<div style="font-size:.72rem;font-weight:700;color:'+mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent).color+';">'+mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent).txt+'</div>'
-    : '<div style="font-size:.72rem;color:var(--fg-3);">—</div>';
+  var chg=q?mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent):{txt:'—',color:'var(--fg-3)'};
+  var priceTxt=q?mktFmtPrice(q.regularMarketPrice):'—';
   var tick=((d.ticker||d.code)||'').trim();
-  var trailing=WL_EDIT_MODE
-    ? '<button data-wl-rm="'+d.id+'" style="background:none;border:none;cursor:pointer;padding:4px;margin-left:8px;color:var(--red);flex-shrink:0;" title="Remove">'
+  var removeBtn=WL_EDIT_MODE
+    ? '<button data-wl-rm="'+d.id+'" style="background:none;border:none;cursor:pointer;padding:4px;margin-left:10px;color:var(--red);flex-shrink:0;" title="Remove">'
       +'<svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="8" x2="16" y2="16"/><line x1="16" y1="8" x2="8" y2="16"/></svg>'
       +'</button>'
-    : '<span class="menu-arr" style="margin-left:8px;">›</span>';
-  return '<div id="wlRow-'+d.id+'" data-wl-open="'+d.code+'" style="display:flex;align-items:center;padding:13px 16px;border-bottom:'+(i<total-1?'1px solid var(--border)':'none')+';cursor:'+(WL_EDIT_MODE?'default':'pointer')+';">'
-    +'<div style="width:40px;height:40px;border-radius:11px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;font-size:.6rem;font-weight:700;color:var(--fg-3);text-align:center;overflow:hidden;">'+(tick||'—')+'</div>'
-    +'<div style="flex:1;min-width:0;">'
-      +'<div style="font-size:.88rem;font-weight:600;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+d.name+'</div>'
-      +'<div style="font-size:.7rem;color:var(--fg-3);margin-top:2px;">'+tick+'</div>'
+    : '';
+  return '<div id="wlRow-'+d.id+'" data-wl-open="'+d.code+'" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:'+(i<total-1?'1px solid var(--border)':'none')+';cursor:'+(WL_EDIT_MODE?'default':'pointer')+';">'
+    +'<div style="min-width:0;">'
+      +'<div style="font-size:.84rem;font-weight:700;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+d.name+'</div>'
+      +'<div style="font-size:.71rem;color:var(--fg-3);margin-top:2px;">'+tick+'</div>'
     +'</div>'
-    +'<div style="text-align:right;flex-shrink:0;">'+priceHTML+'</div>'
-    +trailing
+    +'<div style="display:flex;align-items:center;flex-shrink:0;padding-left:10px;">'
+      +'<div style="text-align:right;">'
+        +'<div style="font-size:.86rem;font-weight:700;color:var(--fg-1);">'+priceTxt+'</div>'
+        +'<div style="font-size:.72rem;font-weight:600;color:'+chg.color+';margin-top:2px;">'+chg.txt+'</div>'
+      +'</div>'
+      +removeBtn
+    +'</div>'
     +'</div>';
 }
 
