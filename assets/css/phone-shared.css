@@ -136,6 +136,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .menu-text span{display:block;font-size:.72rem;color:var(--fg-3);margin-top:1px;}
 .menu-arr{color:var(--fg-3);font-size:.8rem;}
 .menu-item.danger .menu-text b{color:var(--red);}
+.scroll .back-bar{display:none;}
+.back-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 4px;}
+.back-btn{background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font:inherit;font-size:.88rem;font-weight:600;color:var(--blue);padding:0;}
+.back-btn svg{stroke:var(--blue);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 
 /* Bottom tab bar */
 .tabbar{height:calc(var(--tab-h) + var(--safe-bottom));background:#fff;border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:6px;padding-bottom:var(--safe-bottom);flex-shrink:0;}
