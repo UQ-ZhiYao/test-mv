@@ -147,6 +147,32 @@ async function mpLoadSecuritiesInstruments() {
   return data || [];
 }
 
+/* ── Watchlist (this member's own saved instruments) ──
+   watchlist: uid, name, code, ticker — uid is NOT unique (one row per
+   saved instrument), same "many rows share this member's uid" shape as
+   capital_injection/transactions. See assets/js/phone/watchlist-actions.js
+   for the screen this backs. */
+async function mpLoadWatchlist(userId) {
+  const { data, error } = await sb.from('watchlist')
+    .select('id, name, code, ticker, created_at')
+    .eq('uid', userId)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+async function mpAddWatchlistItem(userId, inst) {
+  const { error } = await sb.from('watchlist')
+    .insert({ uid: userId, name: inst.name, code: inst.code, ticker: inst.ticker });
+  if (error) throw error;
+}
+async function mpRemoveWatchlistItem(userId, id) {
+  const { error } = await sb.from('watchlist')
+    .delete()
+    .eq('uid', userId)
+    .eq('id', id);
+  if (error) throw error;
+}
+
 /* ── Capital Summary (Units Held, AVCO Avg Cost, Total Cost) ──
    Units Held = direct sum of signed units from Approved capital_injection.
    Avg Cost   = AVCO over the same Approved rows in date order:
