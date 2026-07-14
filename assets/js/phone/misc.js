@@ -468,5 +468,28 @@ function renderFinDetail(){
     loadProfileData();
     loadAccountSummary();
     loadAdminBankAccount();
+    zyFillSupportEmailText();
   });
 })();
+
+// ── SUPPORT EMAIL (Cloudflare Email Obfuscation workaround) ────────────────
+// Cloudflare's "Email Address Obfuscation" (Scrape Shield) rewrites any
+// plain user@domain.tld text or mailto: link it finds in the HTML it
+// serves into its own [email protected] placeholder plus a decoder
+// <script>. That decoder never runs for fund.html's/inquiry.html's contact
+// text, because those pages are fetched as fragments and injected via
+// innerHTML above (browsers never execute <script> tags inserted that
+// way) — so the placeholder just sits there broken instead of decoding
+// back to a real address. Building the address from JS at runtime, after
+// the fragments are already in the DOM, means Cloudflare's edge-side
+// scanner never sees a literal email pattern in the HTML it serves in the
+// first place, so there's nothing for it to rewrite.
+var ZY_SUPPORT_EMAIL=['support','zy-invest.com'].join('@');
+function zyOpenSupportEmail(){
+  window.location.href='mailto:'+ZY_SUPPORT_EMAIL;
+}
+function zyFillSupportEmailText(){
+  document.querySelectorAll('.zy-support-email').forEach(function(el){
+    el.textContent=ZY_SUPPORT_EMAIL;
+  });
+}
