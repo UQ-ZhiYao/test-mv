@@ -238,22 +238,32 @@ async function loadIndexDetailData(){
   var period=null;
   for(var i=0;i<MKT_IDX_PERIODS.length;i++){ if(MKT_IDX_PERIODS[i].key===periodKey){ period=MKT_IDX_PERIODS[i]; break; } }
   if(!period) period=MKT_IDX_PERIODS[2];
-  try{
-    var results=await Promise.all([
-      mpLoadHistorical(symbol,period.interval,period.range),
-      mpLoadQuotes([symbol])
-    ]);
-    // The symbol changed (user opened a different index) or another period
-    // was tapped and already finished loading while this request was still
-    // in flight — either way a newer call already rendered (or will), so
-    // drop this now-stale one instead of overwriting it.
-    if(symbol!==MKT_IDX_DETAIL_SYMBOL||periodKey!==MKT_IDX_DETAIL_PERIOD) return;
-    drawIndexDetailChart(results[0]);
-    renderIndexDetailSummary(mktQuoteBySymbol(results[1],symbol));
-  }catch(e){
-    console.warn('[Market] index detail load failed:', e.message);
-    if(symbol!==MKT_IDX_DETAIL_SYMBOL||periodKey!==MKT_IDX_DETAIL_PERIOD) return;
+  // The symbol changed (user opened a different index) or another period
+  // was tapped and already finished loading while this request was still
+  // in flight — either way a newer call already rendered (or will), so
+  // drop this now-stale one instead of overwriting it.
+  function stillCurrent(){ return symbol===MKT_IDX_DETAIL_SYMBOL&&periodKey===MKT_IDX_DETAIL_PERIOD; }
+  // Chart (fetch-historical) and summary (fetch-quotes) are two
+  // independent calls, settled via allSettled rather than Promise.all —
+  // previously a single failed Promise.all() blanked BOTH out even when
+  // only one of them actually failed (e.g. the chart loading fine while
+  // fetch-quotes errors). Each is rendered from its own outcome.
+  var results=await Promise.allSettled([
+    mpLoadHistorical(symbol,period.interval,period.range),
+    mpLoadQuotes([symbol])
+  ]);
+  if(!stillCurrent()) return;
+  var chartResult=results[0], quotesResult=results[1];
+  if(chartResult.status==='fulfilled'){
+    drawIndexDetailChart(chartResult.value);
+  }else{
+    console.warn('[Market] index detail chart load failed:', chartResult.reason&&chartResult.reason.message);
     drawIndexDetailChart([]);
+  }
+  if(quotesResult.status==='fulfilled'){
+    renderIndexDetailSummary(mktQuoteBySymbol(quotesResult.value,symbol));
+  }else{
+    console.warn('[Market] index detail summary load failed:', quotesResult.reason&&quotesResult.reason.message);
     renderIndexDetailSummary(null);
   }
 }
@@ -267,7 +277,16 @@ function drawIndexDetailChart(points){
   var c=document.getElementById('mktIndexDetailChart');
   if(!c) return;
   var dpr=window.devicePixelRatio||1;
-  var W=c.parentElement.clientWidth;
+  // The canvas's OWN clientWidth (matching its CSS width:100%), not its
+  // parent's — the parent (<div style="padding:16px 16px 0;">) has 32px
+  // of horizontal padding, and clientWidth on an element includes its own
+  // padding as part of the value. Reading the parent's clientWidth sized
+  // the canvas 32px wider than the actual space available inside that
+  // padding, pushing its right edge (and the axis labels/gridlines drawn
+  // near it) past the visible card and off into the page's overflow-x:
+  // hidden clip. This matches drawAdTrend()'s canvas.clientWidth pattern
+  // in portfolio-widgets.js.
+  var W=c.clientWidth||c.getBoundingClientRect().width;
   var H=160;
   var ctx=c.getContext('2d');
   if(W<=0){
