@@ -430,8 +430,8 @@ function renderFinDetail(){
 
 // ── PAGE LOADER ──
 (function loadPages(){
-  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails","pg-inquiry"];
-  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html","pg-inquiry":"inquiry.html"};
+  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails","pg-inquiry","pg-feedback"];
+  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html","pg-inquiry":"inquiry.html","pg-feedback":"feedback.html"};
   var mount=document.getElementById('pages-mount');
   Promise.all(pages.map(function(id){
     return fetch(srcMap[id]).then(function(r){return r.text();}).then(function(html){
@@ -492,4 +492,34 @@ function zyFillSupportEmailText(){
   document.querySelectorAll('.zy-support-email').forEach(function(el){
     el.textContent=ZY_SUPPORT_EMAIL;
   });
+}
+
+// ── APP FEEDBACK ─────────────────────────────────────────────────────────
+// No backend for sending arbitrary mail — submitting opens the member's
+// own email app via a mailto: link, prefilled with subject/body, so the
+// message is genuinely sent from their own address rather than relayed
+// through some service account.
+var feedbackSubject=null;
+function selectFeedbackSubject(el){
+  document.querySelectorAll('.fb-subject-opt').forEach(function(o){o.classList.remove('selected');});
+  el.classList.add('selected');
+  feedbackSubject=el.getAttribute('data-subject');
+  var err=document.getElementById('feedbackSubjectErr');
+  if(err) err.style.display='none';
+}
+function submitFeedback(){
+  var contentEl=document.getElementById('feedbackContent');
+  var content=contentEl?contentEl.value.trim():'';
+  var subjectErr=document.getElementById('feedbackSubjectErr');
+  var contentErr=document.getElementById('feedbackContentErr');
+  var ok=true;
+  if(!feedbackSubject){ if(subjectErr) subjectErr.style.display='block'; ok=false; }
+  else if(subjectErr) subjectErr.style.display='none';
+  if(!content){ if(contentErr) contentErr.style.display='block'; ok=false; }
+  else if(contentErr) contentErr.style.display='none';
+  if(!ok) return;
+  var name=(typeof PROFILE!=='undefined'&&PROFILE&&PROFILE.full_name)?PROFILE.full_name:'';
+  var body=(name?'From: '+name+'\n\n':'')+content;
+  var mailSubject='App Feedback: '+feedbackSubject;
+  window.location.href='mailto:'+ZY_SUPPORT_EMAIL+'?subject='+encodeURIComponent(mailSubject)+'&body='+encodeURIComponent(body);
 }
