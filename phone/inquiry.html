@@ -38,9 +38,16 @@
            since there's nothing meaningful to show in a subline once it's
            tapped straight through to that app anyway. -->
       <div style="padding:0 16px;">
-        <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="window.location.href='mailto:support@zy-invest.com'">
+        <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="zyOpenSupportEmail()">
           <div class="menu-ic"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-          <div style="flex:1;min-width:0;font-size:.88rem;font-weight:600;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Email (support@zy-invest.com)</div>
+          <!-- Email address is filled in by zyFillSupportEmailText()
+               (assets/js/phone/misc.js), not written here as literal
+               text — Cloudflare's Email Address Obfuscation rewrites any
+               plain user@domain.tld pattern it finds in served HTML into
+               a placeholder that only decodes via a <script> tag, and
+               that script never runs because this page is injected via
+               innerHTML as a fragment. -->
+          <div style="flex:1;min-width:0;font-size:.88rem;font-weight:600;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Email (<span class="zy-support-email"></span>)</div>
           <span class="menu-arr">›</span>
         </div>
         <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="window.location.href='tel:+601111218085'">
