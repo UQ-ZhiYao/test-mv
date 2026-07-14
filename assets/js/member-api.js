@@ -724,6 +724,21 @@ async function mpLoadQuotes(symbols) {
   return (data && data.quotes) || [];
 }
 
+/* ── App Feedback submission via our own send-feedback Supabase Edge
+   Function (supabase/functions/send-feedback/index.ts) — sends the email
+   to support@zy-invest.com server-side through Resend, so Submit doesn't
+   need to open the member's own mail app. Throws on failure so the caller
+   (submitFeedback() in phone/misc.js) can show an error toast and let the
+   member retry without losing what they typed. */
+async function mpSendFeedback(subject, content, memberEmail, memberName) {
+  const { data, error } = await sb.functions.invoke('send-feedback', {
+    body: { subject: subject, content: content, memberEmail: memberEmail, memberName: memberName }
+  });
+  if (error) throw new Error('send-feedback failed: ' + error.message);
+  if (data && data.error) throw new Error(data.error);
+  return true;
+}
+
 /* ── Distributions by FY (fund-wide, Paid only) — for the Fund Overview
    "Distribution Summary" & "Distribution History" cards. Buckets each
    Paid distribution into interimDps / finalDps by matching distributions.type

@@ -401,6 +401,13 @@ setTimeout(function(){
     </button>
   </div>
 
+  <!-- APP FEEDBACK: fixed Submit footer, shown in place of the bottom tab
+       bar only while the feedback page is active (toggled alongside the
+       topbar's back button by updateTopbarChrome() in profile-account.js). -->
+  <div class="feedback-footer" id="feedbackFooterBar" style="display:none;">
+    <button class="feedback-submit-btn" id="feedbackSubmitBtn" onclick="submitFeedback()">Submit</button>
+  </div>
+
 </div><!-- /app -->
 
 <!-- ── GLOBAL SEARCH OVERLAY ── -->
@@ -560,13 +567,13 @@ setTimeout(function(){
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="../assets/js/supabase-auth.js?v=1" defer></script>
-<script src="../assets/js/member-api.js?v=6" defer></script>
-<script src="../assets/js/phone/profile-account.js?v=6" defer></script>
+<script src="../assets/js/member-api.js?v=7" defer></script>
+<script src="../assets/js/phone/profile-account.js?v=7" defer></script>
 <script src="../assets/js/phone/portfolio-widgets.js?v=2" defer></script>
 <script src="../assets/js/phone/markets-actions.js?v=1" defer></script>
 <script src="../assets/js/phone/financial-charts-1.js?v=2" defer></script>
 <script src="../assets/js/phone/financial-charts-2.js?v=1" defer></script>
 <script src="../assets/js/phone/market-data.js?v=8" defer></script>
-<script src="../assets/js/phone/misc.js?v=4" defer></script>
+<script src="../assets/js/phone/misc.js?v=5" defer></script>
 </body>
 </html>
