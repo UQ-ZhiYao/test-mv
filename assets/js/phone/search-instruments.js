@@ -12,6 +12,14 @@
 var SEARCH_INSTRUMENTS = null;   // lazy-loaded [{name,ticker,code,product,sector,currency}]
 var SEARCH_LOAD_PROMISE = null;
 var SEARCH_RECENT_CODES = [];    // recently-opened instrument codes, most recent first
+// 'navigate' (default, opened via the topbar search icon): tapping ZY-Invest
+// goes to the Fund page, tapping an instrument opens Instrument Detail.
+// 'add-watchlist' (opened via Watchlist's "Add Instrument" — see
+// openWlSearch() in watchlist-actions.js): this exact same overlay is
+// reused instead of a separate picker, but ZY-Invest isn't offered (it
+// can't be "watched") and tapping an instrument toggles it in/out of the
+// watchlist in place instead of navigating away.
+var SEARCH_MODE = 'navigate';
 
 function ensureSearchInstruments(){
   if(SEARCH_INSTRUMENTS) return Promise.resolve(SEARCH_INSTRUMENTS);
@@ -25,8 +33,23 @@ function ensureSearchInstruments(){
 function instrumentByCode(code){
   return (SEARCH_INSTRUMENTS||[]).find(function(u){return u.code===code;});
 }
+// Ticker and code shown together ("TICK | CODE") only when code exists —
+// just the ticker (or code alone, if that's all there is) otherwise.
+function zyInstrumentSubline(ticker,code){
+  var tick=(ticker||'').trim();
+  var co=(code||'').trim();
+  if(!co) return tick||'—';
+  return tick?tick+' | '+co:co;
+}
 
 function openMktSearch(){
+  SEARCH_MODE='navigate';
+  document.getElementById('globalSearchInput').placeholder='Search stocks, indices, crypto…';
+  var label=document.getElementById('searchRecentLabel');
+  if(label) label.textContent='Recent';
+  openSearchOverlay();
+}
+function openSearchOverlay(){
   var overlay=document.getElementById('searchOverlay');
   overlay.style.display='flex';
   overlay.style.flexDirection='column';
@@ -38,6 +61,7 @@ function openMktSearch(){
   setTimeout(function(){document.getElementById('globalSearchInput').focus();},200);
 }
 function closeSearch(){
+  SEARCH_MODE='navigate';
   document.getElementById('searchOverlay').style.display='none';
   document.getElementById('globalSearchInput').value='';
   document.getElementById('searchResults').style.display='none';
@@ -57,20 +81,36 @@ function zyInvestSearchRowHTML(){
     +'</div>';
 }
 function instrumentSearchRowHTML(inst,i,total){
-  var sub=inst.sector||inst.product||'Securities';
+  var sub=zyInstrumentSubline(inst.ticker,inst.code);
   var tick=((inst.ticker||inst.code)||'').trim();
+  var trailing='<span class="menu-arr">›</span>';
+  if(SEARCH_MODE==='add-watchlist'){
+    var saved=(typeof WATCHLIST_ITEMS!=='undefined'&&WATCHLIST_ITEMS||[]).some(function(w){return w.code===inst.code;});
+    trailing=saved
+      ? '<svg width="20" height="20" viewBox="0 0 24 24" stroke="var(--green)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 24 24" stroke="var(--blue)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>';
+  }
   return '<div data-inst-code="'+(inst.code||'')+'" style="display:flex;align-items:center;padding:12px 16px;border-bottom:'+(i<total-1?'1px solid var(--border)':'none')+';cursor:pointer;">'
     +'<div style="width:38px;height:38px;border-radius:10px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;font-size:.6rem;font-weight:700;color:var(--fg-3);text-align:center;overflow:hidden;">'+(tick||'—')+'</div>'
     +'<div style="flex:1;min-width:0;">'
       +'<div style="font-size:.88rem;font-weight:600;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+inst.name+'</div>'
       +'<div style="font-size:.72rem;color:var(--fg-3);margin-top:1px;">'+sub+'</div>'
     +'</div>'
-    +'<span class="menu-arr">›</span>'
+    +trailing
     +'</div>';
 }
 function renderSearchRecent(){
   var list=document.getElementById('searchRecentList');
   if(!list) return;
+  if(SEARCH_MODE==='add-watchlist'){
+    // No "recently viewed" concept when picking something to watch — show
+    // every Securities instrument, same as the default (empty-query) view
+    // the dedicated Add sheet used to show before it was folded into this
+    // shared overlay.
+    var all=SEARCH_INSTRUMENTS||[];
+    list.innerHTML=all.map(function(d,i){return instrumentSearchRowHTML(d,i,all.length);}).join('');
+    return;
+  }
   var recentItems=SEARCH_RECENT_CODES.map(function(code){return instrumentByCode(code);}).filter(Boolean);
   list.innerHTML=zyInvestSearchRowHTML()+recentItems.map(function(d,i){return instrumentSearchRowHTML(d,i,recentItems.length);}).join('');
 }
@@ -87,13 +127,14 @@ function globalSearch(q){
       || (u.ticker||'').toLowerCase().indexOf(ql)!==-1
       || (u.code||'').toLowerCase().indexOf(ql)!==-1;
   });
-  // ZY-Invest is always the first result, regardless of query — it's the
-  // one thing on this single-fund platform worth surfacing no matter what
-  // was typed.
   var body=hits.length
     ? hits.map(function(d,i){return instrumentSearchRowHTML(d,i,hits.length);}).join('')
     : '<div style="padding:24px 16px;text-align:center;font-size:.8rem;color:var(--fg-3);">No matching instruments</div>';
-  list.innerHTML=zyInvestSearchRowHTML()+body;
+  // ZY-Invest is always the first result in navigate mode, regardless of
+  // query — it's the one thing on this single-fund platform worth
+  // surfacing no matter what was typed. It isn't offered in
+  // add-watchlist mode (the fund itself can't be "watched").
+  list.innerHTML=(SEARCH_MODE==='add-watchlist'?'':zyInvestSearchRowHTML())+body;
 }
 
 // Event delegation for the two row types in the search overlay.
@@ -101,7 +142,12 @@ document.addEventListener('click',function(e){
   var zyRow=e.target.closest('[data-zy-fund]');
   if(zyRow){ closeSearch(); switchTab('fund'); return; }
   var instRow=e.target.closest('[data-inst-code]');
-  if(instRow){ openInstrumentDetail(instRow.getAttribute('data-inst-code')); return; }
+  if(instRow){
+    var code=instRow.getAttribute('data-inst-code');
+    if(SEARCH_MODE==='add-watchlist') toggleWlItem(code);
+    else openInstrumentDetail(code);
+    return;
+  }
 });
 
 // ── INSTRUMENT DETAIL PAGE ──────────────────────────────────────────────

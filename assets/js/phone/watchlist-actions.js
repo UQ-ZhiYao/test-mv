@@ -91,7 +91,7 @@ async function drawWatchlistList(){
 function wlRowHTML(d,i,total,q){
   var chg=q?mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent):{txt:'—',color:'var(--fg-3)'};
   var priceTxt=q?mktFmtPrice(q.regularMarketPrice):'—';
-  var tick=((d.ticker||d.code)||'').trim();
+  var sub=zyInstrumentSubline(d.ticker,d.code);
   var removeBtn=WL_EDIT_MODE
     ? '<button data-wl-rm="'+d.id+'" style="background:none;border:none;cursor:pointer;padding:4px;margin-left:10px;color:var(--red);flex-shrink:0;" title="Remove">'
       +'<svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="8" x2="16" y2="16"/><line x1="16" y1="8" x2="8" y2="16"/></svg>'
@@ -100,7 +100,7 @@ function wlRowHTML(d,i,total,q){
   return '<div id="wlRow-'+d.id+'" data-wl-open="'+d.code+'" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:'+(i<total-1?'1px solid var(--border)':'none')+';cursor:'+(WL_EDIT_MODE?'default':'pointer')+';">'
     +'<div style="min-width:0;">'
       +'<div style="font-size:.84rem;font-weight:700;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+d.name+'</div>'
-      +'<div style="font-size:.71rem;color:var(--fg-3);margin-top:2px;">'+tick+'</div>'
+      +'<div style="font-size:.71rem;color:var(--fg-3);margin-top:2px;">'+sub+'</div>'
     +'</div>'
     +'<div style="display:flex;align-items:center;flex-shrink:0;padding-left:10px;">'
       +'<div style="text-align:right;">'
@@ -129,52 +129,23 @@ async function removeWlItem(id){
     WATCHLIST_ITEMS=(WATCHLIST_ITEMS||[]).filter(function(w){return String(w.id)!==String(id);});
     showToastM('Removed from watchlist');
     drawWatchlistList();
-    var sheet=document.getElementById('wlSearchSheet');
-    if(sheet&&sheet.classList.contains('vis')) wlSearch(document.getElementById('wlSearchInput').value);
   }catch(e){
     showToastM('Could not remove — please try again');
   }
 }
 
-// ── ADD-TO-WATCHLIST SHEET (searches the same real "instruments" cache
-// global search uses, via ensureSearchInstruments()/SEARCH_INSTRUMENTS in
-// search-instruments.js) ────────────────────────────────────────────────
+// ── ADD INSTRUMENT ──────────────────────────────────────────────────────
+// Reuses the same full-screen search overlay the topbar's search icon
+// opens (search-instruments.js) instead of a separate picker sheet —
+// SEARCH_MODE='add-watchlist' changes that overlay's behavior: no
+// ZY-Invest row, and tapping a result toggles it in/out of the watchlist
+// (via toggleWlItem() below) instead of opening Instrument Detail.
 function openWlSearch(){
-  document.getElementById('sheetScrim').classList.add('vis');
-  document.getElementById('wlSearchSheet').classList.add('vis');
-  document.getElementById('wlSearchInput').value='';
-  ensureSearchInstruments().then(function(){wlSearch('');});
-  setTimeout(function(){document.getElementById('wlSearchInput').focus();},300);
-}
-function closeWlSearch(){
-  document.getElementById('wlSearchSheet').classList.remove('vis');
-  document.getElementById('sheetScrim').classList.remove('vis');
-}
-function wlSearch(q){
-  var res=document.getElementById('wlSearchResults');
-  var emp=document.getElementById('wlSearchEmpty');
-  if(!res) return;
-  var insts=SEARCH_INSTRUMENTS||[];
-  var ql=(q||'').toLowerCase();
-  var hits=insts.filter(function(u){
-    return !ql
-      || (u.name||'').toLowerCase().indexOf(ql)!==-1
-      || (u.ticker||'').toLowerCase().indexOf(ql)!==-1
-      || (u.code||'').toLowerCase().indexOf(ql)!==-1;
-  });
-  if(!hits.length){res.innerHTML='';if(emp)emp.style.display='block';return;}
-  if(emp) emp.style.display='none';
-  res.innerHTML=hits.map(function(d,i){
-    var inWl=(WATCHLIST_ITEMS||[]).some(function(w){return w.code===d.code;});
-    var tick=((d.ticker||d.code)||'').trim();
-    return '<div style="display:flex;align-items:center;padding:11px 14px;border-bottom:'+(i<hits.length-1?'1px solid var(--border)':'none')+';">'
-      +'<div style="flex:1;min-width:0;">'
-        +'<div style="font-size:.86rem;font-weight:600;color:var(--fg-1);">'+d.name+'</div>'
-        +'<div style="font-size:.7rem;color:var(--fg-3);margin-top:1px;">'+tick+(d.sector?' · '+d.sector:'')+'</div>'
-      +'</div>'
-      +'<button data-wl-toggle="'+d.code+'" style="font:inherit;font-size:.75rem;font-weight:700;padding:6px 12px;border-radius:99px;border:1.5px solid '+(inWl?'var(--red)':'var(--blue)')+';background:'+(inWl?'var(--red-bg)':'var(--blue-bg)')+';color:'+(inWl?'var(--red)':'var(--blue)')+';cursor:pointer;flex-shrink:0;">'+(inWl?'Remove':'+ Add')+'</button>'
-      +'</div>';
-  }).join('');
+  SEARCH_MODE='add-watchlist';
+  document.getElementById('globalSearchInput').placeholder='Search instruments to add…';
+  var label=document.getElementById('searchRecentLabel');
+  if(label) label.textContent='All Instruments';
+  openSearchOverlay();
 }
 async function toggleWlItem(code){
   if(!AUTH_USER) return;
@@ -196,17 +167,19 @@ async function toggleWlItem(code){
     showToastM('Could not update watchlist — please try again');
     return;
   }
-  wlSearch(document.getElementById('wlSearchInput').value);
+  // Re-render whichever of the search overlay's lists is currently
+  // showing (Recent when the query is empty, Results otherwise) so the
+  // tapped row's saved/unsaved indicator updates in place, plus the
+  // Watchlist page's own list underneath.
+  var q=document.getElementById('globalSearchInput');
+  if(q){ if(q.value) globalSearch(q.value); else renderSearchRecent(); }
   drawWatchlistList();
 }
 
-// Event delegation for watchlist rows (open/remove) and the Add sheet's
-// per-result add/remove toggle.
+// Event delegation for watchlist rows: open (navigate) or remove.
 document.addEventListener('click',function(e){
   var rm=e.target.closest('[data-wl-rm]');
   if(rm){ removeWlItem(rm.getAttribute('data-wl-rm')); return; }
-  var toggle=e.target.closest('[data-wl-toggle]');
-  if(toggle){ toggleWlItem(toggle.getAttribute('data-wl-toggle')); return; }
   var openRow=e.target.closest('[data-wl-open]');
   if(openRow && !WL_EDIT_MODE){ openInstrumentDetail(openRow.getAttribute('data-wl-open')); return; }
 });

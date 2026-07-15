@@ -357,25 +357,6 @@ setTimeout(function(){
         <div id="pages-mount"></div>
 
 
-    <!-- Add-to-watchlist search sheet -->
-    <div class="sheet" id="wlSearchSheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-head">
-        <span class="sheet-title">Add to Watchlist</span>
-        <button class="sheet-x" onclick="closeWlSearch()">✕</button>
-      </div>
-      <div class="sheet-body">
-        <div style="position:relative;margin-bottom:14px;">
-          <input id="wlSearchInput" type="text" placeholder="Search symbol or name…" oninput="wlSearch(this.value)"
-            style="width:100%;font:inherit;font-size:.92rem;color:var(--fg-1);background:var(--gray-50);border:1.5px solid var(--border);border-radius:11px;padding:11px 11px 11px 40px;outline:none;"
-            onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
-          <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none;" width="16" height="16" viewBox="0 0 24 24" stroke="var(--fg-3)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        </div>
-        <div id="wlSearchResults" style="display:flex;flex-direction:column;gap:0;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;max-height:320px;overflow-y:auto;scrollbar-width:none;"></div>
-        <div id="wlSearchEmpty" style="display:none;text-align:center;padding:28px;font-size:.84rem;color:var(--fg-3);">No results found</div>
-      </div>
-    </div>
-
 </div><!-- /scroll -->
 
   <!-- BOTTOM TAB BAR -->
@@ -429,7 +410,11 @@ setTimeout(function(){
   <!-- Recent / Results -->
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
     <div id="searchRecent">
-      <div style="padding:14px 16px 8px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Recent</div>
+      <!-- Text swapped between "Recent" (navigate mode) and "All
+           Instruments" (add-watchlist mode, where this list shows every
+           Securities instrument rather than recently-viewed ones) — see
+           openMktSearch()/openWlSearch(). -->
+      <div id="searchRecentLabel" style="padding:14px 16px 8px;font-size:.68rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);">Recent</div>
       <div id="searchRecentList" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);"></div>
     </div>
     <div id="searchResults" style="display:none;">
@@ -575,8 +560,8 @@ setTimeout(function(){
 <script src="../assets/js/phone/financial-charts-1.js?v=2" defer></script>
 <script src="../assets/js/phone/financial-charts-2.js?v=1" defer></script>
 <script src="../assets/js/phone/market-data.js?v=9" defer></script>
-<script src="../assets/js/phone/search-instruments.js?v=2" defer></script>
-<script src="../assets/js/phone/watchlist-actions.js?v=2" defer></script>
+<script src="../assets/js/phone/search-instruments.js?v=3" defer></script>
+<script src="../assets/js/phone/watchlist-actions.js?v=3" defer></script>
 <script src="../assets/js/phone/misc.js?v=8" defer></script>
 </body>
 </html>
