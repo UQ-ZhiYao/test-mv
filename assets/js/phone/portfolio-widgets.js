@@ -167,19 +167,10 @@ function renderDxList(){
 // Same TX_DATA/DX_DATA and .tx-row/.dx-row markup as the Transaction/
 // Distribution pages above, just fixed to whichever account (AD_ACCT,
 // profile-account.js) Account Details is currently showing — no account
-// selector needed since that's implied by which grey box was tapped. Uses
-// its own filter state (adTxFilter/adDxFilter) so switching filters here
-// never disturbs the separate Transaction/Distribution pages' own state.
-var adTxFilter='all';
-function setAdTxFilter(f){
-  adTxFilter=f;
-  ['all','deposit','withdrawal'].forEach(function(k){var b=document.getElementById('adtxf-'+k);if(b)b.classList.toggle('on',k===f);});
-  renderPrincipalTab();
-}
+// selector needed since that's implied by which grey box was tapped, and no
+// type filter tabs either (removed as unnecessary) — always shows every row.
 function renderPrincipalTab(){
-  var rows=(TX_DATA||[]).filter(function(t){
-    return t.acct===AD_ACCT && (adTxFilter==='all'||t.kind===adTxFilter);
-  });
+  var rows=(TX_DATA||[]).filter(function(t){ return t.acct===AD_ACCT; });
   var list=document.getElementById('adTxList');
   if(!list) return;
   if(!rows.length){ list.innerHTML='<div class="tx-empty">No transactions found</div>'; return; }
@@ -190,16 +181,8 @@ function renderPrincipalTab(){
       +'</div>';
   }).join('');
 }
-var adDxFilter='all';
-function setAdDxFilter(f){
-  adDxFilter=f;
-  ['all','cash','reinvest'].forEach(function(k){var b=document.getElementById('addxf-'+k);if(b)b.classList.toggle('on',k===f);});
-  renderDistributionTab();
-}
 function renderDistributionTab(){
-  var rows=(DX_DATA||[]).filter(function(t){
-    return t.acct===AD_ACCT && (adDxFilter==='all'||t.kind===adDxFilter);
-  });
+  var rows=(DX_DATA||[]).filter(function(t){ return t.acct===AD_ACCT; });
   var list=document.getElementById('adDxList');
   if(!list) return;
   if(!rows.length){ list.innerHTML='<div class="dx-empty">No distributions found</div>'; return; }
