@@ -83,14 +83,29 @@ async function drawWatchlistList(){
   }
 }
 
+// Same as market-data.js's mktFmtPrice()/mktFmtChangeCombined(), except
+// sub-10 values show 3 decimal places here instead of 4 — Watchlist-only,
+// the Market screen's own list keeps its existing 4-decimal precision.
+function wlFmtPrice(v){
+  if(v==null||isNaN(v)) return '—';
+  if(Math.abs(v)>=1000) return v.toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return v.toFixed(v<10?3:2);
+}
+function wlFmtChangeCombined(change,changePct){
+  if(change==null||changePct==null||isNaN(change)||isNaN(changePct)) return {txt:'—',color:'var(--fg-3)'};
+  var sign=change>=0?'+':'';
+  var pctSign=changePct>=0?'+':'';
+  return {txt:sign+wlFmtPrice(Math.abs(change))+' ('+pctSign+changePct.toFixed(2)+'%)', color:change>=0?'var(--green)':'var(--red)'};
+}
+
 // Full-width, no card, no icon badge — same flat row treatment as the
 // Market screen's list (mktRenderRow() in market-data.js): left = name +
 // ticker subline, right = price + change. The only addition over
 // mktRenderRow itself is the optional trailing remove button in edit
 // mode, which that shared helper has no slot for.
 function wlRowHTML(d,i,total,q){
-  var chg=q?mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent):{txt:'—',color:'var(--fg-3)'};
-  var priceTxt=q?mktFmtPrice(q.regularMarketPrice):'—';
+  var chg=q?wlFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent):{txt:'—',color:'var(--fg-3)'};
+  var priceTxt=q?wlFmtPrice(q.regularMarketPrice):'—';
   var sub=zyInstrumentSubline(d.ticker,d.code);
   var removeBtn=WL_EDIT_MODE
     ? '<button data-wl-rm="'+d.id+'" style="background:none;border:none;cursor:pointer;padding:4px;margin-left:10px;color:var(--red);flex-shrink:0;" title="Remove">'
