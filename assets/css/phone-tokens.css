@@ -226,6 +226,11 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 .pin-box:last-child{border-right:none;}
 .pin-box:focus{background:var(--blue-bg);}
 
+/* Account Details' Assets tab — 3-column stat grid inside its grey box.
+   Duplicated in phone-shared.css so the standalone fallback matches. */
+.ad-stat-lbl{font-size:.68rem;color:var(--fg-3);margin-bottom:3px;}
+.ad-stat-val{font-size:.88rem;font-weight:700;color:var(--fg-1);}
+
 /* Step indicator (Verify / New / Confirm — password & PIN change modals) */
 .step-dots{display:flex;gap:6px;margin-bottom:16px;}
 .step-dot{height:5px;flex:1;min-width:0;border-radius:3px;background:var(--border);transition:.2s;}
