@@ -245,16 +245,21 @@ function renderAccountDetails(){
 }
 // Populates the account-switcher dropdown — "Joint Account" only appears
 // once a joint account is confirmed to exist — and syncs its selected
-// value to AD_ACCT (needed since renderAccountDetails() can flip AD_TAB,
-// e.g. bouncing PA off the Profile tab, without the user touching the
-// dropdown itself).
+// value + leading icon to AD_ACCT (needed since renderAccountDetails() can
+// flip AD_TAB, e.g. bouncing PA off the Profile tab, without the user
+// touching the dropdown itself).
 function renderAcctSelector(){
   var sel=document.getElementById('adAcctSelect');
-  if(!sel) return;
-  var hasJa=!!(PROFILE && PROFILE.joint_account_id);
-  sel.innerHTML='<option value="pa">Personal Account</option>'
-    +(hasJa?'<option value="ja">Joint Account</option>':'');
-  sel.value=AD_ACCT;
+  if(sel){
+    var hasJa=!!(PROFILE && PROFILE.joint_account_id);
+    sel.innerHTML='<option value="pa">Personal Account</option>'
+      +(hasJa?'<option value="ja">Joint Account</option>':'');
+    sel.value=AD_ACCT;
+  }
+  var iconPa=document.getElementById('adAcctIconPa');
+  var iconJa=document.getElementById('adAcctIconJa');
+  if(iconPa) iconPa.style.display=(AD_ACCT==='ja')?'none':'block';
+  if(iconJa) iconJa.style.display=(AD_ACCT==='ja')?'block':'none';
 }
 // Switching accounts via the dropdown stays on the same page (not a
 // "leave"), so it does NOT reset AD_PROFILE_UNLOCKED — only re-opening the
@@ -487,7 +492,7 @@ async function renderCoHolders(){
     list.innerHTML=holders.map(function(h,i){
       return '<div style="margin-bottom:16px;">'
         +'<div style="font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin:0 0 8px;">Account Holder '+(i+1)+'</div>'
-        +'<div style="background:var(--gray-100);border-radius:12px;overflow:hidden;">'
+        +'<div style="background:transparent;border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
         +'<div class="info-row"><span class="info-label">Full Name</span><span class="info-value">'+(h.full_name||'—')+'</span></div>'
         +'<div class="info-row"><span class="info-label">Email</span><span class="info-value">'+(h.email||'—')+'</span></div>'
         +'<div class="info-row"><span class="info-label">Ownership</span><span class="info-value">'+ownershipPct.toFixed(2)+'%</span></div>'
