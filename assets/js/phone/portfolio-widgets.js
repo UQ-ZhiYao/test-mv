@@ -163,6 +163,54 @@ function renderDxList(){
   }).join('');
 }
 
+// ── ACCOUNT DETAILS: PRINCIPAL / DISTRIBUTION TABS ──────────────────────────
+// Same TX_DATA/DX_DATA and .tx-row/.dx-row markup as the Transaction/
+// Distribution pages above, just fixed to whichever account (AD_ACCT,
+// profile-account.js) Account Details is currently showing — no account
+// selector needed since that's implied by which grey box was tapped. Uses
+// its own filter state (adTxFilter/adDxFilter) so switching filters here
+// never disturbs the separate Transaction/Distribution pages' own state.
+var adTxFilter='all';
+function setAdTxFilter(f){
+  adTxFilter=f;
+  ['all','deposit','withdrawal'].forEach(function(k){var b=document.getElementById('adtxf-'+k);if(b)b.classList.toggle('on',k===f);});
+  renderPrincipalTab();
+}
+function renderPrincipalTab(){
+  var rows=(TX_DATA||[]).filter(function(t){
+    return t.acct===AD_ACCT && (adTxFilter==='all'||t.kind===adTxFilter);
+  });
+  var list=document.getElementById('adTxList');
+  if(!list) return;
+  if(!rows.length){ list.innerHTML='<div class="tx-empty">No transactions found</div>'; return; }
+  list.innerHTML=rows.map(function(t){
+    return '<div class="tx-row">'
+      +'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.ref+'</div></div>'
+      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?(fmtTxRM(t.units)+' units'):'Pending')+'</div></div>'
+      +'</div>';
+  }).join('');
+}
+var adDxFilter='all';
+function setAdDxFilter(f){
+  adDxFilter=f;
+  ['all','cash','reinvest'].forEach(function(k){var b=document.getElementById('addxf-'+k);if(b)b.classList.toggle('on',k===f);});
+  renderDistributionTab();
+}
+function renderDistributionTab(){
+  var rows=(DX_DATA||[]).filter(function(t){
+    return t.acct===AD_ACCT && (adDxFilter==='all'||t.kind===adDxFilter);
+  });
+  var list=document.getElementById('adDxList');
+  if(!list) return;
+  if(!rows.length){ list.innerHTML='<div class="dx-empty">No distributions found</div>'; return; }
+  list.innerHTML=rows.map(function(t){
+    return '<div class="dx-row">'
+      +'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+t.type+'</div></div>'
+      +'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+' units':'—')+'</div></div>'
+      +'</div>';
+  }).join('');
+}
+
 // ── ASSET DETAILS ─────────────────────────────────────────────────────────────
 function drawAdDonut(retriesLeft){
   var c=document.getElementById('adDonut');

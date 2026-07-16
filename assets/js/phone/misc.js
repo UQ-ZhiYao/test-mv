@@ -107,21 +107,6 @@ function toggleAcctExpand(){
   }
   btn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
 }
-function togglePersonalExpand(){
-  var panel=document.getElementById('acctExpandPanel');
-  var btn=document.getElementById('personalExpandBtn');
-  var open=panel.style.display==='block';
-  panel.style.display=open?'none':'block';
-  if(btn)btn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
-}
-function toggleJointExpand(){
-  var panel=document.getElementById('jointExpandPanel');
-  var btn=document.getElementById('jointExpandBtn');
-  var open=panel.style.display==='block';
-  panel.style.display=open?'none':'block';
-  if(btn)btn.style.transform=open?'rotate(0deg)':'rotate(180deg)';
-}
-
 // Watchlist screen logic (real "watchlist" table data) lives in
 // assets/js/phone/watchlist-actions.js.
 
@@ -388,8 +373,8 @@ function renderFinDetail(){
 
 // ── PAGE LOADER ──
 (function loadPages(){
-  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails","pg-inquiry","pg-feedback","pg-instrument"];
-  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html","pg-inquiry":"inquiry.html","pg-feedback":"feedback.html","pg-instrument":"instrument.html"};
+  var pages=["pg-all","pg-fund","pg-profile","pg-password","pg-discover","pg-market","pg-watchlist","pg-transaction","pg-distribution","pg-assetdetails","pg-inquiry","pg-feedback","pg-instrument","pg-accountdetails"];
+  var srcMap={"pg-all":"all.html","pg-fund":"fund.html","pg-profile":"me.html","pg-password":"password.html","pg-discover":"discover.html","pg-market":"market.html","pg-watchlist":"watchlist.html","pg-transaction":"transaction.html","pg-distribution":"distribution.html","pg-assetdetails":"asset-details.html","pg-inquiry":"inquiry.html","pg-feedback":"feedback.html","pg-instrument":"instrument.html","pg-accountdetails":"account-details.html"};
   var mount=document.getElementById('pages-mount');
   Promise.all(pages.map(function(id){
     return fetch(srcMap[id]).then(function(r){return r.text();}).then(function(html){

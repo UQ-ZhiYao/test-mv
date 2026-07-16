@@ -103,7 +103,7 @@ function fmtDateShort(d){
 // displayed holdings before it's actually been approved.
 async function computeAccountFromCapitalInjection(acctId, latestNta){
   if(!acctId) return {rows:[],result:null};
-  var { data, error } = await sb.from('capital_injection').select('reference_id, type, units, amount, date, status').eq('uid', acctId);
+  var { data, error } = await sb.from('capital_injection').select('reference_id, type, units, amount, date, status, nta').eq('uid', acctId);
   if(error){ console.warn('[Account Summary] capital_injection load failed for', acctId, ':', error.message); return {rows:[],result:null}; }
   var rows=data||[];
   console.log('[Account Summary] capital_injection rows for uid='+acctId+':', rows.length);
@@ -211,6 +211,240 @@ function renderAccountSummary(){
   applyEyeVisibility();
   if(typeof drawAdDonut==='function') drawAdDonut();
 }
+
+// ── ACCOUNT DETAILS (Assets / Principal / Distribution / Profile tabs) ──────
+// Opened from the Personal/Joint Account grey boxes' own chevrons
+// (#personalExpandBtn/#jointExpandBtn in index.html) — the overall
+// "Account Summary" section chevron (toggleAcctExpand(), misc.js) is
+// unrelated and unchanged; it still expands the inline panels in place.
+var AD_ACCT='pa';   // 'pa' | 'ja' — which account this page is showing
+var AD_TAB='assets';
+function openAccountDetails(acct){
+  AD_ACCT=acct;
+  AD_TAB='assets';
+  switchTab('accountdetails');
+  // switchTab() -> updateTopbarChrome() just set the static DRILL_PAGES
+  // title ("Account Details") — overwrite it now, same pattern as
+  // openInstrumentDetail() in search-instruments.js.
+  var titleEl=document.getElementById('topbarBackTitle');
+  if(titleEl) titleEl.textContent=(acct==='ja')?'Joint Account':'Personal Account';
+}
+function renderAccountDetails(){
+  var profileBtn=document.getElementById('adtab-profile-btn');
+  if(profileBtn) profileBtn.style.display=(AD_ACCT==='ja')?'':'none';
+  // A personal account can never land on the joint-only Profile tab.
+  if(AD_ACCT!=='ja' && AD_TAB==='profile') AD_TAB='assets';
+  switchAcctDetailTab(AD_TAB);
+}
+function switchAcctDetailTab(tab){
+  AD_TAB=tab;
+  ['assets','principal','distribution','profile'].forEach(function(t){
+    var body=document.getElementById('adtab-'+t+'-body');
+    var btn=document.getElementById('adtab-'+t+'-btn');
+    if(body) body.style.display=tab===t?'block':'none';
+    if(btn){ btn.style.color=tab===t?'var(--blue)':'var(--fg-3)'; btn.style.borderBottomColor=tab===t?'var(--blue)':'transparent'; }
+  });
+  var scroll=document.getElementById('mainScroll');
+  if(scroll) scroll.scrollTop=0;
+  if(tab==='assets') renderAssetsTab();
+  else if(tab==='principal') renderPrincipalTab();
+  else if(tab==='distribution') renderDistributionTab();
+  else if(tab==='profile') enterProfileTab();
+}
+
+// ── ASSETS TAB — AVCO (average cost) over the same capital_injection rows
+// already loaded for Account Summary (PA_CI_ROWS/JA_CI_ROWS) — no second
+// query. VWAP (computeAccountFromCapitalInjection above) only tracks
+// unrealized gain on currently-held units; AVCO is needed here because
+// realized P&L requires knowing the cost basis consumed by each sell,
+// same algorithm as member-api.js's mpLoadCapitalSummary() (used by the
+// desktop portal), just run over rows already in memory instead of a
+// fresh query. ──────────────────────────────────────────────────────────
+function computeAvcoFromRows(ciRows){
+  var rows=(ciRows||[]).filter(function(r){return r.status==='Approved';})
+    .slice().sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0);});
+  var runUnits=0, runCost=0, realizedPnl=0, cashflows=[], totalSubscribed=0, earliestDate=null;
+  rows.forEach(function(r){
+    var u=parseFloat(r.units)||0, amt=Math.abs(parseFloat(r.amount)||0);
+    if(!earliestDate || r.date<earliestDate) earliestDate=r.date;
+    if(u>0){
+      runCost+=amt; runUnits+=u; totalSubscribed+=amt;
+      cashflows.push({date:r.date, amount:-amt});
+    } else if(u<0){
+      var sellUnits=Math.min(Math.abs(u),runUnits);
+      if(runUnits>0 && sellUnits>0){
+        var avg=runCost/runUnits;
+        var salePrice=(r.nta!=null && r.nta!=='')?parseFloat(r.nta):(sellUnits>0?amt/sellUnits:0);
+        realizedPnl+=(salePrice-avg)*sellUnits;
+        runUnits-=sellUnits;
+        runCost=runUnits>0?runCost-avg*sellUnits:0;
+      }
+      cashflows.push({date:r.date, amount:amt});
+    }
+  });
+  return {
+    unitsHeld:runUnits,
+    avgCost:runUnits>0?runCost/runUnits:0,
+    totalCost:runCost,
+    realizedPnl:realizedPnl,
+    cashflows:cashflows,
+    totalSubscribed:totalSubscribed,
+    earliestDate:earliestDate
+  };
+}
+
+// Newton-Raphson XIRR — ported from the desktop portal's computeXIRR()
+// (assets/js/portal/shell.js), duplicated here rather than loading
+// desktop's JS bundle into the phone app for one function. Returns null
+// if there are fewer than 2 cashflows or they never change sign (no
+// meaningful rate exists).
+function computeXIRR(cashflows){
+  if(!cashflows || cashflows.length<2) return null;
+  var hasPos=false, hasNeg=false;
+  cashflows.forEach(function(c){ if(c.amount>0)hasPos=true; if(c.amount<0)hasNeg=true; });
+  if(!hasPos || !hasNeg) return null;
+  var t0=new Date(cashflows[0].date).getTime();
+  function years(d){ return (new Date(d).getTime()-t0)/(365*24*3600*1000); }
+  function npv(rate){
+    return cashflows.reduce(function(sum,c){ return sum+c.amount/Math.pow(1+rate,years(c.date)); },0);
+  }
+  function dnpv(rate){
+    return cashflows.reduce(function(sum,c){
+      var t=years(c.date);
+      return t===0?sum:sum-t*c.amount/Math.pow(1+rate,t+1);
+    },0);
+  }
+  var rate=0.1;
+  for(var i=0;i<100;i++){
+    var f=npv(rate), d=dnpv(rate);
+    if(Math.abs(d)<1e-10) break;
+    var newRate=rate-f/d;
+    if(newRate<=-0.999) newRate=-0.999;
+    if(Math.abs(newRate-rate)<1e-7){ rate=newRate; break; }
+    rate=newRate;
+  }
+  return isFinite(rate)?rate*100:null;
+}
+// Feeds the AVCO cashflows + this account's Paid distributions (as
+// positive inflows, dated at pay_date) + today's market value (as a
+// final positive inflow) into computeXIRR() — same pattern as desktop's
+// pages-portfolio.js.
+function computeAcctIrr(acct, avco){
+  var cf=avco.cashflows.slice();
+  (typeof DX_DATA!=='undefined'?DX_DATA:[]).forEach(function(d){
+    if(d.acct===acct && d.amt>0) cf.push({date:d._sortDate, amount:d.amt});
+  });
+  var acctObj=(acct==='ja')?JA_ACCT:PA_ACCT;
+  var mv=acctObj?acctObj.mv:0;
+  if(mv>0 && avco.unitsHeld>0) cf.push({date:new Date().toISOString().slice(0,10), amount:mv});
+  return computeXIRR(cf);
+}
+function renderAssetsTab(){
+  var ciRows=(AD_ACCT==='ja')?JA_CI_ROWS:PA_CI_ROWS;
+  var acctObj=(AD_ACCT==='ja')?JA_ACCT:PA_ACCT;
+  var avco=computeAvcoFromRows(ciRows);
+  var mv=acctObj?acctObj.mv:0;
+  var unrealized=mv-avco.totalCost;
+  var totalReturn=unrealized+avco.realizedPnl;
+  // Return % is on total capital ever subscribed (not just the current
+  // cost basis) so it reflects overall performance including money
+  // that's since been redeemed, not only what's currently held.
+  var returnPct=avco.totalSubscribed?(totalReturn/avco.totalSubscribed*100):0;
+  var periodDays=avco.earliestDate?Math.max(0,Math.round((Date.now()-new Date(avco.earliestDate+'T00:00:00').getTime())/86400000)):0;
+  var irr=computeAcctIrr(AD_ACCT, avco);
+
+  function setMoney(id,val){
+    var el=document.getElementById(id);
+    if(!el) return;
+    el.textContent=(val>=0?'+':'')+fmtMoney(val);
+    el.style.color=val>=0?'var(--green)':'var(--red)';
+  }
+  var valEl=document.getElementById('adAssetValue');
+  if(valEl) valEl.textContent=fmtMoney(mv);
+  setMoney('adUnrealized', unrealized);
+  setMoney('adRealized', avco.realizedPnl);
+  setMoney('adTotalReturn', totalReturn);
+  var pctEl=document.getElementById('adReturnPct');
+  if(pctEl){ pctEl.textContent=(returnPct>=0?'+':'')+returnPct.toFixed(2)+'%'; pctEl.style.color=returnPct>=0?'var(--green)':'var(--red)'; }
+  var perEl=document.getElementById('adPeriodDays');
+  if(perEl) perEl.textContent=periodDays+(periodDays===1?' day':' days');
+  var irrEl=document.getElementById('adIrr');
+  if(irrEl){
+    if(irr==null){ irrEl.textContent='—'; irrEl.style.color='var(--fg-1)'; }
+    else { irrEl.textContent=(irr>=0?'+':'')+irr.toFixed(2)+'%'; irrEl.style.color=irr>=0?'var(--green)':'var(--red)'; }
+  }
+}
+
+// ── PROFILE TAB (joint account co-holders) — PIN-gated, centered popup ──
+// Same verify-against-profiles.pin logic as phone/profile.html's PIN gate,
+// but scoped to its own sessionStorage key so unlocking one doesn't
+// unlock the other.
+function adProfileUnlocked(){
+  try{ return sessionStorage.getItem('zy_acctdetails_profile_unlocked')==='1'; }catch(e){ return false; }
+}
+function enterProfileTab(){
+  var locked=document.getElementById('adProfileLocked');
+  var list=document.getElementById('adCoHolderList');
+  if(adProfileUnlocked()){
+    if(locked) locked.style.display='none';
+    if(list) list.style.display='block';
+    renderCoHolders();
+  } else {
+    if(locked) locked.style.display='block';
+    if(list) list.style.display='none';
+  }
+}
+function openAdPin(){
+  if(!PROFILE || !PROFILE.pin){
+    if(typeof showToastM==='function') showToastM('Please set a PIN in Security settings first');
+    return;
+  }
+  document.getElementById('adPinScrim').style.display='block';
+  document.getElementById('adPinModal').style.display='block';
+  var input=document.getElementById('adPinInput');
+  if(input){ input.value=''; setTimeout(function(){input.focus();},150); }
+  var err=document.getElementById('adPinErr');
+  if(err) err.style.display='none';
+}
+function closeAdPin(){
+  document.getElementById('adPinScrim').style.display='none';
+  document.getElementById('adPinModal').style.display='none';
+}
+function submitAdPin(){
+  var input=document.getElementById('adPinInput');
+  var entered=input?input.value.trim():'';
+  var errEl=document.getElementById('adPinErr');
+  if(!/^\d{6}$/.test(entered)){
+    if(errEl){ errEl.textContent='PIN must be 6 digits.'; errEl.style.display='block'; }
+    return;
+  }
+  if(entered===String(PROFILE.pin)){
+    try{ sessionStorage.setItem('zy_acctdetails_profile_unlocked','1'); }catch(e){}
+    closeAdPin();
+    enterProfileTab();
+  } else {
+    if(errEl){ errEl.textContent='Incorrect PIN. Please try again.'; errEl.style.display='block'; }
+  }
+}
+async function renderCoHolders(){
+  var list=document.getElementById('adCoHolderList');
+  if(!list) return;
+  list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>';
+  try{
+    var holders=await mpLoadJointCoHolders(PROFILE.joint_account_id);
+    if(!holders.length){ list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.82rem;">No co-holders found</div>'; return; }
+    list.innerHTML=holders.map(function(h,i){
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:'+(i<holders.length-1?'1px solid var(--border)':'none')+';">'
+        +'<div style="font-size:.88rem;font-weight:600;color:var(--fg-1);">'+(h.full_name||'—')+'</div>'
+        +'<span style="font-size:.68rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 9px;border-radius:99px;background:var(--gray-100);color:var(--fg-3);">'+(h.status||'—')+'</span>'
+        +'</div>';
+    }).join('');
+  }catch(e){
+    console.error('[Account Details] failed to load co-holders —',e&&e.message);
+    list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.82rem;">Could not load co-holders</div>';
+  }
+}
+
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 var activeTab='portfolio';
 var lastMainTab='portfolio';
@@ -224,7 +458,11 @@ var DRILL_PAGES={
   // title is a placeholder — openInstrumentDetail() (search-instruments.js)
   // overwrites #topbarBackTitle with the actual instrument's name right
   // after switchTab('instrument') runs.
-  instrument:{title:'Instrument',back:'discover'}
+  instrument:{title:'Instrument',back:'discover'},
+  // title is a placeholder too — openAccountDetails() overwrites
+  // #topbarBackTitle with "Personal Account"/"Joint Account" right after
+  // switchTab('accountdetails') runs, same pattern as 'instrument' above.
+  accountdetails:{title:'Account Details',back:'portfolio'}
 };
 function topbarBackClick(){
   var d=DRILL_PAGES[activeTab];
@@ -320,6 +558,7 @@ function switchTab(tab){
     ['pinVerifyBoxes','pinNewBoxes','pinConfirmBoxes'].forEach(setupPinBoxes);
   }
   if(tab==='assetdetails'){setTimeout(function(){drawAdDonut();drawAdTrend(adPeriod);},50);}
+  if(tab==='accountdetails'){renderAccountDetails();}
   if(tab==='portfolio'){setTimeout(drawSparkline,50);}
   if(tab==='profile')setTimeout(function(){adjustProfileSpacer();},50);
   if(tab==='fund'){

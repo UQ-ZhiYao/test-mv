@@ -30,6 +30,25 @@ async function mpLoadJointAccountName(jointAccountId) {
   return (data && data.display_name) || null;
 }
 
+/* ── Joint account co-holders — every profile sharing this joint_account_id.
+   Used by the Account Details page's Profile tab (joint accounts only,
+   assets/js/phone/profile-account.js), gated behind a PIN prompt since this
+   is the first query that reads another member's row rather than the
+   caller's own. Requires an RLS policy on profiles permitting SELECT where
+   joint_account_id matches the caller's own joint_account_id — see the SQL
+   note alongside this feature's PR. Only name + status are read (not
+   email/phone) to avoid exposing one co-holder's contact details to
+   another. */
+async function mpLoadJointCoHolders(jointAccountId) {
+  if (!jointAccountId) return [];
+  const { data, error } = await sb.from('profiles')
+    .select('full_name, status')
+    .eq('joint_account_id', jointAccountId)
+    .order('full_name', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
 async function mpSaveProfile(userId, updates) {
   const { error } = await sb.from('profiles')
     .update(updates).eq('id', userId);
