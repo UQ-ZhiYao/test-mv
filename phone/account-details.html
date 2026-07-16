@@ -28,18 +28,17 @@
         <div style="width:60px;"></div>
       </div>
 
-      <!-- Account type icon + label — first element in the body (the top
-           bar no longer names the account; only the back button lives
-           there now). Icon/label toggled by renderAcctTypeHeader() in
-           profile-account.js based on AD_ACCT. Icons match the exact SVGs
-           used on the Accounts screen's Personal/Joint grey boxes
-           (index.html) for visual consistency. -->
-      <div style="display:flex;align-items:center;gap:10px;padding:16px 16px 12px;">
-        <div style="width:36px;height:36px;border-radius:10px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg id="adAcctIconPa" width="19" height="19" viewBox="0 0 24 24" fill="var(--blue)" stroke="none"><path d="M19 5H5a3 3 0 00-3 3v8a3 3 0 003 3h14a3 3 0 003-3v-1h-5a3 3 0 010-6h5V8a3 3 0 00-3-3z"/><path d="M21 11h-5a1 1 0 000 2h5v-2z"/></svg>
-          <svg id="adAcctIconJa" style="display:none;" width="19" height="19" viewBox="0 0 24 24" fill="var(--blue)" stroke="none"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-        </div>
-        <div style="font-size:1rem;font-weight:700;color:var(--fg-1);" id="adAcctTypeLabel">Personal Account</div>
+      <!-- Account switcher — first element in the body (the top bar no
+           longer names the account; only the back button lives there
+           now). Options are populated by renderAcctSelector() in
+           profile-account.js — "Joint Account" only appears if the
+           profile actually has one. Reuses the same select styling as
+           the Transaction/Distribution pages' account pickers
+           (.tx-acct-select, phone-tokens.css/phone-shared.css). -->
+      <div style="padding:16px 16px 12px;">
+        <select id="adAcctSelect" class="tx-acct-select" onchange="switchAdAccount(this.value)" style="font-size:.95rem;width:100%;">
+          <option value="pa">Personal Account</option>
+        </select>
       </div>
 
       <!-- Tabs — same show/hide-body pattern as fund.html's switchFundTab2().
@@ -53,38 +52,37 @@
       </div>
 
       <!-- ── ASSETS TAB — one grey box: Net Assets header, then a 3-column
-           stat grid per row (see renderAssetsTab() in profile-account.js).
-           Period is intentionally shown twice (end of row 2, start of row
-           4 below the divider) — matches the requested layout exactly. ── -->
+           stat grid per row (34% / 34% / 32%, last column right-aligned —
+           see renderAssetsTab() in profile-account.js). ── -->
       <div id="adtab-assets-body" style="padding:16px 16px 32px;">
         <div style="background:var(--gray-100);border-radius:12px;padding:16px 14px;">
-          <div style="font-size:.75rem;color:var(--fg-3);margin-bottom:4px;">Net Assets</div>
+          <div style="font-size:.75rem;color:var(--fg-3);margin-bottom:4px;">Net Assets <span style="font-weight:400;">· MYR</span></div>
           <div style="font-size:1.4rem;font-weight:700;color:var(--fg-1);margin-bottom:16px;" id="adNetAssets">0.00</div>
 
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+          <div style="display:grid;grid-template-columns:34% 34% 32%;gap:10px;margin-bottom:14px;">
             <div><div class="ad-stat-lbl">Unit Held</div><div class="ad-stat-val" id="adUnitsHeld">0.00</div></div>
             <div><div class="ad-stat-lbl">Avg Cost</div><div class="ad-stat-val" id="adAvgCost">0.0000</div></div>
-            <div><div class="ad-stat-lbl">Latest Price</div><div class="ad-stat-val" id="adLatestPrice">0.0000</div></div>
+            <div style="text-align:right;"><div class="ad-stat-lbl">Latest Price</div><div class="ad-stat-val" id="adLatestPrice">0.0000</div></div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
+          <div style="display:grid;grid-template-columns:34% 34% 32%;gap:10px;margin-bottom:14px;">
             <div><div class="ad-stat-lbl">Unrealized Return</div><div class="ad-stat-val" id="adUnrealized">0.00</div></div>
             <div><div class="ad-stat-lbl">Realized Return</div><div class="ad-stat-val" id="adRealized">0.00</div></div>
-            <div><div class="ad-stat-lbl">Period</div><div class="ad-stat-val" id="adPeriodDays">0 days</div></div>
+            <div style="text-align:right;"><div class="ad-stat-lbl">Dividend Received</div><div class="ad-stat-val" id="adDividendReceived">0.00</div></div>
           </div>
 
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          <div style="display:grid;grid-template-columns:34% 34% 32%;gap:10px;">
             <div><div class="ad-stat-lbl">Total Return</div><div class="ad-stat-val" id="adTotalReturn">0.00</div></div>
             <div><div class="ad-stat-lbl">Return %</div><div class="ad-stat-val" id="adReturnPct">0.00%</div></div>
-            <div></div>
+            <div style="text-align:right;"></div>
           </div>
 
           <div style="border-top:1px solid var(--border);margin:14px 0;"></div>
 
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-            <div><div class="ad-stat-lbl">Period</div><div class="ad-stat-val" id="adPeriodDays2">0 days</div></div>
+          <div style="display:grid;grid-template-columns:34% 34% 32%;gap:10px;">
+            <div><div class="ad-stat-lbl">Period</div><div class="ad-stat-val" id="adPeriodDays">0 days</div></div>
             <div><div class="ad-stat-lbl">IRR</div><div class="ad-stat-val" id="adIrr">—</div></div>
-            <div></div>
+            <div style="text-align:right;"></div>
           </div>
         </div>
       </div>

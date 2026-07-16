@@ -36,13 +36,12 @@ async function mpLoadJointAccountName(jointAccountId) {
    is the first query that reads another member's row rather than the
    caller's own. Requires an RLS policy on profiles permitting SELECT where
    joint_account_id matches the caller's own joint_account_id — see the SQL
-   note alongside this feature's PR. Only name + status are read (not
-   email/phone) to avoid exposing one co-holder's contact details to
-   another. */
+   note alongside this feature's PR. Name + email + status are read; phone
+   is still excluded to limit what one co-holder can see about another. */
 async function mpLoadJointCoHolders(jointAccountId) {
   if (!jointAccountId) return [];
   const { data, error } = await sb.from('profiles')
-    .select('full_name, status')
+    .select('full_name, email, status')
     .eq('joint_account_id', jointAccountId)
     .order('full_name', { ascending: true });
   if (error) throw error;
