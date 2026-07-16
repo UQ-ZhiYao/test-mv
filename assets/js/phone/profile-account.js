@@ -72,7 +72,7 @@ loadProfileData();
 // own account). JA: same computation, but keyed on profiles.joint_account_id
 // instead — a joint account has no login of its own, so its capital_injection
 // rows are filed under that shared id rather than a person's id.
-var PA_ACCT=null, JA_ACCT=null, LATEST_NTA=0, LATEST_NTA_DATE=null;
+var PA_ACCT=null, JA_ACCT=null, LATEST_NTA=0, LATEST_NTA_DATE=null, TOTAL_ISSUED_UNITS=0;
 var PA_CI_ROWS=[], JA_CI_ROWS=[];
 // The fund's deposit-destination bank account, shown on the Subscribe
 // sheet — loaded independently of the account summary above so a failure
@@ -135,10 +135,14 @@ async function loadAccountSummary(){
     if(!PROFILE) PROFILE=await mpLoadProfile(AUTH_USER.id);
     var P=PROFILE||{};
 
-    var ntaRes=await sb.from('nta_daily').select('date,nta').order('date',{ascending:false}).limit(1);
+    // total_units is the fund's total issued units as of that date — used
+    // for Stake (this account's units ÷ total issued units), not just the
+    // member's own PA+JA combined units.
+    var ntaRes=await sb.from('nta_daily').select('date,nta,total_units').order('date',{ascending:false}).limit(1);
     var latestRow=(ntaRes.data&&ntaRes.data[0])||null;
     LATEST_NTA=latestRow?parseFloat(latestRow.nta):0;
     LATEST_NTA_DATE=latestRow?latestRow.date:null;
+    TOTAL_ISSUED_UNITS=latestRow?parseFloat(latestRow.total_units):0;
 
     PA_ACCT=null; JA_ACCT=null;
     var paLoad=await computeAccountFromCapitalInjection(P.id, LATEST_NTA);
@@ -173,14 +177,15 @@ function renderAccountSummary(){
 
   var pa=PA_ACCT, ja=JA_ACCT;
   var totalValue=(pa?pa.mv:0)+(ja?ja.mv:0);
-  var totalUnits=(pa?pa.units:0)+(ja?ja.units:0);
   var totalPortfolioEl=document.getElementById('portfolioValue');
   if(totalPortfolioEl) totalPortfolioEl.setAttribute('data-real', fmtMoney(totalValue));
 
   function fill(prefix,acct){
     var up=acct&&acct.realized>=0;
-    // Stake = this account's units ÷ units held across PA+JA combined.
-    var stake=(acct&&totalUnits)?(acct.units/totalUnits*100):0;
+    // Stake = this account's units ÷ the fund's total issued units
+    // (nta_daily.total_units, latest date) — not just this member's own
+    // PA+JA units combined.
+    var stake=(acct&&TOTAL_ISSUED_UNITS)?(acct.units/TOTAL_ISSUED_UNITS*100):0;
     setText(prefix+'Value', acct?fmtMoney(acct.mv):'0.00');
     setText(prefix+'PL', acct?((up?'+':'')+fmtMoney(acct.realized)):'0.00', up?'var(--green)':'var(--red)');
     setText(prefix+'UnitsHeldLbl', acct?(fmtUnits(acct.units)+' units held'):'0.00 units held');
@@ -386,14 +391,15 @@ function renderAssetsTab(){
   var avco=computeAvcoFromRows(ciRows);
   var mv=acctObj?acctObj.mv:0;
   var unrealized=mv-avco.totalCost;
-  var totalReturn=unrealized+avco.realizedPnl;
+  var dividendReceived=computeDividendReceived(AD_ACCT);
+  // Total Return = Unrealized Return + Realized Return + Dividend Received.
+  var totalReturn=unrealized+avco.realizedPnl+dividendReceived;
   // Return % is on total capital ever subscribed (not just the current
   // cost basis) so it reflects overall performance including money
   // that's since been redeemed, not only what's currently held.
   var returnPct=avco.totalSubscribed?(totalReturn/avco.totalSubscribed*100):0;
   var periodDays=avco.earliestDate?Math.max(0,Math.round((Date.now()-new Date(avco.earliestDate+'T00:00:00').getTime())/86400000)):0;
   var irr=computeAcctIrr(AD_ACCT, avco);
-  var dividendReceived=computeDividendReceived(AD_ACCT);
 
   // These figures are subject to the same portfolio-value eye toggle as
   // the Accounts screen (see EYE_MASK_IDS/applyEyeVisibility() below) — set

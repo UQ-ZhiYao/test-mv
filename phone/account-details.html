@@ -54,28 +54,29 @@
       </div>
 
       <!-- ── ASSETS TAB — one grey box: Net Assets header, then a 3-column
-           stat grid per row (35/35/30 ratio via fr units, not %, so the
+           stat grid per row (36/36/28 ratio via fr units, not %, so the
            gap between columns doesn't push the last one past the card's
-           edge — last column right-aligned. See renderAssetsTab() in
+           edge — last column right-aligned. Total Return = Unrealized +
+           Realized + Dividend Received. See renderAssetsTab() in
            profile-account.js. ── -->
       <div id="adtab-assets-body" style="padding:16px 16px 32px;">
         <div style="background:var(--gray-100);border-radius:12px;padding:16px 14px;">
           <div style="font-size:.75rem;color:var(--fg-3);margin-bottom:4px;">Net Assets <span style="font-weight:400;">· MYR</span></div>
           <div style="font-size:1.4rem;font-weight:700;color:var(--fg-1);margin-bottom:16px;" id="adNetAssets">0.00</div>
 
-          <div style="display:grid;grid-template-columns:35fr 35fr 30fr;gap:10px;margin-bottom:14px;">
+          <div style="display:grid;grid-template-columns:36fr 36fr 28fr;gap:10px;margin-bottom:14px;">
             <div><div class="ad-stat-lbl">Unit Held</div><div class="ad-stat-val" id="adUnitsHeld">0.00</div></div>
             <div><div class="ad-stat-lbl">Avg Cost</div><div class="ad-stat-val" id="adAvgCost">0.0000</div></div>
             <div style="text-align:right;"><div class="ad-stat-lbl">Latest Price</div><div class="ad-stat-val" id="adLatestPrice">0.0000</div></div>
           </div>
 
-          <div style="display:grid;grid-template-columns:35fr 35fr 30fr;gap:10px;margin-bottom:14px;">
+          <div style="display:grid;grid-template-columns:36fr 36fr 28fr;gap:10px;margin-bottom:14px;">
             <div><div class="ad-stat-lbl">Unrealized Return</div><div class="ad-stat-val" id="adUnrealized">0.00</div></div>
             <div><div class="ad-stat-lbl">Realized Return</div><div class="ad-stat-val" id="adRealized">0.00</div></div>
             <div style="text-align:right;"><div class="ad-stat-lbl">Dividend Received</div><div class="ad-stat-val" id="adDividendReceived">0.00</div></div>
           </div>
 
-          <div style="display:grid;grid-template-columns:35fr 35fr 30fr;gap:10px;">
+          <div style="display:grid;grid-template-columns:36fr 36fr 28fr;gap:10px;">
             <div><div class="ad-stat-lbl">Total Return</div><div class="ad-stat-val" id="adTotalReturn">0.00</div></div>
             <div><div class="ad-stat-lbl">Return %</div><div class="ad-stat-val" id="adReturnPct">0.00%</div></div>
             <div style="text-align:right;"></div>
@@ -83,7 +84,7 @@
 
           <div style="border-top:1px solid var(--border);margin:14px 0;"></div>
 
-          <div style="display:grid;grid-template-columns:35fr 35fr 30fr;gap:10px;">
+          <div style="display:grid;grid-template-columns:36fr 36fr 28fr;gap:10px;">
             <div><div class="ad-stat-lbl">Period</div><div class="ad-stat-val" id="adPeriodDays">0 days</div></div>
             <div><div class="ad-stat-lbl">IRR</div><div class="ad-stat-val" id="adIrr">—</div></div>
             <div style="text-align:right;"></div>
