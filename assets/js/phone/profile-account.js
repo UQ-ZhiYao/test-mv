@@ -173,15 +173,19 @@ function renderAccountSummary(){
 
   var pa=PA_ACCT, ja=JA_ACCT;
   var totalValue=(pa?pa.mv:0)+(ja?ja.mv:0);
+  var totalUnits=(pa?pa.units:0)+(ja?ja.units:0);
   var totalPortfolioEl=document.getElementById('portfolioValue');
   if(totalPortfolioEl) totalPortfolioEl.setAttribute('data-real', fmtMoney(totalValue));
 
   function fill(prefix,acct){
     var up=acct&&acct.realized>=0;
+    // Stake = this account's units ÷ units held across PA+JA combined.
+    var stake=(acct&&totalUnits)?(acct.units/totalUnits*100):0;
     setText(prefix+'Value', acct?fmtMoney(acct.mv):'0.00');
     setText(prefix+'PL', acct?((up?'+':'')+fmtMoney(acct.realized)):'0.00', up?'var(--green)':'var(--red)');
     setText(prefix+'UnitsHeldLbl', acct?(fmtUnits(acct.units)+' units held'):'0.00 units held');
     setText(prefix+'Units', acct?fmtUnits(acct.units):'0.00');
+    setText(prefix+'Stake', acct?(stake.toFixed(2)+'%'):'0.00%');
     setText(prefix+'LatestDate', fmtDateShort(LATEST_NTA_DATE));
     setText(prefix+'Price', fmtNta(LATEST_NTA));
     setText(prefix+'Vwap', acct?fmtNta(acct.vwap):'0.0000');
@@ -228,24 +232,38 @@ function openAccountDetails(acct){
   AD_PROFILE_UNLOCKED=false;
   switchTab('accountdetails');
   // Top bar keeps the static DRILL_PAGES title ("Account Details") and its
-  // back button only — the account name now lives in the icon+label block
-  // at the top of the body instead (renderAcctTypeHeader()).
+  // back button only — the account is instead chosen via the #adAcctSelect
+  // dropdown at the top of the body (renderAcctSelector()/switchAdAccount()).
 }
 function renderAccountDetails(){
   var profileBtn=document.getElementById('adtab-profile-btn');
   if(profileBtn) profileBtn.style.display=(AD_ACCT==='ja')?'':'none';
   // A personal account can never land on the joint-only Profile tab.
   if(AD_ACCT!=='ja' && AD_TAB==='profile') AD_TAB='assets';
-  renderAcctTypeHeader();
+  renderAcctSelector();
   switchAcctDetailTab(AD_TAB);
 }
-function renderAcctTypeHeader(){
-  var label=document.getElementById('adAcctTypeLabel');
-  var iconPa=document.getElementById('adAcctIconPa');
-  var iconJa=document.getElementById('adAcctIconJa');
-  if(label) label.textContent=(AD_ACCT==='ja')?'Joint Account':'Personal Account';
-  if(iconPa) iconPa.style.display=(AD_ACCT==='ja')?'none':'block';
-  if(iconJa) iconJa.style.display=(AD_ACCT==='ja')?'block':'none';
+// Populates the account-switcher dropdown — "Joint Account" only appears
+// once a joint account is confirmed to exist — and syncs its selected
+// value to AD_ACCT (needed since renderAccountDetails() can flip AD_TAB,
+// e.g. bouncing PA off the Profile tab, without the user touching the
+// dropdown itself).
+function renderAcctSelector(){
+  var sel=document.getElementById('adAcctSelect');
+  if(!sel) return;
+  var hasJa=!!(PROFILE && PROFILE.joint_account_id);
+  sel.innerHTML='<option value="pa">Personal Account</option>'
+    +(hasJa?'<option value="ja">Joint Account</option>':'');
+  sel.value=AD_ACCT;
+}
+// Switching accounts via the dropdown stays on the same page (not a
+// "leave"), so it does NOT reset AD_PROFILE_UNLOCKED — only re-opening the
+// page fresh via openAccountDetails() does that. Reuses
+// renderAccountDetails() for the same profile-tab-visibility/bounce logic
+// the initial open already does.
+function switchAdAccount(acct){
+  AD_ACCT=acct;
+  renderAccountDetails();
 }
 function switchAcctDetailTab(tab){
   AD_TAB=tab;
@@ -350,6 +368,13 @@ function computeAcctIrr(acct, avco){
   if(mv>0 && avco.unitsHeld>0) cf.push({date:new Date().toISOString().slice(0,10), amount:mv});
   return computeXIRR(cf);
 }
+// Sum of this account's Paid distributions (DX_DATA is already filtered to
+// status='Paid' — see loadDistributionHistory() in portfolio-widgets.js).
+function computeDividendReceived(acct){
+  return (typeof DX_DATA!=='undefined'?DX_DATA:[]).reduce(function(sum,d){
+    return d.acct===acct?sum+(d.amt||0):sum;
+  },0);
+}
 function renderAssetsTab(){
   var ciRows=(AD_ACCT==='ja')?JA_CI_ROWS:PA_CI_ROWS;
   var acctObj=(AD_ACCT==='ja')?JA_ACCT:PA_ACCT;
@@ -363,38 +388,36 @@ function renderAssetsTab(){
   var returnPct=avco.totalSubscribed?(totalReturn/avco.totalSubscribed*100):0;
   var periodDays=avco.earliestDate?Math.max(0,Math.round((Date.now()-new Date(avco.earliestDate+'T00:00:00').getTime())/86400000)):0;
   var irr=computeAcctIrr(AD_ACCT, avco);
+  var dividendReceived=computeDividendReceived(AD_ACCT);
 
-  function setMoney(id,val){
+  // These figures are subject to the same portfolio-value eye toggle as
+  // the Accounts screen (see EYE_MASK_IDS/applyEyeVisibility() below) — set
+  // data-real here and let applyEyeVisibility() at the end decide whether
+  // to actually display it or a mask.
+  function setStat(id,txt,color){
     var el=document.getElementById(id);
     if(!el) return;
-    el.textContent=(val>=0?'+':'')+fmtMoney(val);
-    el.style.color=val>=0?'var(--green)':'var(--red)';
+    el.setAttribute('data-real', txt);
+    if(color) el.style.color=color;
   }
-  var valEl=document.getElementById('adNetAssets');
-  if(valEl) valEl.textContent=fmtMoney(mv);
-  var unitsEl=document.getElementById('adUnitsHeld');
-  if(unitsEl) unitsEl.textContent=fmtUnits(avco.unitsHeld);
-  var avgCostEl=document.getElementById('adAvgCost');
-  if(avgCostEl) avgCostEl.textContent=fmtNta(avco.avgCost);
-  var priceEl=document.getElementById('adLatestPrice');
-  if(priceEl) priceEl.textContent=fmtNta(LATEST_NTA);
+  function setMoney(id,val){
+    setStat(id, (val>=0?'+':'')+fmtMoney(val), val>=0?'var(--green)':'var(--red)');
+  }
+  setStat('adNetAssets', fmtMoney(mv));
+  setStat('adUnitsHeld', fmtUnits(avco.unitsHeld));
+  setStat('adAvgCost', fmtNta(avco.avgCost));
+  setStat('adLatestPrice', fmtNta(LATEST_NTA));
   setMoney('adUnrealized', unrealized);
   setMoney('adRealized', avco.realizedPnl);
+  setStat('adDividendReceived', fmtMoney(dividendReceived));
   setMoney('adTotalReturn', totalReturn);
-  var pctEl=document.getElementById('adReturnPct');
-  if(pctEl){ pctEl.textContent=(returnPct>=0?'+':'')+returnPct.toFixed(2)+'%'; pctEl.style.color=returnPct>=0?'var(--green)':'var(--red)'; }
-  var periodText=periodDays+(periodDays===1?' day':' days');
-  // Period is intentionally shown in two places in this layout (end of the
-  // 2nd row, start of the row below the divider) — same value both times.
+  setStat('adReturnPct', (returnPct>=0?'+':'')+returnPct.toFixed(2)+'%', returnPct>=0?'var(--green)':'var(--red)');
+  // Period is not a financial figure — never masked by the eye toggle.
   var perEl=document.getElementById('adPeriodDays');
-  if(perEl) perEl.textContent=periodText;
-  var perEl2=document.getElementById('adPeriodDays2');
-  if(perEl2) perEl2.textContent=periodText;
-  var irrEl=document.getElementById('adIrr');
-  if(irrEl){
-    if(irr==null){ irrEl.textContent='—'; irrEl.style.color='var(--fg-1)'; }
-    else { irrEl.textContent=(irr>=0?'+':'')+irr.toFixed(2)+'%'; irrEl.style.color=irr>=0?'var(--green)':'var(--red)'; }
-  }
+  if(perEl) perEl.textContent=periodDays+(periodDays===1?' day':' days');
+  if(irr==null){ setStat('adIrr', '—', 'var(--fg-1)'); }
+  else { setStat('adIrr', (irr>=0?'+':'')+irr.toFixed(2)+'%', irr>=0?'var(--green)':'var(--red)'); }
+  applyEyeVisibility();
 }
 
 // ── PROFILE TAB (joint account co-holders) — PIN-gated, centered popup ──
@@ -448,6 +471,11 @@ function submitAdPin(){
     if(errEl){ errEl.textContent='Incorrect PIN. Please try again.'; errEl.style.display='block'; }
   }
 }
+// One "Account Holder #" section + card per co-holder, in the same order
+// mpLoadJointCoHolders() returns them (alphabetical by name). Ownership is
+// always split evenly across every holder on the joint account — there's
+// no per-holder ownership figure in the schema, so 100% ÷ holder count is
+// the only defensible number to show.
 async function renderCoHolders(){
   var list=document.getElementById('adCoHolderList');
   if(!list) return;
@@ -455,11 +483,15 @@ async function renderCoHolders(){
   try{
     var holders=await mpLoadJointCoHolders(PROFILE.joint_account_id);
     if(!holders.length){ list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.82rem;">No co-holders found</div>'; return; }
+    var ownershipPct=100/holders.length;
     list.innerHTML=holders.map(function(h,i){
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:'+(i<holders.length-1?'1px solid var(--border)':'none')+';">'
-        +'<div style="font-size:.88rem;font-weight:600;color:var(--fg-1);">'+(h.full_name||'—')+'</div>'
-        +'<span style="font-size:.68rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 9px;border-radius:99px;background:var(--gray-100);color:var(--fg-3);">'+(h.status||'—')+'</span>'
-        +'</div>';
+      return '<div style="margin-bottom:16px;">'
+        +'<div style="font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin:0 0 8px;">Account Holder '+(i+1)+'</div>'
+        +'<div style="background:var(--gray-100);border-radius:12px;overflow:hidden;">'
+        +'<div class="info-row"><span class="info-label">Full Name</span><span class="info-value">'+(h.full_name||'—')+'</span></div>'
+        +'<div class="info-row"><span class="info-label">Email</span><span class="info-value">'+(h.email||'—')+'</span></div>'
+        +'<div class="info-row"><span class="info-label">Ownership</span><span class="info-value">'+ownershipPct.toFixed(2)+'%</span></div>'
+        +'</div></div>';
     }).join('');
   }catch(e){
     console.error('[Account Details] failed to load co-holders —',e&&e.message);
@@ -947,7 +979,11 @@ var portfolioVisible=true;
 // computed separately (sum of PA+JA) rather than per-account.
 var EYE_MASK_IDS=['paValue','paPL','paUnits','paStake','paPrice','paVwap','paMv','paCost','paRealized','paReturnPct',
                    'jaValue','jaPL','jaUnits','jaStake','jaPrice','jaVwap','jaMv','jaCost','jaRealized','jaReturnPct',
-                   'adDonutTotal'];
+                   'adDonutTotal',
+                   // Account Details' Assets tab (period/day-count is left
+                   // out — it isn't a financial figure).
+                   'adNetAssets','adUnitsHeld','adAvgCost','adLatestPrice',
+                   'adUnrealized','adRealized','adDividendReceived','adTotalReturn','adReturnPct','adIrr'];
 function applyEyeVisibility(){
   var mask='••••••';
   var totalEl=document.getElementById('portfolioValue');
