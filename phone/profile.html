@@ -59,7 +59,7 @@ a,a:hover{color:var(--blue);text-decoration:none;}
 
 /* PIN modal */
 .pin-scrim{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100;}
-.pin-sheet{display:none;position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;background:#fff;border-radius:20px 20px 0 0;z-index:101;padding:24px 20px calc(24px + env(safe-area-inset-bottom,0px));}
+.pin-sheet{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(100% - 48px);max-width:340px;background:#fff;border-radius:16px;z-index:101;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.18);}
 .pin-title{font-size:1.05rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;}
 .pin-sub{font-size:.82rem;color:var(--fg-3);margin-bottom:18px;line-height:1.5;}
 .pin-input{width:100%;font-size:1.6rem;letter-spacing:.6em;text-align:center;padding:14px 10px 14px 20px;border:1.5px solid var(--border);border-radius:12px;outline:none;font-family:var(--font);}
@@ -169,7 +169,7 @@ a,a:hover{color:var(--blue);text-decoration:none;}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/supabase-auth.js"></script>
-<script src="../assets/js/member-api.js?v=4"></script>
+<script src="../assets/js/member-api.js?v=5"></script>
 <script>
 // This page is a genuine standalone navigation (not an in-app SPA tab, by
 // original design) — it needs its own auth check and its own data fetch,
