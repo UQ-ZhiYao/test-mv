@@ -222,19 +222,30 @@ var AD_TAB='assets';
 function openAccountDetails(acct){
   AD_ACCT=acct;
   AD_TAB='assets';
+  // Sensitive co-holder data must re-lock every time this page is opened
+  // fresh (this is the only entry point into 'accountdetails') — "leaving
+  // the page" always requires the PIN again, no persisted unlock.
+  AD_PROFILE_UNLOCKED=false;
   switchTab('accountdetails');
-  // switchTab() -> updateTopbarChrome() just set the static DRILL_PAGES
-  // title ("Account Details") — overwrite it now, same pattern as
-  // openInstrumentDetail() in search-instruments.js.
-  var titleEl=document.getElementById('topbarBackTitle');
-  if(titleEl) titleEl.textContent=(acct==='ja')?'Joint Account':'Personal Account';
+  // Top bar keeps the static DRILL_PAGES title ("Account Details") and its
+  // back button only — the account name now lives in the icon+label block
+  // at the top of the body instead (renderAcctTypeHeader()).
 }
 function renderAccountDetails(){
   var profileBtn=document.getElementById('adtab-profile-btn');
   if(profileBtn) profileBtn.style.display=(AD_ACCT==='ja')?'':'none';
   // A personal account can never land on the joint-only Profile tab.
   if(AD_ACCT!=='ja' && AD_TAB==='profile') AD_TAB='assets';
+  renderAcctTypeHeader();
   switchAcctDetailTab(AD_TAB);
+}
+function renderAcctTypeHeader(){
+  var label=document.getElementById('adAcctTypeLabel');
+  var iconPa=document.getElementById('adAcctIconPa');
+  var iconJa=document.getElementById('adAcctIconJa');
+  if(label) label.textContent=(AD_ACCT==='ja')?'Joint Account':'Personal Account';
+  if(iconPa) iconPa.style.display=(AD_ACCT==='ja')?'none':'block';
+  if(iconJa) iconJa.style.display=(AD_ACCT==='ja')?'block':'none';
 }
 function switchAcctDetailTab(tab){
   AD_TAB=tab;
@@ -359,15 +370,26 @@ function renderAssetsTab(){
     el.textContent=(val>=0?'+':'')+fmtMoney(val);
     el.style.color=val>=0?'var(--green)':'var(--red)';
   }
-  var valEl=document.getElementById('adAssetValue');
+  var valEl=document.getElementById('adNetAssets');
   if(valEl) valEl.textContent=fmtMoney(mv);
+  var unitsEl=document.getElementById('adUnitsHeld');
+  if(unitsEl) unitsEl.textContent=fmtUnits(avco.unitsHeld);
+  var avgCostEl=document.getElementById('adAvgCost');
+  if(avgCostEl) avgCostEl.textContent=fmtNta(avco.avgCost);
+  var priceEl=document.getElementById('adLatestPrice');
+  if(priceEl) priceEl.textContent=fmtNta(LATEST_NTA);
   setMoney('adUnrealized', unrealized);
   setMoney('adRealized', avco.realizedPnl);
   setMoney('adTotalReturn', totalReturn);
   var pctEl=document.getElementById('adReturnPct');
   if(pctEl){ pctEl.textContent=(returnPct>=0?'+':'')+returnPct.toFixed(2)+'%'; pctEl.style.color=returnPct>=0?'var(--green)':'var(--red)'; }
+  var periodText=periodDays+(periodDays===1?' day':' days');
+  // Period is intentionally shown in two places in this layout (end of the
+  // 2nd row, start of the row below the divider) — same value both times.
   var perEl=document.getElementById('adPeriodDays');
-  if(perEl) perEl.textContent=periodDays+(periodDays===1?' day':' days');
+  if(perEl) perEl.textContent=periodText;
+  var perEl2=document.getElementById('adPeriodDays2');
+  if(perEl2) perEl2.textContent=periodText;
   var irrEl=document.getElementById('adIrr');
   if(irrEl){
     if(irr==null){ irrEl.textContent='—'; irrEl.style.color='var(--fg-1)'; }
@@ -376,12 +398,12 @@ function renderAssetsTab(){
 }
 
 // ── PROFILE TAB (joint account co-holders) — PIN-gated, centered popup ──
-// Same verify-against-profiles.pin logic as phone/profile.html's PIN gate,
-// but scoped to its own sessionStorage key so unlocking one doesn't
-// unlock the other.
-function adProfileUnlocked(){
-  try{ return sessionStorage.getItem('zy_acctdetails_profile_unlocked')==='1'; }catch(e){ return false; }
-}
+// In-memory only (no sessionStorage) — this data must hide again the
+// moment the member leaves Account Details, so every fresh
+// openAccountDetails() call resets AD_PROFILE_UNLOCKED to false rather
+// than persisting an unlock across visits.
+var AD_PROFILE_UNLOCKED=false;
+function adProfileUnlocked(){ return AD_PROFILE_UNLOCKED; }
 function enterProfileTab(){
   var locked=document.getElementById('adProfileLocked');
   var list=document.getElementById('adCoHolderList');
@@ -401,8 +423,9 @@ function openAdPin(){
   }
   document.getElementById('adPinScrim').style.display='block';
   document.getElementById('adPinModal').style.display='block';
-  var input=document.getElementById('adPinInput');
-  if(input){ input.value=''; setTimeout(function(){input.focus();},150); }
+  setupPinBoxes('adPinBoxes');
+  clearPinBoxes('adPinBoxes');
+  setTimeout(function(){focusFirstPinBox('adPinBoxes');},150);
   var err=document.getElementById('adPinErr');
   if(err) err.style.display='none';
 }
@@ -411,15 +434,14 @@ function closeAdPin(){
   document.getElementById('adPinModal').style.display='none';
 }
 function submitAdPin(){
-  var input=document.getElementById('adPinInput');
-  var entered=input?input.value.trim():'';
+  var entered=getPinBoxesValue('adPinBoxes');
   var errEl=document.getElementById('adPinErr');
   if(!/^\d{6}$/.test(entered)){
     if(errEl){ errEl.textContent='PIN must be 6 digits.'; errEl.style.display='block'; }
     return;
   }
   if(entered===String(PROFILE.pin)){
-    try{ sessionStorage.setItem('zy_acctdetails_profile_unlocked','1'); }catch(e){}
+    AD_PROFILE_UNLOCKED=true;
     closeAdPin();
     enterProfileTab();
   } else {

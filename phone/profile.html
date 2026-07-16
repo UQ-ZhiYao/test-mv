@@ -62,11 +62,14 @@ a,a:hover{color:var(--blue);text-decoration:none;}
 .pin-sheet{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(100% - 48px);max-width:340px;background:#fff;border-radius:16px;z-index:101;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.18);}
 .pin-title{font-size:1.05rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;}
 .pin-sub{font-size:.82rem;color:var(--fg-3);margin-bottom:18px;line-height:1.5;}
-.pin-input{width:100%;font-size:1.6rem;letter-spacing:.6em;text-align:center;padding:14px 10px 14px 20px;border:1.5px solid var(--border);border-radius:12px;outline:none;font-family:var(--font);}
-.pin-input:focus{border-color:var(--blue);}
+.pin-boxes{display:flex;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;}
+.pin-box{flex:1;min-width:0;border:none;border-right:1px solid var(--border);text-align:center;font-size:1.3rem;font-weight:700;color:var(--fg-1);padding:14px 0;outline:none;font-family:inherit;background:#fff;}
+.pin-box:last-child{border-right:none;}
+.pin-box:focus{background:var(--blue-bg);}
 .pin-err{display:none;color:var(--red);font-size:.78rem;margin-top:8px;text-align:center;}
-.pin-btn-primary{width:100%;margin-top:18px;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;}
-.pin-btn-secondary{width:100%;margin-top:8px;padding:12px;border-radius:12px;border:none;background:none;color:var(--fg-3);font:inherit;font-size:.88rem;font-weight:600;cursor:pointer;}
+.pin-btns{display:flex;gap:10px;margin-top:18px;}
+.pin-btn-primary{flex:1;padding:13px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;}
+.pin-btn-secondary{flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:none;color:var(--fg-2);font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;}
 
 .bottom-pad{height:32px;}
 </style>
@@ -159,10 +162,19 @@ a,a:hover{color:var(--blue);text-decoration:none;}
 <div class="pin-sheet" id="pinSheet">
   <div class="pin-title">Enter PIN</div>
   <div class="pin-sub">Enter your 6-digit PIN to view your personal details.</div>
-  <input class="pin-input" id="pinInput" type="password" inputmode="numeric" maxlength="6" pattern="[0-9]*" placeholder="——————" autocomplete="off">
+  <div class="pin-boxes" id="pinBoxes">
+    <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1" data-idx="0">
+    <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1" data-idx="1">
+    <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1" data-idx="2">
+    <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1" data-idx="3">
+    <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1" data-idx="4">
+    <input class="pin-box" type="password" inputmode="numeric" pattern="[0-9]" maxlength="1" data-idx="5">
+  </div>
   <div class="pin-err" id="pinErr"></div>
-  <button class="pin-btn-primary" onclick="submitPin()">Confirm</button>
-  <button class="pin-btn-secondary" onclick="closePinModal()">Cancel</button>
+  <div class="pin-btns">
+    <button class="pin-btn-secondary" onclick="closePinModal()">Cancel</button>
+    <button class="pin-btn-primary" onclick="submitPin()">Confirm</button>
+  </div>
 </div>
 
 <div id="pfToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#0F172A;color:#fff;font-size:.82rem;font-weight:600;padding:10px 20px;border-radius:99px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;z-index:102;"></div>
@@ -173,23 +185,17 @@ a,a:hover{color:var(--blue);text-decoration:none;}
 <script>
 // This page is a genuine standalone navigation (not an in-app SPA tab, by
 // original design) — it needs its own auth check and its own data fetch,
-// since a full page load starts a fresh JS context. That also means
-// Edit -> profile-edit.html -> Cancel/Save/Back is a REAL page reload
-// back to this page, which would reset profileUnlocked to false on every
-// round trip if it were a plain variable — requiring the PIN again for a
-// routine edit that never left this feature. Persisting the unlocked
-// state in sessionStorage (not localStorage) fixes that: it survives a
-// same-tab reload, but not a real new session (closing and reopening the
-// app), matching "PIN required only on resume/reopen."
+// since a full page load starts a fresh JS context. Sensitive fields must
+// re-hide every time this page is left (including a round trip through
+// profile-edit.html), so profileUnlocked is a plain in-memory variable,
+// never persisted — a fresh load always starts locked.
 // Tell index.html's App Lock (assets/js/phone/profile-account.js) that
 // whenever the app is next reached again, it got here via a real round
 // trip through this in-app subpage — not a genuine close/backgrounding —
 // so it shouldn't demand the whole-app PIN again on the way back.
 try{ sessionStorage.setItem('zy_returning_from_subpage','1'); }catch(e){}
 
-function pfIsUnlocked(){ try{ return sessionStorage.getItem('zy_profile_unlocked')==='1'; }catch(e){ return false; } }
-function pfSetUnlocked(v){ try{ if(v) sessionStorage.setItem('zy_profile_unlocked','1'); else sessionStorage.removeItem('zy_profile_unlocked'); }catch(e){} }
-var PF_USER=null, PF_PROFILE=null, profileUnlocked=pfIsUnlocked();
+var PF_USER=null, PF_PROFILE=null, profileUnlocked=false;
 
 function pfToast(msg){
   var el=document.getElementById('pfToast');
@@ -250,17 +256,16 @@ function openPinModal(){
   }
   document.getElementById('pinScrim').style.display='block';
   document.getElementById('pinSheet').style.display='block';
-  var input=document.getElementById('pinInput');
-  input.value='';
+  clearPinBoxes('pinBoxes');
   document.getElementById('pinErr').style.display='none';
-  setTimeout(function(){input.focus();},150);
+  setTimeout(function(){focusFirstPinBox('pinBoxes');},150);
 }
 function closePinModal(){
   document.getElementById('pinScrim').style.display='none';
   document.getElementById('pinSheet').style.display='none';
 }
 function submitPin(){
-  var entered=document.getElementById('pinInput').value.trim();
+  var entered=getPinBoxesValue('pinBoxes');
   var errEl=document.getElementById('pinErr');
   if(!/^\d{6}$/.test(entered)){
     errEl.textContent='PIN must be 6 digits.'; errEl.style.display='block';
@@ -268,14 +273,48 @@ function submitPin(){
   }
   if(entered===String(PF_PROFILE.pin)){
     profileUnlocked=true;
-    pfSetUnlocked(true);
     revealAllFields();
     closePinModal();
   } else {
     errEl.textContent='Incorrect PIN. Please try again.'; errEl.style.display='block';
   }
 }
-document.getElementById('pinInput')?.addEventListener('keydown',function(e){ if(e.key==='Enter') submitPin(); });
+
+// ── Segmented 6-box PIN input helpers (duplicated from password.html /
+// profile-account.js — this page is a standalone navigation with its own
+// JS context, so it needs its own copy). ──────────────────────────────────
+function setupPinBoxes(containerId){
+  var boxes=document.querySelectorAll('#'+containerId+' .pin-box');
+  boxes.forEach(function(box,i){
+    box.addEventListener('input',function(){
+      box.value=box.value.replace(/[^0-9]/g,'').slice(0,1);
+      if(box.value && i<boxes.length-1){ boxes[i+1].focus(); }
+    });
+    box.addEventListener('keydown',function(e){
+      if(e.key==='Backspace' && !box.value && i>0){ boxes[i-1].focus(); }
+      if(e.key==='Enter') submitPin();
+    });
+    box.addEventListener('paste',function(e){
+      e.preventDefault();
+      var text=((e.clipboardData||window.clipboardData).getData('text')||'').replace(/[^0-9]/g,'').slice(0,boxes.length);
+      text.split('').forEach(function(ch,idx){ if(boxes[idx]) boxes[idx].value=ch; });
+      var nextIdx=Math.min(text.length,boxes.length-1);
+      boxes[nextIdx].focus();
+    });
+  });
+}
+function getPinBoxesValue(containerId){
+  var boxes=document.querySelectorAll('#'+containerId+' .pin-box');
+  return Array.prototype.map.call(boxes,function(b){return b.value;}).join('');
+}
+function clearPinBoxes(containerId){
+  document.querySelectorAll('#'+containerId+' .pin-box').forEach(function(b){b.value='';});
+}
+function focusFirstPinBox(containerId){
+  var first=document.querySelector('#'+containerId+' .pin-box');
+  if(first) first.focus();
+}
+setupPinBoxes('pinBoxes');
 function revealAllFields(){
   document.querySelectorAll('.info-value[data-field]').forEach(function(el){
     el.textContent=el.getAttribute('data-real')||'-';
@@ -285,7 +324,6 @@ function revealAllFields(){
 }
 function hideAllFields(){
   profileUnlocked=false;
-  pfSetUnlocked(false);
   document.querySelectorAll('.info-value[data-field]').forEach(function(el){
     el.textContent='•••••';
   });
@@ -293,15 +331,12 @@ function hideAllFields(){
   if(wrap) wrap.style.display='block';
 }
 // If the browser restores this page from bfcache on "back" navigation
-// (common on iOS Safari — the page reappears without re-running scripts,
-// e.g. tapping Cancel on profile-edit.html), resync the display from the
-// persisted sessionStorage flag instead of force-masking: the frozen DOM
-// may be stale, but the unlock state itself should carry over so Cancel
-// after Edit doesn't demand the PIN again.
+// (common on iOS Safari — the page reappears without re-running scripts),
+// always re-lock: sensitive fields must hide again every time this page
+// is (re)reached, matching the fresh-load behavior above.
 window.addEventListener('pageshow',function(e){
   if(e.persisted){
-    profileUnlocked=pfIsUnlocked();
-    if(profileUnlocked) revealAllFields(); else hideAllFields();
+    hideAllFields();
   }
 });
 
