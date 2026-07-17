@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ZY-Invest · Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/phone-shared.css?v=5">
+</head>
+<body>
+<div class="standalone-shell">
+  <div class="scroll" style="flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;">
+<div class="page" id="pg-settings">
+
+      <!-- Back bar (standalone fallback only — embedded use gets its back
+           button from the shared topbar; see the "settings" entry in
+           DRILL_PAGES, profile-account.js). -->
+      <div class="back-bar">
+        <button class="back-btn" onclick="typeof switchTab!=='undefined'?switchTab('profile'):history.back()">
+          <svg width="18" height="18" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">ZY-Invest</span>
+        <div style="width:60px;"></div>
+      </div>
+
+      <!-- ── GENERAL — one section, one card so far (Language); more
+           settings sections/cards can be added the same way later. ── -->
+      <div style="height:16px;"></div>
+      <div class="menu-group" style="margin-left:16px;margin-right:16px;">
+        <div class="menu-group-label">General</div>
+        <div class="menu-list">
+          <div class="menu-item" style="cursor:default;">
+            <div class="menu-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div>
+            <div class="menu-text"><b>Language</b><span>Applies across the app</span></div>
+            <div class="lang-switch">
+              <button data-i18n-lang-btn="en" onclick="i18nSetLang('en')">EN</button>
+              <button data-i18n-lang-btn="zh" onclick="i18nSetLang('zh')">中文</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+</div>
+  </div>
+</div>
+</body>
+</html>
