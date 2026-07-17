@@ -391,7 +391,7 @@ setTimeout(function(){
        bar only while the feedback page is active (toggled alongside the
        topbar's back button by updateTopbarChrome() in profile-account.js). -->
   <div class="feedback-footer" id="feedbackFooterBar" style="display:none;">
-    <button class="feedback-submit-btn" id="feedbackSubmitBtn" onclick="submitFeedback()">Submit</button>
+    <button class="feedback-submit-btn" id="feedbackSubmitBtn" onclick="submitFeedback()" data-i18n="feedback.submit">Submit</button>
   </div>
 
 </div><!-- /app -->
@@ -551,11 +551,11 @@ setTimeout(function(){
      file you just changed so its URL — and therefore its cache key —
      actually changes. -->
 
-<script src="../assets/js/i18n.js?v=1" defer></script>
+<script src="../assets/js/i18n.js?v=2" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="../assets/js/supabase-auth.js?v=1" defer></script>
 <script src="../assets/js/member-api.js?v=12" defer></script>
-<script src="../assets/js/phone/profile-account.js?v=15" defer></script>
+<script src="../assets/js/phone/profile-account.js?v=16" defer></script>
 <script src="../assets/js/phone/portfolio-widgets.js?v=4" defer></script>
 <script src="../assets/js/phone/markets-actions.js?v=3" defer></script>
 <script src="../assets/js/phone/financial-charts-1.js?v=2" defer></script>
@@ -563,6 +563,6 @@ setTimeout(function(){
 <script src="../assets/js/phone/market-data.js?v=9" defer></script>
 <script src="../assets/js/phone/search-instruments.js?v=3" defer></script>
 <script src="../assets/js/phone/watchlist-actions.js?v=4" defer></script>
-<script src="../assets/js/phone/misc.js?v=10" defer></script>
+<script src="../assets/js/phone/misc.js?v=11" defer></script>
 </body>
 </html>

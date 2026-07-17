@@ -46,7 +46,7 @@ function applyProfileToUI(){
   // profiles has no separate investor_id column — id (the profile's own
   // uuid) is the only real per-member identifier in this schema.
   var shortId=P.id?String(P.id).slice(0,8).toUpperCase():'—';
-  var badgeLabel=P.status==='pending'?'USER':'Verified Investor';
+  var badgeLabel=(typeof t==='function')?(P.status==='pending'?t('me.badgeUser'):t('me.badgeVerified')):(P.status==='pending'?'USER':'Verified Investor');
   document.querySelectorAll('.prof-badge').forEach(function(el){el.textContent=badgeLabel+' · '+shortId;});
   if(typeof updatePinDisplay==='function') updatePinDisplay();
   ACCOUNT_RESTRICTED=(P.status==='pending'||P.status==='suspended');
@@ -513,13 +513,19 @@ async function renderCoHolders(){
 // ── TAB NAVIGATION ────────────────────────────────────────────────────────────
 var activeTab='portfolio';
 var lastMainTab='portfolio';
+// title values here are plain English strings, EXCEPT for the four
+// entries whose page is now translated (password/inquiry/feedback/
+// settings) — those use i18n.js dictionary keys instead, resolved via
+// t() in updateTopbarChrome() below. t() safely returns any string
+// unchanged when it isn't a recognized key, so the untranslated entries
+// below don't need any change.
 var DRILL_PAGES={
-  password:{title:'Password & Security',back:'profile'},
+  password:{title:'drill.password',back:'profile'},
   transaction:{title:'Transaction',back:'all'},
   distribution:{title:'Distribution',back:'all'},
   assetdetails:{title:'Asset Details',back:'portfolio'},
-  inquiry:{title:'Online Inquiry',back:'profile'},
-  feedback:{title:'App Feedback',back:'profile'},
+  inquiry:{title:'drill.inquiry',back:'profile'},
+  feedback:{title:'drill.feedback',back:'profile'},
   // title is a placeholder — openInstrumentDetail() (search-instruments.js)
   // overwrites #topbarBackTitle with the actual instrument's name right
   // after switchTab('instrument') runs.
@@ -528,7 +534,7 @@ var DRILL_PAGES={
   // #topbarBackTitle with "Personal Account"/"Joint Account" right after
   // switchTab('accountdetails') runs, same pattern as 'instrument' above.
   accountdetails:{title:'Account Details',back:'portfolio'},
-  settings:{title:'Settings',back:'profile'}
+  settings:{title:'drill.settings',back:'profile'}
 };
 function topbarBackClick(){
   var d=DRILL_PAGES[activeTab];
@@ -550,7 +556,7 @@ function updateTopbarChrome(tab){
   if(fundCompact && tab!=='fund') fundCompact.style.display='none';
   if(d){
     if(logo)logo.style.display='none';
-    if(back){back.style.display='flex';document.getElementById('topbarBackTitle').textContent=d.title;}
+    if(back){back.style.display='flex';document.getElementById('topbarBackTitle').textContent=(typeof t==='function')?t(d.title):d.title;}
   } else {
     if(logo)logo.style.display='flex';
     if(back)back.style.display='none';
@@ -615,6 +621,10 @@ function switchTab(tab){
   pgEl.classList.add('active');
   document.getElementById('mainScroll').scrollTop=0;
   activeTab=tab;
+  // Re-sync translated text now, not just at page-load time — the target
+  // fragment may not have existed yet when i18n.js's own initial
+  // applyI18n() call ran (loadPages() fetches fragments asynchronously).
+  if(typeof applyI18n==='function'){applyI18n();}
   if(tab==='market'){renderMktList();drawKlciSparkline();updateMktTime();if(typeof switchMarketTab==='function')switchMarketTab(MKT_ACTIVE_TAB||'indices');}
   if(tab==='watchlist'){renderWatchlist();}
   if(tab==='transaction'){renderTxList();}
@@ -625,10 +635,6 @@ function switchTab(tab){
   }
   if(tab==='assetdetails'){setTimeout(function(){drawAdDonut();drawAdTrend(adPeriod);},50);}
   if(tab==='accountdetails'){renderAccountDetails();}
-  // Re-sync the active-language button now, not just at page-load time —
-  // this fragment may not have existed yet when i18n.js's own initial
-  // applyI18n() call ran.
-  if(tab==='settings' && typeof applyI18n==='function'){applyI18n();}
   if(tab==='portfolio'){setTimeout(drawSparkline,50);}
   if(tab==='profile')setTimeout(function(){adjustProfileSpacer();},50);
   if(tab==='fund'){
@@ -713,12 +719,12 @@ async function verifyPw(){
   var btn=event&&event.target;
   if(!v){document.getElementById('pwCurrent').focus();return;}
   if(typeof sb==='undefined'||!sb||!AUTH_USER||!AUTH_USER.email){
-    document.getElementById('pwCurrentErr').textContent='Unable to verify — please try again later.';
+    document.getElementById('pwCurrentErr').textContent=t('password.unableVerifyLater');
     document.getElementById('pwCurrentErr').style.display='block';
     return;
   }
   var origTxt=btn&&btn.textContent;
-  if(btn){btn.disabled=true;btn.textContent='Verifying…';}
+  if(btn){btn.disabled=true;btn.textContent=t('password.verifying');}
   try{
     // Re-authenticating with the entered password is how we confirm it's
     // correct — Supabase has no separate "check password" call. This does
@@ -732,7 +738,7 @@ async function verifyPw(){
     setPwStepDots(2);
     setTimeout(function(){document.getElementById('pwNew').focus();},100);
   }catch(e){
-    document.getElementById('pwCurrentErr').textContent='Incorrect password. Please try again.';
+    document.getElementById('pwCurrentErr').textContent=t('password.incorrectPassword');
     document.getElementById('pwCurrentErr').style.display='block';
     document.getElementById('pwCurrent').style.borderColor='var(--red)';
   }finally{
@@ -758,13 +764,13 @@ async function savePw(){
   var c=document.getElementById('pwConfirm').value;
   var btn=event&&event.target;
   if(n!==c){document.getElementById('pwMatchErr').style.display='block';document.getElementById('pwConfirm').style.borderColor='var(--red)';return;}
-  if(typeof mpUpdatePassword!=='function'){showToastM('Password service unavailable');return;}
+  if(typeof mpUpdatePassword!=='function'){showToastM(t('password.pwServiceUnavailable'));return;}
   var origTxt=btn&&btn.textContent;
-  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  if(btn){btn.disabled=true;btn.textContent=t('password.saving');}
   try{
     await mpUpdatePassword(n);
     closePwModal();
-    showToastM('Password updated successfully');
+    showToastM(t('password.toastPwUpdated'));
   }catch(e){
     document.getElementById('pwMatchErr').textContent='Update failed: '+(e&&e.message||'Unknown error');
     document.getElementById('pwMatchErr').style.display='block';
@@ -802,14 +808,14 @@ function openPinModal(){
   step3.style.display='none';
   if(hasPin){
     step1.style.display='block'; step2.style.display='none';
-    if(step2Title) step2Title.textContent='Set New PIN';
-    if(step2BackBtn){ step2BackBtn.textContent='Back'; step2BackBtn.setAttribute('onclick','pinBackTo(1)'); }
+    if(step2Title) step2Title.textContent=t('password.setNewPinTitle');
+    if(step2BackBtn){ step2BackBtn.textContent=t('password.back'); step2BackBtn.setAttribute('onclick','pinBackTo(1)'); }
     setPinStepDots(1);
   } else {
     // No PIN on file yet — nothing to verify, go straight to setting one.
     step1.style.display='none'; step2.style.display='block';
-    if(step2Title) step2Title.textContent='Set PIN';
-    if(step2BackBtn){ step2BackBtn.textContent='Cancel'; step2BackBtn.setAttribute('onclick','closePinModal()'); }
+    if(step2Title) step2Title.textContent=t('password.setPinTitle');
+    if(step2BackBtn){ step2BackBtn.textContent=t('password.cancel'); step2BackBtn.setAttribute('onclick','closePinModal()'); }
     setPinStepDots(2);
   }
   document.getElementById('pinScrim').style.display='block';
@@ -830,11 +836,11 @@ function verifyPinStep(){
   var entered=getPinBoxesValue('pinVerifyBoxes');
   var errEl=document.getElementById('pinVerifyErr');
   if(!/^\d{6}$/.test(entered)){
-    errEl.textContent='Please enter your 6-digit PIN.'; errEl.style.display='block';
+    errEl.textContent=t('password.pleaseEnterPin6'); errEl.style.display='block';
     return;
   }
   if(entered!==String(PROFILE&&PROFILE.pin)){
-    errEl.textContent='Incorrect PIN. Please try again.'; errEl.style.display='block';
+    errEl.textContent=t('password.incorrectPin'); errEl.style.display='block';
     clearPinBoxes('pinVerifyBoxes'); focusFirstPinBox('pinVerifyBoxes');
     return;
   }
@@ -848,7 +854,7 @@ function pinNewContinue(){
   var n=getPinBoxesValue('pinNewBoxes');
   var errEl=document.getElementById('pinNewErr');
   if(!/^\d{6}$/.test(n)){
-    errEl.textContent='PIN must be exactly 6 digits.'; errEl.style.display='block';
+    errEl.textContent=t('password.pinMustBe6'); errEl.style.display='block';
     return;
   }
   errEl.style.display='none';
@@ -864,17 +870,17 @@ async function savePin(){
   var btn=event&&event.target;
   errEl.style.display='none';
   if(n!==c){
-    errEl.textContent='PINs do not match.'; errEl.style.display='block'; return;
+    errEl.textContent=t('password.pinMismatch'); errEl.style.display='block'; return;
   }
-  if(typeof mpSaveProfile!=='function'||!AUTH_USER){ showToastM('PIN service unavailable'); return; }
+  if(typeof mpSaveProfile!=='function'||!AUTH_USER){ showToastM(t('password.pinServiceUnavailable')); return; }
   var origTxt=btn&&btn.textContent;
-  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  if(btn){btn.disabled=true;btn.textContent=t('password.saving');}
   try{
     await mpSaveProfile(AUTH_USER.id,{pin:n});
     if(PROFILE) PROFILE.pin=n;
     updatePinDisplay();
     closePinModal();
-    showToastM('PIN updated successfully');
+    showToastM(t('password.toastPinUpdated'));
   }catch(e){
     errEl.textContent='Update failed: '+(e&&e.message||'Unknown error — confirm the "pin" column exists on profiles.');
     errEl.style.display='block';

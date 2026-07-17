@@ -27,25 +27,25 @@
       </div>
 
       <div style="padding:12px 20px 4px;">
-        <div style="font-size:1.2rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;">App Feedback</div>
-        <div style="font-size:.82rem;color:var(--fg-3);line-height:1.5;">Tell us what's working, what isn't, or what you'd like to see — it's sent straight to our support team.</div>
+        <div style="font-size:1.2rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;" data-i18n="feedback.pageTitle">App Feedback</div>
+        <div style="font-size:.82rem;color:var(--fg-3);line-height:1.5;" data-i18n="feedback.pageSub">Tell us what's working, what isn't, or what you'd like to see — it's sent straight to our support team.</div>
       </div>
 
       <div style="padding:20px 16px 0;">
-        <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Subject</div>
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;" data-i18n="feedback.subject">Subject</div>
         <select id="feedbackSubjectSelect" class="fb-subject-select" required onchange="clearFeedbackSubjectErr()">
-          <option value="" disabled selected hidden>Select a subject</option>
-          <option value="Security &amp; Password">Security &amp; Password</option>
-          <option value="UI/UX Design">UI/UX Design</option>
-          <option value="Others">Others</option>
+          <option value="" disabled selected hidden data-i18n="feedback.selectSubject">Select a subject</option>
+          <option value="Security &amp; Password" data-i18n="feedback.subjSecurity">Security &amp; Password</option>
+          <option value="UI/UX Design" data-i18n="feedback.subjUiUx">UI/UX Design</option>
+          <option value="Others" data-i18n="feedback.subjOthers">Others</option>
         </select>
-        <div id="feedbackSubjectErr" style="display:none;color:var(--red);font-size:.76rem;margin-top:8px;">Please select a subject.</div>
+        <div id="feedbackSubjectErr" style="display:none;color:var(--red);font-size:.76rem;margin-top:8px;" data-i18n="feedback.subjectErr">Please select a subject.</div>
       </div>
 
       <div style="padding:20px 16px 0;">
-        <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Your Message</div>
-        <textarea id="feedbackContent" rows="6" placeholder="Write your feedback here…" style="width:100%;font:inherit;font-size:.86rem;color:var(--fg-1);background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:13px 14px;resize:vertical;outline:none;box-sizing:border-box;"></textarea>
-        <div id="feedbackContentErr" style="display:none;color:var(--red);font-size:.76rem;margin-top:8px;">Please write your feedback before submitting.</div>
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;" data-i18n="feedback.yourMessage">Your Message</div>
+        <textarea id="feedbackContent" rows="6" placeholder="Write your feedback here…" data-i18n-placeholder="feedback.messagePlaceholder" style="width:100%;font:inherit;font-size:.86rem;color:var(--fg-1);background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:13px 14px;resize:vertical;outline:none;box-sizing:border-box;"></textarea>
+        <div id="feedbackContentErr" style="display:none;color:var(--red);font-size:.76rem;margin-top:8px;" data-i18n="feedback.contentErr">Please write your feedback before submitting.</div>
       </div>
 
       <div style="height:24px;"></div>

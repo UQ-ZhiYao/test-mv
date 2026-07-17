@@ -462,7 +462,8 @@ async function submitFeedback(){
 
   var btn=document.getElementById('feedbackSubmitBtn');
   var btnLabel=btn?btn.textContent:'';
-  if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+  var tt=typeof t==='function'?t:function(k){return k;};
+  if(btn){ btn.disabled=true; btn.textContent=tt('feedback.sending'); }
 
   var name=(typeof PROFILE!=='undefined'&&PROFILE&&PROFILE.full_name)?PROFILE.full_name:'';
   var email=(typeof AUTH_USER!=='undefined'&&AUTH_USER&&AUTH_USER.email)?AUTH_USER.email:'';
@@ -470,12 +471,12 @@ async function submitFeedback(){
     await mpSendFeedback(subject,content,email,name);
     if(contentEl) contentEl.value='';
     if(subjectEl) subjectEl.value='';
-    if(typeof showToastM==='function') showToastM('Thanks! Your feedback has been sent.');
+    if(typeof showToastM==='function') showToastM(tt('feedback.toastSent'));
     if(typeof switchTab!=='undefined') switchTab('profile');
   }catch(e){
     console.error('submitFeedback failed:',e);
     var reason=(e&&e.message)?e.message:'please try again';
-    if(typeof showToastM==='function') showToastM('Could not send feedback: '+reason.slice(0,100));
+    if(typeof showToastM==='function') showToastM(tt('feedback.toastFailed')+reason.slice(0,100));
   }finally{
     if(btn){ btn.disabled=false; btn.textContent=btnLabel; }
   }
