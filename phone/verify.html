@@ -120,7 +120,7 @@ input,textarea{-webkit-user-select:text;user-select:text;}
   <div class="top-bar">
     <div class="logo-wrap">
       <img src="../assets/img/logo.png" alt="ZY-Invest">
-      <div class="logo-txt"><b>ZY-Invest</b><span>Member Portal</span></div>
+      <div class="logo-txt"><b>ZY-Invest</b><span data-i18n="login.memberPortal">Member Portal</span></div>
     </div>
   </div>
 
@@ -130,8 +130,8 @@ input,textarea{-webkit-user-select:text;user-select:text;}
       <!-- Checking token from URL -->
       <div class="vf-state show" id="vfChecking">
         <div class="vf-icon pending"><div class="vf-spinner"></div></div>
-        <div class="card-title">Verifying Your Email</div>
-        <div class="card-sub">Please wait a moment…</div>
+        <div class="card-title" data-i18n="verify.verifyingTitle">Verifying Your Email</div>
+        <div class="card-sub" data-i18n="verify.pleaseWait">Please wait a moment…</div>
       </div>
 
       <!-- No token — waiting for user to tap the emailed link -->
@@ -139,9 +139,9 @@ input,textarea{-webkit-user-select:text;user-select:text;}
         <div class="vf-icon pending">
           <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         </div>
-        <div class="card-title">Check Your Inbox</div>
-        <div class="card-sub">We've sent a verification link to <b id="vfPendingEmail" style="color:var(--fg-1);">your email</b>. Tap the link there to activate your account, then come back here.</div>
-        <button class="btn-login" id="vfResendBtn">Resend Verification Email</button>
+        <div class="card-title" data-i18n="verify.checkYourInbox">Check Your Inbox</div>
+        <div class="card-sub"><span data-i18n="register.verificationSentTo">We've sent a verification link to</span> <b id="vfPendingEmail" style="color:var(--fg-1);">your email</b>. <span data-i18n="verify.tapLinkThenReturn">Tap the link there to activate your account, then come back here.</span></div>
+        <button class="btn-login" id="vfResendBtn" data-i18n="verify.resendEmail">Resend Verification Email</button>
         <div class="note-msg" id="vfNote1"></div>
       </div>
 
@@ -150,9 +150,9 @@ input,textarea{-webkit-user-select:text;user-select:text;}
         <div class="vf-icon success">
           <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
-        <div class="card-title">Email Verified</div>
-        <div class="card-sub">Your account is now active. Sign in to access your investor portal.</div>
-        <a href="login.html" class="btn-login">Continue to Sign In</a>
+        <div class="card-title" data-i18n="verify.emailVerified">Email Verified</div>
+        <div class="card-sub" data-i18n="verify.accountActiveSub">Your account is now active. Sign in to access your investor portal.</div>
+        <a href="login.html" class="btn-login" data-i18n="verify.continueToSignIn">Continue to Sign In</a>
       </div>
 
       <!-- Expired -->
@@ -160,13 +160,13 @@ input,textarea{-webkit-user-select:text;user-select:text;}
         <div class="vf-icon error">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-        <div class="card-title">Link Expired</div>
-        <div class="card-sub">This verification link has expired. Request a new one below.</div>
+        <div class="card-title" data-i18n="verify.linkExpired">Link Expired</div>
+        <div class="card-sub" data-i18n="verify.linkExpiredSub">This verification link has expired. Request a new one below.</div>
         <div class="field">
-          <label>Email Address</label>
-          <input type="email" id="vfEmailInput" placeholder="your@email.com">
+          <label data-i18n="login.emailLabel">Email Address</label>
+          <input type="email" id="vfEmailInput" placeholder="your@email.com" data-i18n-placeholder="login.emailPlaceholder">
         </div>
-        <button class="btn-login" id="vfResendBtn2">Resend Verification Email</button>
+        <button class="btn-login" id="vfResendBtn2" data-i18n="verify.resendEmail">Resend Verification Email</button>
         <div class="note-msg" id="vfNote2"></div>
       </div>
 
@@ -175,20 +175,21 @@ input,textarea{-webkit-user-select:text;user-select:text;}
         <div class="vf-icon error">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
         </div>
-        <div class="card-title">Verification Failed</div>
-        <div class="card-sub" id="vfErrorMsg">Something went wrong verifying this link.</div>
-        <a href="register.html" class="btn-login">Back to Registration</a>
+        <div class="card-title" data-i18n="verify.verificationFailed">Verification Failed</div>
+        <div class="card-sub" id="vfErrorMsg" data-i18n="verify.errGeneric">Something went wrong verifying this link.</div>
+        <a href="register.html" class="btn-login" data-i18n="verify.backToRegistration">Back to Registration</a>
       </div>
 
     </div>
 
     <div class="card-footer">
-      <a href="login.html">← Back to Sign In</a>
+      <a href="login.html" data-i18n="verify.backToSignIn">← Back to Sign In</a>
     </div>
   </div>
 
 </div>
 
+<script src="../assets/js/i18n.js?v=9"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/supabase-auth.js"></script>
 <script src="../assets/js/api.js"></script>
@@ -215,7 +216,7 @@ input,textarea{-webkit-user-select:text;user-select:text;}
       document.getElementById('vfEmailInput').value=pendingEmail;
       show('vfExpired');
     } else if(res.status==='error'){
-      document.getElementById('vfErrorMsg').textContent=res.message||'Something went wrong verifying this link.';
+      document.getElementById('vfErrorMsg').textContent=res.message||((typeof t==='function')?t('verify.errGeneric'):'Something went wrong verifying this link.');
       show('vfError');
     } else {
       show('vfPending');
@@ -230,24 +231,25 @@ input,textarea{-webkit-user-select:text;user-select:text;}
   }
 
   async function resend(email,btn,noteId){
-    if(!email){ note(noteId,'Please enter your email address.',true); return; }
+    var tt=(typeof t==='function')?t:function(k){return k;};
+    if(!email){ note(noteId,tt('verify.errEnterEmail'),true); return; }
     var orig=btn.textContent;
-    btn.disabled=true; btn.textContent='Sending…';
+    btn.disabled=true; btn.textContent=tt('verify.sending');
     try{
       if(typeof zyResend==='undefined') throw new Error('Auth service not configured.');
       await zyResend(email);
-      note(noteId,'Verification email resent. Please check your inbox.',false);
+      note(noteId,tt('verify.resentSuccess'),false);
     }catch(err){
       console.error('[Verify] resend failed:', err);
       var status=err&&(err.status||(err.context&&err.context.status));
       var rawMsg=(err&&err.message)||'';
       var m;
       if(status===504||/gateway timeout/i.test(rawMsg)){
-        m='The server took too long to respond. Please wait a moment and try again.';
+        m=tt('verify.errGatewayTimeout');
       } else if(/failed to fetch|networkerror|load failed/i.test(rawMsg)){
-        m='Could not reach the server. Please check your connection and try again.';
+        m=tt('verify.errNetworkFailure');
       } else {
-        m=rawMsg||'Could not resend email. Please try again.';
+        m=rawMsg||tt('verify.errResendFailed');
       }
       note(noteId,m,true);
     }

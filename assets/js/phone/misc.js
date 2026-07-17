@@ -60,7 +60,8 @@ async function loadPortfolioData(){
     holdingsData=top8.map(function(h){ return {label:h.name, v:+h.pct.toFixed(1)}; });
     var top3Total=holdings.slice(0,3).reduce(function(s,h){return s+h.pct;},0);
     var holdSum=document.getElementById('holdSummary');
-    if(holdSum) holdSum.textContent='Top 3 Holdings '+top3Total.toFixed(2)+'% \u00a0\u00b7\u00a0 Latest Update '+latest.fy;
+    var ttHold=(typeof t==='function')?t:function(k){return k;};
+    if(holdSum) holdSum.textContent=ttHold('fund.top3HoldingsPrefix')+top3Total.toFixed(2)+'% \u00a0\u00b7\u00a0'+ttHold('fund.latestUpdatePrefix')+latest.fy;
 
     // Sector Allocation — aggregate by sector
     var secMap={};
@@ -68,7 +69,7 @@ async function loadPortfolioData(){
     var secEntries=Object.keys(secMap).map(function(k){return {label:k,v:secMap[k]};}).sort(function(a,b){return b.v-a.v;});
     sectorData=applyPortfolioColors(secEntries);
     var secSum=document.getElementById('sectorSummary');
-    if(secSum) secSum.textContent='As at '+latest.fy;
+    if(secSum) secSum.textContent=((typeof t==='function')?t('fund.asAtPrefix'):'As at ')+latest.fy;
 
     // Product Allocation — aggregate by product
     var prodMap={};
@@ -76,7 +77,7 @@ async function loadPortfolioData(){
     var prodEntries=Object.keys(prodMap).map(function(k){return {label:k,v:prodMap[k]};}).sort(function(a,b){return b.v-a.v;});
     productData=applyPortfolioColors(prodEntries);
     var prodSum=document.getElementById('productSummary');
-    if(prodSum) prodSum.textContent='As at '+latest.fy;
+    if(prodSum) prodSum.textContent=((typeof t==='function')?t('fund.asAtPrefix'):'As at ')+latest.fy;
 
     portfolioLoaded=true;
     drawHoldingsChart();
@@ -229,7 +230,7 @@ document.addEventListener('click',function(e){if(e.target.closest('.ownership-op
 
 // ── FINANCIAL RESULTS DETAIL (chart + full table, per statement type) ──
 var finDetailMode=null;
-var FIN_DETAIL_TITLES={is:'Income Statement',bs:'Balance Sheet',cf:'Cash Flows',ra:'Ratio Analysis'};
+var FIN_DETAIL_TITLES={is:'fund.incomeStatement',bs:'fund.balanceSheet',cf:'fund.cashFlows',ra:'fund.ratioAnalysis'};
 function openFinDetail(mode){
   finDetailMode=mode;
   var resultsBody=document.getElementById('ftab-results-body');
@@ -239,7 +240,8 @@ function openFinDetail(mode){
   var scroll=document.getElementById('mainScroll');
   if(scroll) scroll.scrollTop=0;
   var titleEl=document.getElementById('finDetailTitle');
-  if(titleEl) titleEl.textContent=FIN_DETAIL_TITLES[mode]||'';
+  var titleKey=FIN_DETAIL_TITLES[mode];
+  if(titleEl) titleEl.textContent=titleKey?((typeof t==='function')?t(titleKey):titleKey):'';
   renderFinDetail();
 }
 function closeFinDetail(){

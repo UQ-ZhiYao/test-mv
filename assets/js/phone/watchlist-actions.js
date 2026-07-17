@@ -49,7 +49,7 @@ async function drawWatchlistList(){
   var editItem=document.getElementById('wlEditListItem');
   if(!list) return;
   var items=WATCHLIST_ITEMS||[];
-  if(timeEl){var d=new Date(),h=d.getHours(),m=d.getMinutes();timeEl.textContent='Updated '+(h%12||12)+':'+(m<10?'0':'')+m+(h>=12?' PM':' AM');}
+  if(timeEl){var ttT=(typeof t==='function')?t:function(k){return k;};var d=new Date(),h=d.getHours(),m=d.getMinutes();timeEl.textContent=ttT('fund.updatedPrefix')+(h%12||12)+':'+(m<10?'0':'')+m+(h>=12?' '+ttT('watchlist.pm'):' '+ttT('watchlist.am'));}
   if(editItem){
     var hasItems=items.length>0;
     editItem.style.opacity=hasItems?'1':'.4';
@@ -108,7 +108,7 @@ function wlRowHTML(d,i,total,q){
   var priceTxt=q?wlFmtPrice(q.regularMarketPrice):'—';
   var sub=zyInstrumentSubline(d.ticker,d.code);
   var removeBtn=WL_EDIT_MODE
-    ? '<button data-wl-rm="'+d.id+'" style="background:none;border:none;cursor:pointer;padding:4px;margin-left:10px;color:var(--red);flex-shrink:0;" title="Remove">'
+    ? '<button data-wl-rm="'+d.id+'" style="background:none;border:none;cursor:pointer;padding:4px;margin-left:10px;color:var(--red);flex-shrink:0;" title="'+((typeof t==='function')?t('watchlist.remove'):'Remove')+'">'
       +'<svg width="18" height="18" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="8" x2="16" y2="16"/><line x1="16" y1="8" x2="8" y2="16"/></svg>'
       +'</button>'
     : '';
@@ -135,17 +135,18 @@ function toggleWlEditMode(){
 }
 function updateWlEditLabel(){
   var label=document.getElementById('wlEditLabel');
-  if(label) label.textContent=WL_EDIT_MODE?'Done':'Edit List';
+  var ttWl=(typeof t==='function')?t:function(k){return k;};
+  if(label) label.textContent=WL_EDIT_MODE?ttWl('watchlist.done'):ttWl('watchlist.editList');
 }
 async function removeWlItem(id){
   if(!AUTH_USER) return;
   try{
     await mpRemoveWatchlistItem(AUTH_USER.id,id);
     WATCHLIST_ITEMS=(WATCHLIST_ITEMS||[]).filter(function(w){return String(w.id)!==String(id);});
-    showToastM('Removed from watchlist');
+    showToastM((typeof t==='function')?t('watchlist.toastRemoved'):'Removed from watchlist');
     drawWatchlistList();
   }catch(e){
-    showToastM('Could not remove — please try again');
+    showToastM((typeof t==='function')?t('watchlist.toastRemoveFailed'):'Could not remove — please try again');
   }
 }
 
@@ -157,29 +158,31 @@ async function removeWlItem(id){
 // (via toggleWlItem() below) instead of opening Instrument Detail.
 function openWlSearch(){
   SEARCH_MODE='add-watchlist';
-  document.getElementById('globalSearchInput').placeholder='Search instruments to add…';
+  var tt=(typeof t==='function')?t:function(k){return k;};
+  document.getElementById('globalSearchInput').placeholder=tt('search.placeholderAdd');
   var label=document.getElementById('searchRecentLabel');
-  if(label) label.textContent='All Instruments';
+  if(label) label.textContent=tt('search.allInstruments');
   openSearchOverlay();
 }
 async function toggleWlItem(code){
   if(!AUTH_USER) return;
   var existing=(WATCHLIST_ITEMS||[]).find(function(w){return w.code===code;});
   try{
+    var ttToggle=(typeof t==='function')?t:function(k){return k;};
     if(existing){
       await mpRemoveWatchlistItem(AUTH_USER.id,existing.id);
       WATCHLIST_ITEMS=WATCHLIST_ITEMS.filter(function(w){return w.id!==existing.id;});
-      showToastM('Removed from watchlist');
+      showToastM(ttToggle('watchlist.toastRemoved'));
     }else{
       var inst=(SEARCH_INSTRUMENTS||[]).find(function(u){return u.code===code;});
       if(!inst) return;
-      if((WATCHLIST_ITEMS||[]).length>=50){showToastM('Max 50 items in watchlist');return;}
+      if((WATCHLIST_ITEMS||[]).length>=50){showToastM(ttToggle('watchlist.toastMax50'));return;}
       await mpAddWatchlistItem(AUTH_USER.id,inst);
       WATCHLIST_ITEMS=await mpLoadWatchlist(AUTH_USER.id); // refetch to pick up the new row's id
-      showToastM('Added to watchlist');
+      showToastM(ttToggle('watchlist.toastAdded'));
     }
   }catch(e){
-    showToastM('Could not update watchlist — please try again');
+    showToastM((typeof t==='function')?t('watchlist.toastUpdateFailed'):'Could not update watchlist — please try again');
     return;
   }
   // Re-render whichever of the search overlay's lists is currently

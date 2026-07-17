@@ -22,7 +22,7 @@
       <div class="back-bar">
         <button class="back-btn" onclick="typeof switchTab!=='undefined'?switchTab('portfolio'):history.back()">
           <svg width="18" height="18" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
+          <span data-i18n="market.back">Back</span>
         </button>
         <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">ZY-Invest</span>
         <div style="width:60px;"></div>
@@ -39,7 +39,7 @@
         <svg id="adAcctIconPa" width="20" height="20" viewBox="0 0 24 24" fill="var(--blue)" stroke="none"><path d="M19 5H5a3 3 0 00-3 3v8a3 3 0 003 3h14a3 3 0 003-3v-1h-5a3 3 0 010-6h5V8a3 3 0 00-3-3z"/><path d="M21 11h-5a1 1 0 000 2h5v-2z"/></svg>
         <svg id="adAcctIconJa" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="var(--blue)" stroke="none"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
         <select id="adAcctSelect" class="ad-acct-select" onchange="switchAdAccount(this.value)">
-          <option value="pa">Personal Account</option>
+          <option value="pa" data-i18n="portfolio.personalAccount">Personal Account</option>
         </select>
       </div>
 
@@ -47,10 +47,10 @@
            #adtab-profile-btn is hidden unless the joint account is being
            viewed (see renderAccountDetails() in profile-account.js). -->
       <div style="display:flex;gap:0;padding:0 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:10;overflow-x:auto;scrollbar-width:none;">
-        <button id="adtab-assets-btn" onclick="switchAcctDetailTab('assets')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--blue);background:none;border:none;border-bottom:2px solid var(--blue);padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Assets</button>
-        <button id="adtab-principal-btn" onclick="switchAcctDetailTab('principal')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Principal</button>
-        <button id="adtab-distribution-btn" onclick="switchAcctDetailTab('distribution')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Distribution</button>
-        <button id="adtab-profile-btn" onclick="switchAcctDetailTab('profile')" style="display:none;font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Profile</button>
+        <button id="adtab-assets-btn" onclick="switchAcctDetailTab('assets')" data-i18n="accountdetails.tabAssets" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--blue);background:none;border:none;border-bottom:2px solid var(--blue);padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Assets</button>
+        <button id="adtab-principal-btn" onclick="switchAcctDetailTab('principal')" data-i18n="accountdetails.tabPrincipal" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Principal</button>
+        <button id="adtab-distribution-btn" onclick="switchAcctDetailTab('distribution')" data-i18n="accountdetails.tabDistribution" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Distribution</button>
+        <button id="adtab-profile-btn" onclick="switchAcctDetailTab('profile')" data-i18n="accountdetails.tabProfile" style="display:none;font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Profile</button>
       </div>
 
       <!-- ── ASSETS TAB — one grey box: Net Assets header, then a 3-column
@@ -61,32 +61,32 @@
            profile-account.js. ── -->
       <div id="adtab-assets-body" style="padding:16px 16px 32px;">
         <div style="background:var(--gray-100);border-radius:12px;padding:16px 14px;">
-          <div style="font-size:.75rem;color:var(--fg-3);margin-bottom:4px;">Net Assets <span style="font-weight:400;">· MYR</span></div>
+          <div style="font-size:.75rem;color:var(--fg-3);margin-bottom:4px;"><span data-i18n="accountdetails.netAssets">Net Assets</span> <span style="font-weight:400;">· MYR</span></div>
           <div style="font-size:1.4rem;font-weight:700;color:var(--fg-1);margin-bottom:16px;" id="adNetAssets">0.00</div>
 
           <div style="display:grid;grid-template-columns:36fr 36fr 28fr;gap:10px;margin-bottom:14px;">
-            <div><div class="ad-stat-lbl">Unit Held</div><div class="ad-stat-val" id="adUnitsHeld">0.00</div></div>
-            <div><div class="ad-stat-lbl">Avg Cost</div><div class="ad-stat-val" id="adAvgCost">0.0000</div></div>
-            <div style="text-align:right;"><div class="ad-stat-lbl">Latest Price</div><div class="ad-stat-val" id="adLatestPrice">0.0000</div></div>
+            <div><div class="ad-stat-lbl" data-i18n="accountdetails.unitHeld">Unit Held</div><div class="ad-stat-val" id="adUnitsHeld">0.00</div></div>
+            <div><div class="ad-stat-lbl" data-i18n="accountdetails.avgCost">Avg Cost</div><div class="ad-stat-val" id="adAvgCost">0.0000</div></div>
+            <div style="text-align:right;"><div class="ad-stat-lbl" data-i18n="accountdetails.latestPrice">Latest Price</div><div class="ad-stat-val" id="adLatestPrice">0.0000</div></div>
           </div>
 
           <div style="display:grid;grid-template-columns:36fr 36fr 28fr;gap:10px;margin-bottom:14px;">
-            <div><div class="ad-stat-lbl">Unrealized Return</div><div class="ad-stat-val" id="adUnrealized">0.00</div></div>
-            <div><div class="ad-stat-lbl">Realized Return</div><div class="ad-stat-val" id="adRealized">0.00</div></div>
-            <div style="text-align:right;"><div class="ad-stat-lbl">Dividend Received</div><div class="ad-stat-val" id="adDividendReceived">0.00</div></div>
+            <div><div class="ad-stat-lbl" data-i18n="accountdetails.unrealizedReturn">Unrealized Return</div><div class="ad-stat-val" id="adUnrealized">0.00</div></div>
+            <div><div class="ad-stat-lbl" data-i18n="accountdetails.realizedReturn">Realized Return</div><div class="ad-stat-val" id="adRealized">0.00</div></div>
+            <div style="text-align:right;"><div class="ad-stat-lbl" data-i18n="accountdetails.dividendReceived">Dividend Received</div><div class="ad-stat-val" id="adDividendReceived">0.00</div></div>
           </div>
 
           <div style="display:grid;grid-template-columns:36fr 36fr 28fr;gap:10px;">
-            <div><div class="ad-stat-lbl">Total Return</div><div class="ad-stat-val" id="adTotalReturn">0.00</div></div>
-            <div><div class="ad-stat-lbl">Return %</div><div class="ad-stat-val" id="adReturnPct">0.00%</div></div>
+            <div><div class="ad-stat-lbl" data-i18n="accountdetails.totalReturn">Total Return</div><div class="ad-stat-val" id="adTotalReturn">0.00</div></div>
+            <div><div class="ad-stat-lbl" data-i18n="accountdetails.returnPct">Return %</div><div class="ad-stat-val" id="adReturnPct">0.00%</div></div>
             <div style="text-align:right;"></div>
           </div>
 
           <div style="border-top:1px solid var(--border);margin:14px 0;"></div>
 
           <div style="display:grid;grid-template-columns:36fr 36fr 28fr;gap:10px;">
-            <div><div class="ad-stat-lbl">Period</div><div class="ad-stat-val" id="adPeriodDays">0 days</div></div>
-            <div><div class="ad-stat-lbl">IRR</div><div class="ad-stat-val" id="adIrr">—</div></div>
+            <div><div class="ad-stat-lbl" data-i18n="accountdetails.period">Period</div><div class="ad-stat-val" id="adPeriodDays">0 days</div></div>
+            <div><div class="ad-stat-lbl" data-i18n="accountdetails.irr">IRR</div><div class="ad-stat-val" id="adIrr">—</div></div>
             <div style="text-align:right;"></div>
           </div>
         </div>
@@ -111,8 +111,8 @@
            PIN popup below until unlocked for this session. ── -->
       <div id="adtab-profile-body" style="display:none;padding:16px 16px 32px;">
         <div id="adProfileLocked" style="text-align:center;padding:40px 20px;">
-          <div style="font-size:.85rem;color:var(--fg-3);margin-bottom:14px;">Enter your PIN to view co-holder details.</div>
-          <button onclick="openAdPin()" style="padding:12px 20px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.88rem;font-weight:700;cursor:pointer;">Unlock</button>
+          <div style="font-size:.85rem;color:var(--fg-3);margin-bottom:14px;" data-i18n="accountdetails.enterPinCoHolder">Enter your PIN to view co-holder details.</div>
+          <button onclick="openAdPin()" data-i18n="applock.unlock" style="padding:12px 20px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.88rem;font-weight:700;cursor:pointer;">Unlock</button>
         </div>
         <div id="adCoHolderList" style="display:none;"></div>
       </div>
@@ -124,8 +124,8 @@
            viewport regardless of this nesting depth. -->
       <div id="adPinScrim" onclick="closeAdPin()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;"></div>
       <div id="adPinModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(100% - 48px);max-width:340px;background:#fff;border-radius:16px;padding:24px;z-index:101;box-shadow:0 8px 40px rgba(0,0,0,.18);">
-        <div style="font-size:1.05rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;">Enter PIN</div>
-        <div style="font-size:.82rem;color:var(--fg-3);margin-bottom:18px;line-height:1.5;">Enter your 6-digit PIN to view co-holder details.</div>
+        <div style="font-size:1.05rem;font-weight:700;color:var(--fg-1);margin-bottom:6px;" data-i18n="applock.enterPin">Enter PIN</div>
+        <div style="font-size:.82rem;color:var(--fg-3);margin-bottom:18px;line-height:1.5;" data-i18n="accountdetails.enterPin6CoHolder">Enter your 6-digit PIN to view co-holder details.</div>
         <!-- Boxed PIN input — setupPinBoxes()/getPinBoxesValue() etc. are
              the same helpers profile-account.js already defines for the
              Password & Security page's PIN boxes, reused here (embedded
@@ -140,8 +140,8 @@
         </div>
         <div id="adPinErr" style="display:none;color:var(--red);font-size:.78rem;margin-top:8px;text-align:center;"></div>
         <div style="display:flex;gap:10px;margin-top:18px;">
-          <button onclick="closeAdPin()" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:none;color:var(--fg-2);font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;">Cancel</button>
-          <button onclick="submitAdPin()" style="flex:1;padding:13px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;">Confirm</button>
+          <button onclick="closeAdPin()" data-i18n="profile.cancel" style="flex:1;padding:13px;border-radius:12px;border:1.5px solid var(--border);background:none;color:var(--fg-2);font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;">Cancel</button>
+          <button onclick="submitAdPin()" data-i18n="profile.confirm" style="flex:1;padding:13px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;">Confirm</button>
         </div>
       </div>
 

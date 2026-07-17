@@ -27,15 +27,15 @@
           </div>
           <div style="display:flex;flex-direction:column;gap:4px;padding-top:4px;min-width:90px;">
             <div style="display:flex;justify-content:space-between;gap:12px;">
-              <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);">Open</div>
+              <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);" data-i18n="fund.open">Open</div>
               <div id="fsOpen" style="font-size:.78rem;color:var(--fg-1);">-</div>
             </div>
             <div style="display:flex;justify-content:space-between;gap:12px;">
-              <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);">High</div>
+              <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);" data-i18n="fund.high">High</div>
               <div id="fsHigh" style="font-size:.78rem;color:var(--fg-1);">-</div>
             </div>
             <div style="display:flex;justify-content:space-between;gap:12px;">
-              <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);">Low</div>
+              <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);" data-i18n="fund.low">Low</div>
               <div id="fsLow" style="font-size:.78rem;color:var(--fg-1);">-</div>
             </div>
           </div>
@@ -45,33 +45,33 @@
         <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:0;">
           <!-- Row 1 -->
           <div style="padding:8px 6px 8px 0;">
-            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;">52Wk High</div>
+            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;" data-i18n="fund.wk52High">52Wk High</div>
             <div id="fs52High" style="font-size:.78rem;color:var(--fg-1);">-</div>
           </div>
           <div style="padding:8px 6px;">
-            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;">52Wk Low</div>
+            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;" data-i18n="fund.wk52Low">52Wk Low</div>
             <div id="fs52Low" style="font-size:.78rem;color:var(--fg-1);">-</div>
           </div>
           <div style="padding:8px 0 8px 6px;text-align:right;">
-            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;">Total Shares</div>
+            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;" data-i18n="fund.totalShares">Total Shares</div>
             <div id="fsShares" style="font-size:.78rem;color:var(--fg-1);">-</div>
           </div>
           <!-- Row 2 -->
           <div style="padding:8px 6px 8px 0;">
-            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;">Dividend</div>
+            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;" data-i18n="fund.dividend">Dividend</div>
             <div id="fsDividend" style="font-size:.78rem;color:var(--fg-1);">-</div>
           </div>
           <div style="padding:8px 6px;">
-            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;">Yield</div>
+            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;" data-i18n="fund.yield">Yield</div>
             <div id="fsYield" style="font-size:.78rem;color:var(--fg-1);">-</div>
           </div>
           <div style="padding:8px 0 8px 6px;text-align:right;">
-            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;">Market Value</div>
+            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;" data-i18n="fund.marketValue">Market Value</div>
             <div id="fsMarketValue" style="font-size:.78rem;color:var(--fg-1);">24.6 M</div>
           </div>
           <!-- Row 3 -->
           <div style="padding:8px 6px 8px 0;grid-column:1/-1;">
-            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;">Avg Cost</div>
+            <div style="font-size:.56rem;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:3px;" data-i18n="fund.avgCost">Avg Cost</div>
             <div id="fsAvgCost" style="font-size:.78rem;color:var(--fg-1);">-</div>
           </div>
         </div>
@@ -82,23 +82,23 @@
 
       <!-- ── FUND TABS ── -->
       <div style="display:flex;gap:0;padding:0 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:10;overflow-x:auto;scrollbar-width:none;">
-        <button id="ftab-chart-btn" onclick="switchFundTab2('chart')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--blue);background:none;border:none;border-bottom:2px solid var(--blue);padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Chart</button>
-        <button id="ftab-profile-btn" onclick="switchFundTab2('profile')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Profile</button>
-        <button id="ftab-results-btn" onclick="switchFundTab2('results')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Results</button>
-        <button id="ftab-portfolio-btn" onclick="switchFundTab2('portfolio')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Portfolio</button>
-        <button id="ftab-shareholder-btn" onclick="switchFundTab2('shareholder')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Shareholder</button>
+        <button id="ftab-chart-btn" onclick="switchFundTab2('chart')" data-i18n="fund.tabChart" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--blue);background:none;border:none;border-bottom:2px solid var(--blue);padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Chart</button>
+        <button id="ftab-profile-btn" onclick="switchFundTab2('profile')" data-i18n="fund.tabProfile" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Profile</button>
+        <button id="ftab-results-btn" onclick="switchFundTab2('results')" data-i18n="fund.tabResults" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Results</button>
+        <button id="ftab-portfolio-btn" onclick="switchFundTab2('portfolio')" data-i18n="fund.tabPortfolio" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Portfolio</button>
+        <button id="ftab-shareholder-btn" onclick="switchFundTab2('shareholder')" data-i18n="fund.tabShareholder" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Shareholder</button>
       </div>
       <div id="ftab-chart-body" style="padding:0 0 32px;">
         <div style="position:relative;overflow:visible;">
           <div id="candleInfoBox" style="display:none;position:absolute;top:0;transform:translateY(-100%);left:0;right:0;z-index:20;background:#fff;border:1px solid var(--border);border-left:none;border-right:none;padding:6px 16px 8px;pointer-events:none;">
             <div id="ci-date" style="font-size:.68rem;font-weight:700;color:var(--fg-2);margin-bottom:5px;"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px 0;">
-              <div><div id="ci-ol" style="font-size:.58rem;color:var(--fg-3);">Open</div><div id="ci-ov" style="font-size:.78rem;font-weight:600;color:var(--fg-1);"></div></div>
-              <div><div id="ci-hl" style="font-size:.58rem;color:var(--fg-3);">High</div><div id="ci-hv" style="font-size:.78rem;font-weight:600;color:var(--green);"></div></div>
-              <div><div id="ci-cl2" style="font-size:.58rem;color:var(--fg-3);">Chg</div><div id="ci-cv" style="font-size:.78rem;font-weight:600;"></div></div>
-              <div><div id="ci-cll" style="font-size:.58rem;color:var(--fg-3);">Close</div><div id="ci-clv" style="font-size:.78rem;font-weight:600;color:var(--fg-1);"></div></div>
-              <div><div id="ci-ll" style="font-size:.58rem;color:var(--fg-3);">Low</div><div id="ci-lv" style="font-size:.78rem;font-weight:600;color:var(--red);"></div></div>
-              <div><div id="ci-pl" style="font-size:.58rem;color:var(--fg-3);">Chg%</div><div id="ci-pv" style="font-size:.78rem;font-weight:600;"></div></div>
+              <div><div id="ci-ol" data-i18n="fund.open" style="font-size:.58rem;color:var(--fg-3);">Open</div><div id="ci-ov" style="font-size:.78rem;font-weight:600;color:var(--fg-1);"></div></div>
+              <div><div id="ci-hl" data-i18n="fund.high" style="font-size:.58rem;color:var(--fg-3);">High</div><div id="ci-hv" style="font-size:.78rem;font-weight:600;color:var(--green);"></div></div>
+              <div><div id="ci-cl2" data-i18n="fund.ciChg" style="font-size:.58rem;color:var(--fg-3);">Chg</div><div id="ci-cv" style="font-size:.78rem;font-weight:600;"></div></div>
+              <div><div id="ci-cll" data-i18n="fund.ciClose" style="font-size:.58rem;color:var(--fg-3);">Close</div><div id="ci-clv" style="font-size:.78rem;font-weight:600;color:var(--fg-1);"></div></div>
+              <div><div id="ci-ll" data-i18n="fund.low" style="font-size:.58rem;color:var(--fg-3);">Low</div><div id="ci-lv" style="font-size:.78rem;font-weight:600;color:var(--red);"></div></div>
+              <div><div id="ci-pl" data-i18n="fund.ciChgPct" style="font-size:.58rem;color:var(--fg-3);">Chg%</div><div id="ci-pv" style="font-size:.78rem;font-weight:600;"></div></div>
             </div>
           </div>
           <canvas id="candleChart" style="width:100%;display:block;"></canvas>
@@ -115,9 +115,9 @@
           </div>
           <div style="flex:1;display:flex;justify-content:center;align-items:center;">
             <select id="candleDataType" onchange="drawCandleChart(activeCPeriod,null,null)" style="font:inherit;font-size:.7rem;font-weight:600;color:var(--fg-2);background:none;border:none;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;text-align:center;text-align-last:center;-moz-text-align-last:center;width:100%;">
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
+              <option value="weekly" data-i18n="fund.candleWeekly">Weekly</option>
+              <option value="monthly" data-i18n="fund.candleMonthly">Monthly</option>
+              <option value="quarterly" data-i18n="fund.candleQuarterly">Quarterly</option>
             </select>
           </div>
         </div>
@@ -125,7 +125,7 @@
         <!-- ── CORRELATION MATRIX ── -->
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;letter-spacing:.04em;color:var(--fg-1);margin-bottom:10px;">Correlation Matrix</div>
+          <div style="font-size:.85rem;font-weight:700;letter-spacing:.04em;color:var(--fg-1);margin-bottom:10px;" data-i18n="fund.correlationMatrix">Correlation Matrix</div>
           <div id="corrDataNotice" style="display:none;font-size:.72rem;color:var(--fg-3);background:var(--gray-50);border-radius:8px;padding:8px 10px;margin-bottom:10px;"></div>
           <div id="corrMatrixWrap"></div>
         </div>
@@ -134,7 +134,7 @@
         <!-- ── SHARPE RATIO ── -->
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;letter-spacing:.04em;color:var(--fg-1);margin-bottom:12px;">Sharpe Ratio</div>
+          <div style="font-size:.85rem;font-weight:700;letter-spacing:.04em;color:var(--fg-1);margin-bottom:12px;" data-i18n="fund.sharpeRatio">Sharpe Ratio</div>
           <div style="position:relative;">
             <canvas id="rvChart" style="width:100%;display:block;"></canvas>
             <div id="rvTooltip" style="display:none;position:absolute;background:#0F172A;color:#fff;border-radius:8px;padding:8px 10px;font-size:.65rem;font-weight:600;pointer-events:none;white-space:nowrap;z-index:10;"></div>
@@ -146,9 +146,9 @@
         <!-- Company Overview -->
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;">Company Overview</div>
-          <p style="font-size:.78rem;color:var(--fg-2);line-height:1.65;text-align:justify;margin-bottom:10px;">ZY-Invest Investment Holdings is a family private fund. The fund focuses on equity growth across ASEAN markets, combining quantitative screening with fundamental analysis to deliver consistent risk-adjusted return for.</p>
-          <p style="font-size:.78rem;color:var(--fg-2);line-height:1.65;text-align:justify;margin-bottom:14px;">Established in 2021, the fund has grown its assets under management to <span id="poMarketCap">—</span>. The fund is benchmarked against FBMKLCI and operates as an closed-ended equity fund with a minimum investment of RM 10,000 and an annual management fee up to 1.50%.</p>
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;" data-i18n="fund.companyOverview">Company Overview</div>
+          <p style="font-size:.78rem;color:var(--fg-2);line-height:1.65;text-align:justify;margin-bottom:10px;" data-i18n="fund.companyOverviewP1">ZY-Invest Investment Holdings is a family private fund. The fund focuses on equity growth across ASEAN markets, combining quantitative screening with fundamental analysis to deliver consistent risk-adjusted return for.</p>
+          <p style="font-size:.78rem;color:var(--fg-2);line-height:1.65;text-align:justify;margin-bottom:14px;"><span data-i18n="fund.companyOverviewP2a">Established in 2021, the fund has grown its assets under management to </span><span id="poMarketCap">—</span><span data-i18n="fund.companyOverviewP2b">. The fund is benchmarked against FBMKLCI and operates as an closed-ended equity fund with a minimum investment of RM 10,000 and an annual management fee up to 1.50%.</span></p>
         </div>
 
         <div style="border-top:1px solid var(--border);margin:32px 16px 0;"></div>
@@ -156,31 +156,31 @@
         <!-- Fund Overview -->
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:14px;">Fund Overview</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:14px;" data-i18n="fund.fundOverview">Fund Overview</div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;gap:0;">
-              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);">Name</div>
+              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);" data-i18n="fund.name">Name</div>
               <div style="flex:2;font-size:.74rem;color:var(--fg-1);padding:7px 0 7px 8px;border-bottom:1px solid var(--border);text-align:right;">ZY-Invest</div>
             </div>
             <div style="display:flex;gap:0;">
-              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);">Manager</div>
+              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);" data-i18n="fund.manager">Manager</div>
               <div style="flex:2;font-size:.74rem;color:var(--fg-1);padding:7px 0 7px 8px;border-bottom:1px solid var(--border);text-align:right;">Mr. Ng Zhi Yao</div>
             </div>
             <div style="display:flex;gap:0;">
-              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);">Fund Size</div>
+              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);" data-i18n="fund.fundSize">Fund Size</div>
               <div style="flex:2;font-size:.74rem;color:var(--fg-1);padding:7px 0 7px 8px;border-bottom:1px solid var(--border);text-align:right;" id="foFundSize">—</div>
             </div>
             <div style="display:flex;gap:0;">
-              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);">Issued Units</div>
+              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);" data-i18n="fund.issuedUnits">Issued Units</div>
               <div style="flex:2;font-size:.74rem;color:var(--fg-1);padding:7px 0 7px 8px;border-bottom:1px solid var(--border);text-align:right;" id="foIssuedUnits">—</div>
             </div>
             <div style="display:flex;gap:0;">
-              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);">Allocation</div>
-              <div style="flex:2;font-size:.74rem;color:var(--fg-1);padding:7px 0 7px 8px;border-bottom:1px solid var(--border);text-align:right;">85% Equity · 15% Cash</div>
+              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;border-bottom:1px solid var(--border);" data-i18n="fund.allocation">Allocation</div>
+              <div style="flex:2;font-size:.74rem;color:var(--fg-1);padding:7px 0 7px 8px;border-bottom:1px solid var(--border);text-align:right;" data-i18n="fund.allocationValue">85% Equity · 15% Cash</div>
             </div>
             <div style="display:flex;gap:0;">
-              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;">Management Fee</div>
-              <div style="flex:2;font-size:.74rem;color:var(--fg-1);padding:7px 0 7px 8px;text-align:right;">up to 1.50% per annum</div>
+              <div style="flex:1;font-size:.74rem;color:var(--fg-3);font-weight:600;padding:7px 0;" data-i18n="fund.managementFee">Management Fee</div>
+              <div style="flex:2;font-size:.74rem;color:var(--fg-1);padding:7px 0 7px 8px;text-align:right;" data-i18n="fund.managementFeeValue">up to 1.50% per annum</div>
             </div>
           </div>
         </div>
@@ -190,12 +190,12 @@
         <!-- Executives -->
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:14px;">Executives</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:14px;" data-i18n="fund.executives">Executives</div>
           <div style="display:flex;flex-direction:column;gap:16px;">
             <div>
               <div style="font-size:.82rem;font-weight:700;color:var(--fg-1);">Mr. Ng Zhi Yao</div>
-              <div style="font-size:.72rem;color:var(--blue);font-weight:600;margin-top:1px;margin-bottom:5px;">Founder · Chief Executive Officer</div>
-              <p style="font-size:.76rem;color:var(--fg-2);line-height:1.65;text-align:justify;">With 5 years in asset management, Mr. Ng Zhi Yao holds a degree certificate of Actuarial Science and currently pursing his Master of Financial Mathematics in UQ.</p>
+              <div style="font-size:.72rem;color:var(--blue);font-weight:600;margin-top:1px;margin-bottom:5px;" data-i18n="fund.executiveTitle">Founder · Chief Executive Officer</div>
+              <p style="font-size:.76rem;color:var(--fg-2);line-height:1.65;text-align:justify;" data-i18n="fund.executiveBio">With 5 years in asset management, Mr. Ng Zhi Yao holds a degree certificate of Actuarial Science and currently pursing his Master of Financial Mathematics in UQ.</p>
             </div>
           </div>
         </div>
@@ -205,12 +205,12 @@
         <div class="fund-tab-lock" id="ftab-results-lock">
           <div class="fund-tab-lock-inner">
             <div class="fund-tab-lock-icon"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
-            <div class="fund-tab-lock-title">Restricted Account</div>
+            <div class="fund-tab-lock-title" data-i18n="fund.restrictedTitle">Restricted Account</div>
             <!-- Email filled in by zyFillSupportEmailText() (misc.js), not
                  written as literal text — see the comment in
                  phone/inquiry.html for why (Cloudflare Email Address
                  Obfuscation + this page being injected via innerHTML). -->
-            <div class="fund-tab-lock-sub">This account is not qualified for those information. Please contact us at <span class="zy-support-email"></span></div>
+            <div class="fund-tab-lock-sub"><span data-i18n="fund.restrictedSub">This account is not qualified for those information. Please contact us at </span><span class="zy-support-email"></span></div>
           </div>
         </div>
 
@@ -218,14 +218,14 @@
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);">Income Statement</div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="fund.incomeStatement">Income Statement</div>
             <button onclick="openFinDetail('is')" style="font:inherit;font-size:.85rem;font-weight:600;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;">›</button>
           </div>
           <!-- metric tabs -->
           <div style="display:flex;gap:6px;margin-bottom:14px;">
-            <button id="is-tab-revenue" onclick="switchISTab('revenue')" style="font:inherit;font-size:.73rem;font-weight:600;color:#0F172A;background:#fff;border:1.5px solid #0F172A;border-radius:6px;padding:5px 12px;cursor:pointer;">Revenue</button>
-            <button id="is-tab-gp" onclick="switchISTab('gp')" style="font:inherit;font-size:.73rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:5px 12px;cursor:pointer;">Gross Profit</button>
-            <button id="is-tab-ni" onclick="switchISTab('ni')" style="font:inherit;font-size:.73rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:5px 12px;cursor:pointer;">Net Income</button>
+            <button id="is-tab-revenue" onclick="switchISTab('revenue')" data-i18n="fund.revenue" style="font:inherit;font-size:.73rem;font-weight:600;color:#0F172A;background:#fff;border:1.5px solid #0F172A;border-radius:6px;padding:5px 12px;cursor:pointer;">Revenue</button>
+            <button id="is-tab-gp" onclick="switchISTab('gp')" data-i18n="fund.grossProfit" style="font:inherit;font-size:.73rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:5px 12px;cursor:pointer;">Gross Profit</button>
+            <button id="is-tab-ni" onclick="switchISTab('ni')" data-i18n="fund.netIncome" style="font:inherit;font-size:.73rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:5px 12px;cursor:pointer;">Net Income</button>
           </div>
           <canvas id="isChart" style="width:100%;display:block;"></canvas>
         </div>
@@ -236,7 +236,7 @@
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);">Balance Sheet</div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="fund.balanceSheet">Balance Sheet</div>
             <button onclick="openFinDetail('bs')" style="font:inherit;font-size:.85rem;font-weight:600;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;">›</button>
           </div>
           <canvas id="bsChart" style="width:100%;display:block;"></canvas>
@@ -248,13 +248,13 @@
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);">Cash Flows</div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="fund.cashFlows">Cash Flows</div>
             <button onclick="openFinDetail('cf')" style="font:inherit;font-size:.85rem;font-weight:600;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;">›</button>
           </div>
           <div style="display:flex;gap:6px;margin-bottom:14px;">
-            <button id="cf-tab-op" onclick="switchCFTab('op')" style="font:inherit;font-size:.73rem;font-weight:600;color:#0F172A;background:#fff;border:1.5px solid #0F172A;border-radius:6px;padding:5px 12px;cursor:pointer;">Operating</button>
-            <button id="cf-tab-inv" onclick="switchCFTab('inv')" style="font:inherit;font-size:.73rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:5px 12px;cursor:pointer;">Investing</button>
-            <button id="cf-tab-fin" onclick="switchCFTab('fin')" style="font:inherit;font-size:.73rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:5px 12px;cursor:pointer;">Financing</button>
+            <button id="cf-tab-op" onclick="switchCFTab('op')" data-i18n="fund.operating" style="font:inherit;font-size:.73rem;font-weight:600;color:#0F172A;background:#fff;border:1.5px solid #0F172A;border-radius:6px;padding:5px 12px;cursor:pointer;">Operating</button>
+            <button id="cf-tab-inv" onclick="switchCFTab('inv')" data-i18n="fund.investing" style="font:inherit;font-size:.73rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:5px 12px;cursor:pointer;">Investing</button>
+            <button id="cf-tab-fin" onclick="switchCFTab('fin')" data-i18n="fund.financing" style="font:inherit;font-size:.73rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:5px 12px;cursor:pointer;">Financing</button>
           </div>
           <canvas id="cfChart" style="width:100%;display:block;"></canvas>
         </div>
@@ -265,18 +265,18 @@
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);">Ratio Analysis</div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="fund.ratioAnalysis">Ratio Analysis</div>
             <button onclick="openFinDetail('ra')" style="font:inherit;font-size:.85rem;font-weight:600;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;">›</button>
           </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
-            <button id="ra-tab-gps" onclick="switchRATab('gps')" style="font:inherit;font-size:.71rem;font-weight:600;color:#0F172A;background:#fff;border:1.5px solid #0F172A;border-radius:6px;padding:6px 4px;cursor:pointer;">GPS</button>
-            <button id="ra-tab-eps" onclick="switchRATab('eps')" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">EPS</button>
-            <button id="ra-tab-dps" onclick="switchRATab('dps')" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">DPS</button>
-            <button id="ra-tab-yield" onclick="switchRATab('yield')" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">Yield</button>
-            <button id="ra-tab-gross" onclick="switchRATab('gross')" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">Gross %</button>
-            <button id="ra-tab-roe" onclick="switchRATab('roe')" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">ROE</button>
-            <button id="ra-tab-shares" onclick="switchRATab('shares')" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">Issued Share</button>
-            <button id="ra-tab-turnover" onclick="switchRATab('turnover')" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">Turnover</button>
+            <button id="ra-tab-gps" onclick="switchRATab('gps')" data-i18n="fund.gps" style="font:inherit;font-size:.71rem;font-weight:600;color:#0F172A;background:#fff;border:1.5px solid #0F172A;border-radius:6px;padding:6px 4px;cursor:pointer;">GPS</button>
+            <button id="ra-tab-eps" onclick="switchRATab('eps')" data-i18n="fund.eps" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">EPS</button>
+            <button id="ra-tab-dps" onclick="switchRATab('dps')" data-i18n="fund.dps" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">DPS</button>
+            <button id="ra-tab-yield" onclick="switchRATab('yield')" data-i18n="fund.yield" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">Yield</button>
+            <button id="ra-tab-gross" onclick="switchRATab('gross')" data-i18n="fund.grossPct" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">Gross %</button>
+            <button id="ra-tab-roe" onclick="switchRATab('roe')" data-i18n="fund.roe" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">ROE</button>
+            <button id="ra-tab-shares" onclick="switchRATab('shares')" data-i18n="fund.issuedShare" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">Issued Share</button>
+            <button id="ra-tab-turnover" onclick="switchRATab('turnover')" data-i18n="fund.turnover" style="font:inherit;font-size:.71rem;font-weight:600;color:#94A3B8;background:#fff;border:1.5px solid #E2E8F0;border-radius:6px;padding:6px 4px;cursor:pointer;">Turnover</button>
           </div>
           <canvas id="raChart" style="width:100%;display:block;"></canvas>
         </div>
@@ -293,13 +293,13 @@
         </div>
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;">Chart</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;" data-i18n="fund.chart">Chart</div>
           <canvas id="finDetailChart" style="width:100%;display:block;"></canvas>
         </div>
         <div style="border-top:1px solid var(--border);margin:32px 16px 0;"></div>
         <div style="padding:16px 16px 0 16px;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;">Full Data</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;" data-i18n="fund.fullData">Full Data</div>
           <div style="overflow-x:auto;padding-bottom:24px;">
             <table id="finDetailTable" style="border-collapse:collapse;font-size:.74rem;white-space:nowrap;"></table>
           </div>
@@ -309,17 +309,17 @@
         <div class="fund-tab-lock" id="ftab-portfolio-lock">
           <div class="fund-tab-lock-inner">
             <div class="fund-tab-lock-icon"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
-            <div class="fund-tab-lock-title">Restricted Account</div>
+            <div class="fund-tab-lock-title" data-i18n="fund.restrictedTitle">Restricted Account</div>
             <!-- Email filled in by zyFillSupportEmailText() (misc.js), not
                  written as literal text — see the comment in
                  phone/inquiry.html for why (Cloudflare Email Address
                  Obfuscation + this page being injected via innerHTML). -->
-            <div class="fund-tab-lock-sub">This account is not qualified for those information. Please contact us at <span class="zy-support-email"></span></div>
+            <div class="fund-tab-lock-sub"><span data-i18n="fund.restrictedSub">This account is not qualified for those information. Please contact us at </span><span class="zy-support-email"></span></div>
           </div>
         </div>
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:4px;">Holdings</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:4px;" data-i18n="fund.holdings">Holdings</div>
           <div style="font-size:.72rem;color:var(--fg-3);margin-bottom:16px;" id="holdSummary">Top 3 Holdings — &nbsp;·&nbsp; Latest Update —</div>
           <canvas id="holdingsChart" style="width:100%;display:block;"></canvas>
         </div>
@@ -328,7 +328,7 @@
 
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:4px;">Sector Allocation</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:4px;" data-i18n="fund.sectorAllocation">Sector Allocation</div>
           <div style="font-size:.72rem;color:var(--fg-3);margin-bottom:16px;" id="sectorSummary">As at —</div>
           <canvas id="sectorChart" style="width:100%;display:block;"></canvas>
         </div>
@@ -337,7 +337,7 @@
 
         <div style="padding:16px 16px 0;">
           <div style="height:1em;"></div>
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:4px;">Product Allocation</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:4px;" data-i18n="fund.productAllocation">Product Allocation</div>
           <div style="font-size:.72rem;color:var(--fg-3);margin-bottom:16px;" id="productSummary">As at —</div>
           <canvas id="productChart" style="width:100%;display:block;"></canvas>
         </div>
@@ -347,12 +347,12 @@
         <div class="fund-tab-lock" id="ftab-shareholder-lock">
           <div class="fund-tab-lock-inner">
             <div class="fund-tab-lock-icon"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></div>
-            <div class="fund-tab-lock-title">Restricted Account</div>
+            <div class="fund-tab-lock-title" data-i18n="fund.restrictedTitle">Restricted Account</div>
             <!-- Email filled in by zyFillSupportEmailText() (misc.js), not
                  written as literal text — see the comment in
                  phone/inquiry.html for why (Cloudflare Email Address
                  Obfuscation + this page being injected via innerHTML). -->
-            <div class="fund-tab-lock-sub">This account is not qualified for those information. Please contact us at <span class="zy-support-email"></span></div>
+            <div class="fund-tab-lock-sub"><span data-i18n="fund.restrictedSub">This account is not qualified for those information. Please contact us at </span><span class="zy-support-email"></span></div>
           </div>
         </div>
         <!-- Main view -->
@@ -360,7 +360,7 @@
           <div style="padding:16px 16px 0;">
             <div style="height:1em;"></div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-              <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);">Ownership</div>
+              <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="fund.ownership">Ownership</div>
               <button class="ownership-open-btn" style="font:inherit;font-size:.82rem;color:var(--fg-3);background:none;border:none;padding:0;cursor:pointer;">›</button>
             </div>
             <div style="font-size:.72rem;color:var(--fg-3);margin-bottom:16px;" id="shMainSummary">Top 3 holders: — &nbsp;·&nbsp; As at —</div>
@@ -373,27 +373,27 @@
             <button class="ownership-close-btn" style="background:none;border:none;padding:4px 4px 4px 0;cursor:pointer;color:var(--fg-1);display:flex;align-items:center;">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
-            <div style="font-size:.88rem;font-weight:700;color:var(--fg-1);">Ownership</div>
+            <div style="font-size:.88rem;font-weight:700;color:var(--fg-1);" data-i18n="fund.ownership">Ownership</div>
           </div>
           <div style="padding:16px 16px 0;">
             <div style="height:1em;"></div>
-            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;">Overview</div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;" data-i18n="fund.overview">Overview</div>
             <div id="shareholderDetailChartWrap" style="width:100%;"></div>
           </div>
           <div style="border-top:1px solid var(--border);margin:32px 16px 0;"></div>
           <div style="padding:16px 16px 0;">
             <div style="height:1em;"></div>
-            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:4px;">Shareholder List</div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:4px;" data-i18n="fund.shareholderList">Shareholder List</div>
             <div style="font-size:.72rem;color:var(--fg-3);margin-bottom:16px;" id="shDetailSummary">As at — &nbsp;·&nbsp; Top 3 holders: —</div>
             <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
               <thead><tr style="border-bottom:1px solid var(--border);">
-                <th style="text-align:left;padding:6px 4px;font-weight:600;color:var(--fg-3);font-size:.66rem;">#</th>
-                <th style="text-align:left;padding:6px 4px;font-weight:600;color:var(--fg-3);font-size:.66rem;">Name</th>
-                <th style="text-align:right;padding:6px 4px;font-weight:600;color:var(--fg-3);font-size:.66rem;">Units</th>
-                <th style="text-align:right;padding:6px 4px;font-weight:600;color:var(--fg-3);font-size:.66rem;">Stake</th>
+                <th style="text-align:left;padding:6px 4px;font-weight:600;color:var(--fg-3);font-size:.66rem;" data-i18n="fund.rank">#</th>
+                <th style="text-align:left;padding:6px 4px;font-weight:600;color:var(--fg-3);font-size:.66rem;" data-i18n="fund.shName">Name</th>
+                <th style="text-align:right;padding:6px 4px;font-weight:600;color:var(--fg-3);font-size:.66rem;" data-i18n="fund.units">Units</th>
+                <th style="text-align:right;padding:6px 4px;font-weight:600;color:var(--fg-3);font-size:.66rem;" data-i18n="fund.stake">Stake</th>
               </tr></thead>
               <tbody id="shTableBody">
-                <tr><td colspan="4" style="padding:16px 4px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</td></tr>
+                <tr><td colspan="4" style="padding:16px 4px;text-align:center;color:var(--fg-3);font-size:.72rem;" data-i18n="fund.loading">Loading…</td></tr>
               </tbody>
             </table>
           </div>

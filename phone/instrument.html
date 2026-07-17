@@ -22,7 +22,7 @@
       <div class="back-bar">
         <button class="back-btn" onclick="typeof switchTab!=='undefined'?switchTab('discover'):history.back()">
           <svg width="18" height="18" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
+          <span data-i18n="market.back">Back</span>
         </button>
         <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">ZY-Invest</span>
         <div style="width:60px;"></div>
@@ -51,19 +51,19 @@
 
       <div style="border-top:1px solid var(--border);margin:20px 16px 0;"></div>
       <div style="padding:16px 16px 0;">
-        <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;">Summary</div>
+        <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;" data-i18n="market.summary">Summary</div>
         <div id="instSummary">
-          <div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+          <div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;" data-i18n="fund.loading">Loading…</div>
         </div>
       </div>
 
       <div style="padding:8px 16px 0;">
-        <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;">About</div>
+        <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;" data-i18n="market.about">About</div>
         <div class="info-list">
-          <div class="info-row"><span class="info-label">Ticker / Code</span><span class="info-value" id="instAboutTicker">—</span></div>
-          <div class="info-row"><span class="info-label">Sector</span><span class="info-value" id="instAboutSector">—</span></div>
-          <div class="info-row"><span class="info-label">Product</span><span class="info-value" id="instAboutProduct">—</span></div>
-          <div class="info-row"><span class="info-label">Currency</span><span class="info-value" id="instAboutCurrency">—</span></div>
+          <div class="info-row"><span class="info-label" data-i18n="market.tickerCode">Ticker / Code</span><span class="info-value" id="instAboutTicker">—</span></div>
+          <div class="info-row"><span class="info-label" data-i18n="market.sector">Sector</span><span class="info-value" id="instAboutSector">—</span></div>
+          <div class="info-row"><span class="info-label" data-i18n="market.product">Product</span><span class="info-value" id="instAboutProduct">—</span></div>
+          <div class="info-row"><span class="info-label" data-i18n="market.currency">Currency</span><span class="info-value" id="instAboutCurrency">—</span></div>
         </div>
       </div>
 

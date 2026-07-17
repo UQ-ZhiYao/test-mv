@@ -188,7 +188,8 @@ function renderAccountSummary(){
     var stake=(acct&&TOTAL_ISSUED_UNITS)?(acct.units/TOTAL_ISSUED_UNITS*100):0;
     setText(prefix+'Value', acct?fmtMoney(acct.mv):'0.00');
     setText(prefix+'PL', acct?((up?'+':'')+fmtMoney(acct.realized)):'0.00', up?'var(--green)':'var(--red)');
-    setText(prefix+'UnitsHeldLbl', acct?(fmtUnits(acct.units)+' units held'):'0.00 units held');
+    var unitsHeldSuffix=(typeof t==='function')?t('portfolio.unitsHeldSuffix'):' units held';
+    setText(prefix+'UnitsHeldLbl', (acct?fmtUnits(acct.units):'0.00')+unitsHeldSuffix);
     setText(prefix+'Units', acct?fmtUnits(acct.units):'0.00');
     setText(prefix+'Stake', acct?(stake.toFixed(2)+'%'):'0.00%');
     setText(prefix+'LatestDate', fmtDateShort(LATEST_NTA_DATE));
@@ -257,8 +258,9 @@ function renderAcctSelector(){
   var sel=document.getElementById('adAcctSelect');
   if(sel){
     var hasJa=!!(PROFILE && PROFILE.joint_account_id);
-    sel.innerHTML='<option value="pa">Personal Account</option>'
-      +(hasJa?'<option value="ja">Joint Account</option>':'');
+    var ttSel=(typeof t==='function')?t:function(k){return k;};
+    sel.innerHTML='<option value="pa">'+ttSel('portfolio.personalAccount')+'</option>'
+      +(hasJa?'<option value="ja">'+ttSel('portfolio.jointAccount')+'</option>':'');
     sel.value=AD_ACCT;
   }
   var iconPa=document.getElementById('adAcctIconPa');
@@ -425,7 +427,8 @@ function renderAssetsTab(){
   setStat('adReturnPct', (returnPct>=0?'+':'')+returnPct.toFixed(2)+'%', returnPct>=0?'var(--green)':'var(--red)');
   // Period is not a financial figure — never masked by the eye toggle.
   var perEl=document.getElementById('adPeriodDays');
-  if(perEl) perEl.textContent=periodDays+(periodDays===1?' day':' days');
+  var ttPer=(typeof t==='function')?t:function(k){return k;};
+  if(perEl) perEl.textContent=periodDays+(periodDays===1?ttPer('accountdetails.daySuffix'):ttPer('accountdetails.daysSuffix'));
   if(irr==null){ setStat('adIrr', '—', 'var(--fg-1)'); }
   else { setStat('adIrr', (irr>=0?'+':'')+irr.toFixed(2)+'%', irr>=0?'var(--green)':'var(--red)'); }
   applyEyeVisibility();
@@ -452,7 +455,7 @@ function enterProfileTab(){
 }
 function openAdPin(){
   if(!PROFILE || !PROFILE.pin){
-    if(typeof showToastM==='function') showToastM('Please set a PIN in Security settings first');
+    if(typeof showToastM==='function') showToastM((typeof t==='function')?t('profile.setPinFirst'):'Please set a PIN in Security settings first');
     return;
   }
   document.getElementById('adPinScrim').style.display='block';
@@ -471,7 +474,7 @@ function submitAdPin(){
   var entered=getPinBoxesValue('adPinBoxes');
   var errEl=document.getElementById('adPinErr');
   if(!/^\d{6}$/.test(entered)){
-    if(errEl){ errEl.textContent='PIN must be 6 digits.'; errEl.style.display='block'; }
+    if(errEl){ errEl.textContent=(typeof t==='function')?t('profile.pinMustBe6'):'PIN must be 6 digits.'; errEl.style.display='block'; }
     return;
   }
   if(entered===String(PROFILE.pin)){
@@ -479,7 +482,7 @@ function submitAdPin(){
     closeAdPin();
     enterProfileTab();
   } else {
-    if(errEl){ errEl.textContent='Incorrect PIN. Please try again.'; errEl.style.display='block'; }
+    if(errEl){ errEl.textContent=(typeof t==='function')?t('profile.incorrectPin'):'Incorrect PIN. Please try again.'; errEl.style.display='block'; }
   }
 }
 // One "Account Holder #" section + card per co-holder, in the same order
@@ -490,23 +493,24 @@ function submitAdPin(){
 async function renderCoHolders(){
   var list=document.getElementById('adCoHolderList');
   if(!list) return;
-  list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>';
+  var ttCh=(typeof t==='function')?t:function(k){return k;};
+  list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">'+ttCh('fund.loading')+'</div>';
   try{
     var holders=await mpLoadJointCoHolders(PROFILE.joint_account_id);
-    if(!holders.length){ list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.82rem;">No co-holders found</div>'; return; }
+    if(!holders.length){ list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.82rem;">'+ttCh('accountdetails.noCoHolders')+'</div>'; return; }
     var ownershipPct=100/holders.length;
     list.innerHTML=holders.map(function(h,i){
       return '<div style="margin-bottom:16px;">'
-        +'<div style="font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin:0 0 8px;">Account Holder '+(i+1)+'</div>'
+        +'<div style="font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin:0 0 8px;">'+ttCh('accountdetails.accountHolder')+' '+(i+1)+'</div>'
         +'<div style="background:transparent;border:1px solid var(--border);border-radius:12px;overflow:hidden;">'
-        +'<div class="info-row"><span class="info-label">Full Name</span><span class="info-value">'+(h.full_name||'—')+'</span></div>'
-        +'<div class="info-row"><span class="info-label">Email</span><span class="info-value">'+(h.email||'—')+'</span></div>'
-        +'<div class="info-row"><span class="info-label">Ownership</span><span class="info-value">'+ownershipPct.toFixed(2)+'%</span></div>'
+        +'<div class="info-row"><span class="info-label">'+ttCh('accountdetails.fullName')+'</span><span class="info-value">'+(h.full_name||'—')+'</span></div>'
+        +'<div class="info-row"><span class="info-label">'+ttCh('accountdetails.email')+'</span><span class="info-value">'+(h.email||'—')+'</span></div>'
+        +'<div class="info-row"><span class="info-label">'+ttCh('accountdetails.ownership')+'</span><span class="info-value">'+ownershipPct.toFixed(2)+'%</span></div>'
         +'</div></div>';
     }).join('');
   }catch(e){
     console.error('[Account Details] failed to load co-holders —',e&&e.message);
-    list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.82rem;">Could not load co-holders</div>';
+    list.innerHTML='<div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.82rem;">'+ttCh('accountdetails.couldNotLoadCoHolders')+'</div>';
   }
 }
 
@@ -521,19 +525,18 @@ var lastMainTab='portfolio';
 // below don't need any change.
 var DRILL_PAGES={
   password:{title:'drill.password',back:'profile'},
-  transaction:{title:'Transaction',back:'all'},
-  distribution:{title:'Distribution',back:'all'},
-  assetdetails:{title:'Asset Details',back:'portfolio'},
+  transaction:{title:'transaction.pageTitle',back:'all'},
+  distribution:{title:'distribution.pageTitle',back:'all'},
+  assetdetails:{title:'portfolio.assetDetailsTitle',back:'portfolio'},
   inquiry:{title:'drill.inquiry',back:'profile'},
   feedback:{title:'drill.feedback',back:'profile'},
   // title is a placeholder — openInstrumentDetail() (search-instruments.js)
   // overwrites #topbarBackTitle with the actual instrument's name right
   // after switchTab('instrument') runs.
   instrument:{title:'Instrument',back:'discover'},
-  // title is a placeholder too — openAccountDetails() overwrites
-  // #topbarBackTitle with "Personal Account"/"Joint Account" right after
-  // switchTab('accountdetails') runs, same pattern as 'instrument' above.
-  accountdetails:{title:'Account Details',back:'portfolio'},
+  // Top bar keeps this static title — the account itself is chosen via the
+  // #adAcctSelect dropdown at the top of the body, not the top bar.
+  accountdetails:{title:'accountdetails.pageTitle',back:'portfolio'},
   settings:{title:'drill.settings',back:'profile'}
 };
 function topbarBackClick(){
@@ -1147,17 +1150,18 @@ function showAppLock(){
   overlay.style.display='flex';
   var verifyEl=document.getElementById('appLockVerify'), setEl=document.getElementById('appLockSet');
   var title=document.getElementById('appLockTitle'), sub=document.getElementById('appLockSub');
+  var tt=(typeof t==='function')?t:function(k){return k;};
   if(hasPin){
     verifyEl.style.display='block'; setEl.style.display='none';
-    title.textContent='Enter PIN';
-    sub.textContent='Enter your 6-digit PIN to continue.';
+    title.textContent=tt('applock.enterPin');
+    sub.textContent=tt('applock.enterPinSub');
     clearPinBoxes('appLockVerifyBoxes');
     document.getElementById('appLockVerifyErr').style.display='none';
     setTimeout(function(){ focusFirstPinBox('appLockVerifyBoxes'); },150);
   } else {
     verifyEl.style.display='none'; setEl.style.display='block';
-    title.textContent='Set Up App Lock';
-    sub.textContent='For your security, please set a 6-digit PIN to protect this app. You\u2019ll need it every time you reopen the app.';
+    title.textContent=tt('applock.setupTitle');
+    sub.textContent=tt('applock.setupSub');
     clearPinBoxes('appLockNewBoxes'); clearPinBoxes('appLockConfirmBoxes');
     document.getElementById('appLockSetErr').style.display='none';
     setTimeout(function(){ focusFirstPinBox('appLockNewBoxes'); },150);
@@ -1172,11 +1176,11 @@ function appLockVerifySubmit(){
   var entered=getPinBoxesValue('appLockVerifyBoxes');
   var errEl=document.getElementById('appLockVerifyErr');
   if(!/^\d{6}$/.test(entered)){
-    errEl.textContent='Please enter your 6-digit PIN.'; errEl.style.display='block';
+    errEl.textContent=(typeof t==='function')?t('applock.pleaseEnterPin6'):'Please enter your 6-digit PIN.'; errEl.style.display='block';
     return;
   }
   if(entered!==String(PROFILE&&PROFILE.pin)){
-    errEl.textContent='Incorrect PIN. Please try again.'; errEl.style.display='block';
+    errEl.textContent=(typeof t==='function')?t('applock.incorrectPin'):'Incorrect PIN. Please try again.'; errEl.style.display='block';
     clearPinBoxes('appLockVerifyBoxes'); focusFirstPinBox('appLockVerifyBoxes');
     return;
   }
@@ -1188,24 +1192,25 @@ async function appLockSetSubmit(){
   var errEl=document.getElementById('appLockSetErr');
   var btn=event&&event.target;
   errEl.style.display='none';
+  var tt2=(typeof t==='function')?t:function(k){return k;};
   if(!/^\d{6}$/.test(n)){
-    errEl.textContent='PIN must be exactly 6 digits.'; errEl.style.display='block'; return;
+    errEl.textContent=tt2('applock.pinMustBe6'); errEl.style.display='block'; return;
   }
   if(n!==c){
-    errEl.textContent='PINs do not match.'; errEl.style.display='block'; return;
+    errEl.textContent=tt2('applock.pinMismatch'); errEl.style.display='block'; return;
   }
   if(typeof mpSaveProfile!=='function'||!AUTH_USER){
-    errEl.textContent='Unable to save PIN right now. Please try again.'; errEl.style.display='block'; return;
+    errEl.textContent=tt2('applock.unableSavePin'); errEl.style.display='block'; return;
   }
   var origTxt=btn&&btn.textContent;
-  if(btn){btn.disabled=true;btn.textContent='Saving…';}
+  if(btn){btn.disabled=true;btn.textContent=tt2('applock.saving');}
   try{
     await mpSaveProfile(AUTH_USER.id,{pin:n});
     if(PROFILE) PROFILE.pin=n;
     if(typeof updatePinDisplay==='function') updatePinDisplay();
     hideAppLock();
   }catch(e){
-    errEl.textContent='Could not save PIN: '+(e&&e.message||'Unknown error — confirm the "pin" column exists on profiles.');
+    errEl.textContent=tt2('applock.couldNotSavePin')+(e&&e.message||'Unknown error — confirm the "pin" column exists on profiles.');
     errEl.style.display='block';
   }finally{
     if(btn){btn.disabled=false;btn.textContent=origTxt;}

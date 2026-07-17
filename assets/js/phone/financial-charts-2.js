@@ -325,10 +325,11 @@ async function loadShareholderData(){
     shareholderLoaded=true;
     var top3Pct=shareholderData.slice(0,3).reduce(function(s,d){return s+d.v;},0);
     var todayStr=new Date().toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'});
+    var ttSh=(typeof t==='function')?t:function(k){return k;};
     var mainSum=document.getElementById('shMainSummary');
-    if(mainSum) mainSum.textContent='Top 3 holders: '+top3Pct.toFixed(1)+'% \u00a0\u00b7\u00a0 As at '+todayStr;
+    if(mainSum) mainSum.textContent=ttSh('fund.top3HoldersPrefix')+top3Pct.toFixed(1)+'% \u00a0\u00b7\u00a0 '+ttSh('fund.asAtPrefix')+todayStr;
     var detSum=document.getElementById('shDetailSummary');
-    if(detSum) detSum.textContent='As at '+todayStr+' \u00a0\u00b7\u00a0 Top 3 holders: '+top3Pct.toFixed(1)+'%';
+    if(detSum) detSum.textContent=ttSh('fund.asAtPrefix')+todayStr+' \u00a0\u00b7\u00a0 '+ttSh('fund.top3HoldersPrefix')+top3Pct.toFixed(1)+'%';
     renderShareholderTable();
     drawShareholderChart();
   }catch(e){ console.warn('[Shareholder] load failed:', e.message); }
