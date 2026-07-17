@@ -146,12 +146,6 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .menu-arr{color:var(--fg-3);font-size:.8rem;}
 .menu-item.danger .menu-text b{color:var(--red);}
 
-/* Settings modal — same centered-popup pattern as the app's PIN gates
-   (password.html's #pinModal, account-details.html's #adPinModal). */
-.lang-switch{display:flex;gap:2px;background:var(--gray-100);border-radius:99px;padding:3px;}
-.lang-switch button{font:inherit;font-size:.78rem;font-weight:700;padding:6px 13px;border:none;border-radius:99px;cursor:pointer;background:transparent;color:var(--fg-2);}
-.lang-switch button.i18n-lang-active{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
-
 /* Bottom tab bar */
 .tabbar{height:calc(var(--tab-h) + var(--safe-bottom));background:#fff;border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:6px;padding-bottom:var(--safe-bottom);flex-shrink:0;}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;cursor:pointer;border:none;background:none;transition:.15s;}
@@ -244,7 +238,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
       <div style="height:12px;"></div>
       <div class="menu-group" style="margin-left:12px;margin-right:12px;">
         <div class="menu-list">
-          <div class="menu-item" onclick="openSettingsModal()">
+          <div class="menu-item" onclick="switchTab('settings')">
             <div class="menu-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
             <div class="menu-text"><b>Settings</b></div>
             <span class="menu-arr">›</span>
@@ -264,28 +258,6 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
       <div id="profileSpacer" style="height:100px;"></div>
       <div style="text-align:center;font-size:.68rem;color:var(--fg-3);padding:0 24px 20px;">Platform services provided by ZY-Invest Investment Holdings</div>
-
-      <!-- Settings modal — must live inside #pg-profile (not after it) so
-           it survives loadPages()'s extraction, which only keeps the
-           .page element's own outerHTML when embedding this fragment into
-           the SPA shell (same constraint as account-details.html's PIN
-           gate). openSettingsModal()/closeSettingsModal() are defined in
-           the global bundle (assets/js/phone/profile-account.js) since
-           fragment scripts never execute once embedded. -->
-      <div id="settingsScrim" onclick="closeSettingsModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;"></div>
-      <div id="settingsModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:calc(100% - 48px);max-width:340px;background:#fff;border-radius:16px;padding:24px;z-index:101;box-shadow:0 8px 40px rgba(0,0,0,.18);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-          <div style="font-size:1.05rem;font-weight:700;color:var(--fg-1);">Settings</div>
-          <button onclick="closeSettingsModal()" style="background:none;border:none;font-size:1.1rem;color:var(--fg-3);cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;">✕</button>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="font-size:.88rem;font-weight:600;color:var(--fg-1);">Language</div>
-          <div class="lang-switch">
-            <button data-i18n-lang-btn="en" onclick="i18nSetLang('en')">EN</button>
-            <button data-i18n-lang-btn="zh" onclick="i18nSetLang('zh')">中文</button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </div>

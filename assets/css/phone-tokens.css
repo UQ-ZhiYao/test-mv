@@ -152,6 +152,13 @@ input,textarea{-webkit-user-select:text;user-select:text;}
 .menu-arr{color:var(--fg-3);font-size:.8rem;}
 .menu-item.danger .menu-text b{color:var(--red);}
 
+/* Settings page — language switcher pill (also duplicated in
+   phone-shared.css). i18n.js toggles i18n-lang-active based on
+   data-i18n-lang-btn matching the current language. */
+.lang-switch{display:flex;gap:2px;background:var(--gray-100);border-radius:99px;padding:3px;}
+.lang-switch button{font:inherit;font-size:.78rem;font-weight:700;padding:6px 13px;border:none;border-radius:99px;cursor:pointer;background:transparent;color:var(--fg-2);}
+.lang-switch button.i18n-lang-active{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
+
 /* Transaction page */
 .tx-filters{display:flex;align-items:center;gap:8px;padding:14px 16px 12px;}
 .tx-seg{display:flex;gap:2px;background:var(--gray-100);border-radius:10px;padding:3px;flex:1;}
