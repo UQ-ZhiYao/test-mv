@@ -152,58 +152,62 @@ setTimeout(function(){
   <div class="top-area">
     <div class="logo-wrap">
       <img src="../assets/img/logo.png" alt="ZY-Invest">
-      <div class="logo-txt"><b>ZY-Invest</b><span>Member Portal</span></div>
+      <div class="logo-txt"><b>ZY-Invest</b><span data-i18n="login.memberPortal">Member Portal</span></div>
     </div>
-    <div class="hero-label">Welcome<br>Back</div>
-    <div class="hero-sub">Access your personalised investment dashboard and track your portfolio.</div>
+    <div class="hero-label" data-i18n="login.welcomeBack">Welcome<br>Back</div>
+    <div class="hero-sub" data-i18n="login.heroSub">Access your personalised investment dashboard and track your portfolio.</div>
     <div class="features">
-      <div class="feat"><div class="feat-dot"></div>Real-time portfolio valuation</div>
-      <div class="feat"><div class="feat-dot"></div>Daily NTA updates</div>
-      <div class="feat"><div class="feat-dot"></div>Distribution history &amp; documents</div>
+      <div class="feat"><div class="feat-dot"></div><span data-i18n="login.feat1">Real-time portfolio valuation</span></div>
+      <div class="feat"><div class="feat-dot"></div><span data-i18n="login.feat2">Daily NTA updates</span></div>
+      <div class="feat"><div class="feat-dot"></div><span data-i18n="login.feat3">Distribution history &amp; documents</span></div>
     </div>
   </div>
 
   <!-- LOGIN CARD -->
   <div class="card-wrap">
     <div class="card">
-      <div class="card-title">Sign In</div>
-      <div class="card-sub">Enter your credentials to continue</div>
+      <div class="card-title" data-i18n="login.signIn">Sign In</div>
+      <div class="card-sub" data-i18n="login.cardSub">Enter your credentials to continue</div>
 
       <div class="error-msg" id="errMsg">Incorrect email or password. Please try again.</div>
 
       <div class="field">
-        <label>Email Address</label>
+        <label data-i18n="login.emailLabel">Email Address</label>
         <div class="inp-wrap">
-          <input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()">
+          <input type="email" id="loginEmail" placeholder="your@email.com" data-i18n-placeholder="login.emailPlaceholder" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()">
           <span class="inp-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
         </div>
       </div>
 
       <div class="field">
-        <label>Password</label>
+        <label data-i18n="login.pwdLabel">Password</label>
         <div class="inp-wrap">
-          <input type="password" id="loginPwd" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+          <input type="password" id="loginPwd" placeholder="Enter your password" data-i18n-placeholder="login.pwdPlaceholder" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
           <button class="inp-icon" onclick="togglePwd()" id="pwdToggle"><svg id="eyeIcon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
       </div>
 
-      <a href="#" class="forgot" onclick="return false">Forgot password?</a>
+      <a href="#" class="forgot" onclick="return false" data-i18n="login.forgotPwd">Forgot password?</a>
 
       <button class="btn-login" id="loginBtn" onclick="doLogin()">
-        <span id="loginBtnTxt">Sign In</span>
+        <span id="loginBtnTxt" data-i18n="login.signIn">Sign In</span>
         <div class="spinner" id="loginSpinner"></div>
       </button>
 
       <div class="card-footer">
-        New member? <a href="register.html">Register an account</a>
+        <span data-i18n="login.newMember">New member?</span> <a href="register.html" data-i18n="login.registerLink">Register an account</a>
         &nbsp;·&nbsp;
-        <a href="../index.html">Back to site</a>
+        <a href="../index.html" data-i18n="login.backToSite">Back to site</a>
       </div>
     </div>
   </div>
 
 </div>
 
+<!-- Loaded first (not deferred) so the [data-i18n] markup above gets
+     translated before the rest of the page's scripts run — see
+     assets/js/i18n.js for how the language choice persists/applies. -->
+<script src="../assets/js/i18n.js?v=1"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/supabase-auth.js"></script>
 <script src="../assets/js/api.js"></script>
@@ -255,10 +259,10 @@ async function doLogin(){
   var txt=document.getElementById('loginBtnTxt');
   var spin=document.getElementById('loginSpinner');
   err.classList.remove('show');
-  if(!email||!pwd){err.textContent='Please enter your email and password.';err.classList.add('show');return;}
-  btn.disabled=true;txt.textContent='Signing in…';spin.style.display='inline-block';
+  if(!email||!pwd){err.textContent=t('login.errEmptyFields');err.classList.add('show');return;}
+  btn.disabled=true;txt.textContent=t('login.signingIn');spin.style.display='inline-block';
   try{
-    if(typeof sb==='undefined'||!sb) throw new Error('Auth service not configured.');
+    if(typeof sb==='undefined'||!sb) throw new Error(t('login.errAuthNotConfigured'));
     var res=await sb.auth.signInWithPassword({email:email,password:pwd});
     if(res.error) throw res.error;
     var uid=res.data.user.id;
@@ -294,10 +298,10 @@ async function doLogin(){
     try{sessionStorage.setItem('zy_just_logged_in','1');}catch(e){}
     window.location.href='index.html';
   }catch(ex){
-    var m=(ex&&ex.message)||'Login failed. Please try again.';
-    if(/invalid credentials/i.test(m)) m='Incorrect email or password. Please try again.';
+    var m=(ex&&ex.message)||t('login.errGeneric');
+    if(/invalid credentials/i.test(m)) m=t('login.errInvalidCreds');
     err.textContent=m;err.classList.add('show');
-    btn.disabled=false;txt.textContent='Sign In';spin.style.display='none';
+    btn.disabled=false;txt.textContent=t('login.signIn');spin.style.display='none';
   }
 }
 </script>
