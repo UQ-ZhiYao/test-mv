@@ -60,7 +60,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
     <button onclick="history.back()" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">Asset Details</span>
+    <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);" data-i18n="portfolio.assetDetailsTitle">Asset Details</span>
     <div style="width:40px;"></div>
   </div>
 
@@ -71,32 +71,32 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
       <div class="back-bar">
         <button class="back-btn" onclick="typeof switchTab!=='undefined'?switchTab('portfolio'):history.back()">
           <svg width="18" height="18" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
+          <span data-i18n="market.back">Back</span>
         </button>
-        <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">Asset Details</span>
+        <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);" data-i18n="portfolio.assetDetailsTitle">Asset Details</span>
         <div style="width:60px;"></div>
       </div>
 
       <!-- Total Asset Value -->
       <div style="padding:16px 16px 0;">
-        <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;">Total Asset Value</div>
+        <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:12px;" data-i18n="assetdetails.totalAssetValue">Total Asset Value</div>
         <div class="ad-donut-wrap">
           <div style="position:relative;">
             <canvas id="adDonut" style="display:block;"></canvas>
             <div id="adDonutText" style="position:absolute;left:0;right:0;text-align:center;">
-              <div class="ad-donut-total-l">Total · MYR</div>
+              <div class="ad-donut-total-l" data-i18n="assetdetails.totalMyr">Total · MYR</div>
               <div class="ad-donut-total-v" id="adDonutTotal">0.00</div>
             </div>
           </div>
           <div class="ad-legend">
             <div class="ad-legend-item" id="adLegendPersonalWrap">
               <span class="ad-legend-dot" style="background:#64B5F6;"></span>
-              <span class="ad-legend-label">Personal</span>
+              <span class="ad-legend-label" data-i18n="assetdetails.personal">Personal</span>
               <span class="ad-legend-value" id="adLegendPersonal">0.0%</span>
             </div>
             <div class="ad-legend-item" id="adLegendJointWrap" style="display:none;">
               <span class="ad-legend-dot" style="background:#B39DDB;"></span>
-              <span class="ad-legend-label">Joint</span>
+              <span class="ad-legend-label" data-i18n="assetdetails.joint">Joint</span>
               <span class="ad-legend-value" id="adLegendJoint">0.0%</span>
             </div>
           </div>
@@ -109,7 +109,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
       <div style="padding:16px 16px 0;">
         <div style="height:1em;"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);">Asset Trends</div>
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="assetdetails.assetTrends">Asset Trends</div>
           <div class="ad-seg" id="adSeg">
             <button class="on" onclick="switchAdPeriod('ytd',this)">YTD</button>
             <button onclick="switchAdPeriod('1m',this)">1M</button>

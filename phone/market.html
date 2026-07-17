@@ -16,9 +16,9 @@
 
       <!-- ── MARKET TABS ── -->
       <div style="display:flex;gap:0;padding:0 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:10;overflow-x:auto;scrollbar-width:none;">
-        <button id="mtab-indices-btn" onclick="switchMarketTab('indices')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--blue);background:none;border:none;border-bottom:2px solid var(--blue);padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Indices</button>
-        <button id="mtab-forex-btn" onclick="switchMarketTab('forex')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Forex</button>
-        <button id="mtab-crypto-btn" onclick="switchMarketTab('crypto')" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Crypto</button>
+        <button id="mtab-indices-btn" onclick="switchMarketTab('indices')" data-i18n="market.indices" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--blue);background:none;border:none;border-bottom:2px solid var(--blue);padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Indices</button>
+        <button id="mtab-forex-btn" onclick="switchMarketTab('forex')" data-i18n="market.forex" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Forex</button>
+        <button id="mtab-crypto-btn" onclick="switchMarketTab('crypto')" data-i18n="market.crypto" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Crypto</button>
       </div>
 
       <!-- ── INDICES ── -->
@@ -32,7 +32,7 @@
       <div id="mtab-indices-body" style="display:block;padding:0 0 32px;">
         <div id="mktIndicesListWrap">
           <div id="mktIndicesList" style="border-top:1px solid var(--border);">
-            <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+            <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;" data-i18n="fund.loading">Loading…</div>
           </div>
         </div>
 
@@ -63,9 +63,9 @@
           <div style="border-top:1px solid var(--border);margin:20px 16px 0;"></div>
           <div style="padding:16px 16px 32px;">
             <div style="height:1em;"></div>
-            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;">Summary</div>
+            <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);margin-bottom:8px;" data-i18n="market.summary">Summary</div>
             <div id="mktIndexDetailSummary">
-              <div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+              <div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;" data-i18n="fund.loading">Loading…</div>
             </div>
           </div>
         </div>
@@ -74,14 +74,14 @@
       <!-- ── FOREX ── -->
       <div id="mtab-forex-body" style="display:none;padding:0 0 32px;">
         <div id="mktForexList" style="border-top:1px solid var(--border);">
-          <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+          <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;" data-i18n="fund.loading">Loading…</div>
         </div>
       </div>
 
       <!-- ── CRYPTO ── -->
       <div id="mtab-crypto-body" style="display:none;padding:0 0 32px;">
         <div id="mktCryptoList" style="border-top:1px solid var(--border);">
-          <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;">Loading…</div>
+          <div style="padding:16px;text-align:center;color:var(--fg-3);font-size:.72rem;" data-i18n="fund.loading">Loading…</div>
         </div>
       </div>
 

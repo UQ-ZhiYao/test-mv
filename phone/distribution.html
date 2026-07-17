@@ -63,7 +63,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
     <button onclick="history.back()" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">Distribution</span>
+    <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);" data-i18n="distribution.pageTitle">Distribution</span>
     <div style="width:40px;"></div>
   </div>
 
@@ -74,23 +74,23 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
       <div class="back-bar">
         <button class="back-btn" onclick="typeof switchTab!=='undefined'?switchTab('all'):history.back()">
           <svg width="18" height="18" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
+          <span data-i18n="market.back">Back</span>
         </button>
-        <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">Distribution</span>
+        <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);" data-i18n="distribution.pageTitle">Distribution</span>
         <div style="width:60px;"></div>
       </div>
 
       <!-- Filters -->
       <div class="dx-filters">
         <div class="dx-seg">
-          <button id="dxf-all" class="on" onclick="setDxFilter('all')">All</button>
-          <button id="dxf-cash" onclick="setDxFilter('cash')">Cash</button>
-          <button id="dxf-reinvest" onclick="setDxFilter('reinvest')">Reinvested</button>
+          <button id="dxf-all" class="on" onclick="setDxFilter('all')" data-i18n="transaction.filterAll">All</button>
+          <button id="dxf-cash" onclick="setDxFilter('cash')" data-i18n="distribution.filterCash">Cash</button>
+          <button id="dxf-reinvest" onclick="setDxFilter('reinvest')" data-i18n="distribution.filterReinvested">Reinvested</button>
         </div>
         <select id="dxAcctSelect" class="dx-acct-select" onchange="renderDxList()">
-          <option value="all">All</option>
-          <option value="pa">Personal</option>
-          <option value="ja">Joint</option>
+          <option value="all" data-i18n="transaction.filterAll">All</option>
+          <option value="pa" data-i18n="transaction.acctPersonal">Personal</option>
+          <option value="ja" data-i18n="transaction.acctJoint">Joint</option>
         </select>
       </div>
 
@@ -125,11 +125,12 @@ window.renderDxList=function(){
     return (dxFilter==='all'||t.kind===dxFilter)&&(acct==='all'||t.acct===acct);
   });
   var list=document.getElementById('dxList');
-  if(!rows.length){list.innerHTML='<div class="dx-empty">No distributions found</div>';return;}
+  var ttDx=(typeof t==='function')?t:function(k){return k;};
+  if(!rows.length){list.innerHTML='<div class="dx-empty">'+ttDx('distribution.noDistributionsFound')+'</div>';return;}
   list.innerHTML=rows.map(function(t){
     return '<div class="dx-row">'
-      +'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+t.type+'</div></div>'
-      +'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+' units':'—')+'</div></div>'
+      +'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+(t.kind==='cash'?ttDx('distribution.cashPayout'):t.kind==='reinvest'?ttDx('distribution.unitReinvestment'):t.type)+'</div></div>'
+      +'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+ttDx('sheet.unitsSuffix'):'—')+'</div></div>'
       +'</div>';
   }).join('');
 };

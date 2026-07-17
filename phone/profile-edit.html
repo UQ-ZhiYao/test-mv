@@ -68,13 +68,14 @@ input,textarea,select{-webkit-user-select:text;user-select:text;}
   </div>
 
   <div style="padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--border);flex-shrink:0;">
-    <button id="pfeSaveBtn" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;" onclick="savePfeSection()">Save</button>
+    <button id="pfeSaveBtn" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--blue);color:#fff;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;" onclick="savePfeSection()" data-i18n="profileedit.save">Save</button>
   </div>
 
 </div>
 
 <div id="pfeToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#0F172A;color:#fff;font-size:.82rem;font-weight:600;padding:10px 20px;border-radius:99px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;z-index:102;"></div>
 
+<script src="../assets/js/i18n.js?v=9"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/supabase-auth.js"></script>
 <script src="../assets/js/member-api.js?v=6"></script>
@@ -88,37 +89,41 @@ try{ sessionStorage.setItem('zy_returning_from_subpage','1'); }catch(e){}
 var PFE_USER=null, PFE_PROFILE=null;
 
 // Field definitions per section — each becomes one "box" (label + input).
+// label/sub/placeholder/hint/option values below are i18n.js dictionary
+// keys, not literal English — resolved via tt() in renderFields(). Select
+// option *values* stay the literal English words (they're what gets saved
+// to the DB); only their displayed text translates.
 var PFE_SECTIONS={
   basic:{
-    title:'Basic Information',
-    sub:'Update your personal details below, then tap Save.',
+    title:'profile.basicInfo',
+    sub:'profileedit.basicSub',
     fields:[
-      {field:'full_name',label:'Full Name',type:'text',placeholder:'As per NRIC / passport'},
-      {field:'nric_passport',label:'IC / Passport No.',type:'text',placeholder:'e.g. 990512-14-5678'},
-      {field:'date_of_birth',label:'Date of Birth',type:'date'},
-      {field:'gender',label:'Gender',type:'select',options:['Male','Female']},
-      {field:'nationality',label:'Nationality',type:'select',options:['Malaysian','Singaporean','Permanent Resident','Other']}
+      {field:'full_name',label:'profile.fullName',type:'text',placeholder:'profileedit.fullNamePlaceholder'},
+      {field:'nric_passport',label:'profile.icPassport',type:'text',placeholder:'profileedit.icPassportPlaceholder'},
+      {field:'date_of_birth',label:'profile.dob',type:'date'},
+      {field:'gender',label:'profile.gender',type:'select',options:[['Male','profileedit.male'],['Female','profileedit.female']]},
+      {field:'nationality',label:'profile.nationality',type:'select',options:[['Malaysian','profileedit.malaysian'],['Singaporean','profileedit.singaporean'],['Permanent Resident','profileedit.permanentResident'],['Other','profileedit.other']]}
     ]
   },
   contact:{
-    title:'Contact',
-    sub:'Update your contact details below, then tap Save.',
+    title:'profile.contact',
+    sub:'profileedit.contactSub',
     fields:[
-      {field:'phone',label:'Mobile No.',type:'text',placeholder:'+60 1X-XXX XXXX'},
-      {field:'email',label:'Email',type:'text',disabled:true,hint:"Email is used for login and can't be changed here."},
-      {field:'address',label:'Address',type:'text',placeholder:'Full residential address'},
-      {field:'postcode',label:'Postcode',type:'text'},
-      {field:'city',label:'City',type:'text'},
-      {field:'state',label:'State',type:'text'}
+      {field:'phone',label:'profile.mobileNo',type:'text',placeholder:'profileedit.mobilePlaceholder'},
+      {field:'email',label:'profile.email',type:'text',disabled:true,hint:'profileedit.emailHint'},
+      {field:'address',label:'profile.address',type:'text',placeholder:'profileedit.addressPlaceholder'},
+      {field:'postcode',label:'profile.postcode',type:'text'},
+      {field:'city',label:'profile.city',type:'text'},
+      {field:'state',label:'profile.state',type:'text'}
     ]
   },
   bank:{
-    title:'Bank Account',
-    sub:'Update your distribution bank account below, then tap Save.',
+    title:'profile.bankAccount',
+    sub:'profileedit.bankSub',
     fields:[
-      {field:'bank_name',label:'Bank Name',type:'text',placeholder:'e.g. Maybank'},
-      {field:'bank_account_no',label:'Account No.',type:'text',placeholder:'Account number'},
-      {field:'bank_account_holder',label:'Account Holder Name',type:'text',placeholder:'Name as per bank account'}
+      {field:'bank_name',label:'profile.bankName',type:'text',placeholder:'profileedit.bankNamePlaceholder'},
+      {field:'bank_account_no',label:'profile.accountNo',type:'text',placeholder:'profileedit.accountNoPlaceholder'},
+      {field:'bank_account_holder',label:'profileedit.accountHolderName',type:'text',placeholder:'profileedit.accountHolderPlaceholder'}
     ]
   }
 };
@@ -138,10 +143,12 @@ function getSectionKey(){
 }
 
 function renderFields(sectionKey,values){
+  var tt=(typeof t==='function')?t:function(k){return k;};
   var section=PFE_SECTIONS[sectionKey];
-  document.getElementById('editTitle').textContent=section.title;
-  document.getElementById('editHeading').textContent='Edit '+section.title;
-  document.getElementById('editSub').textContent=section.sub;
+  var title=tt(section.title);
+  document.getElementById('editTitle').textContent=title;
+  document.getElementById('editHeading').textContent=tt('profileedit.editPrefix')+title;
+  document.getElementById('editSub').textContent=tt(section.sub);
   var wrap=document.getElementById('fieldsWrap');
   wrap.innerHTML=section.fields.map(function(f){
     var val=values[f.field];
@@ -150,13 +157,13 @@ function renderFields(sectionKey,values){
     var inputHtml;
     if(f.type==='select'){
       inputHtml='<select id="pfe_'+f.field+'"'+disabled+'>'+f.options.map(function(o){
-        return '<option value="'+o+'"'+(val===o?' selected':'')+'>'+o+'</option>';
+        return '<option value="'+o[0]+'"'+(val===o[0]?' selected':'')+'>'+tt(o[1])+'</option>';
       }).join('')+'</select>';
     } else {
-      inputHtml='<input id="pfe_'+f.field+'" type="'+(f.type==='date'?'date':'text')+'" value="'+(val&&val!=='-'?String(val).replace(/"/g,'&quot;'):'')+'" placeholder="'+(f.placeholder||'')+'"'+disabled+'>';
+      inputHtml='<input id="pfe_'+f.field+'" type="'+(f.type==='date'?'date':'text')+'" value="'+(val&&val!=='-'?String(val).replace(/"/g,'&quot;'):'')+'" placeholder="'+(f.placeholder?tt(f.placeholder):'')+'"'+disabled+'>';
     }
-    return '<div class="'+boxClass+'"><label>'+f.label+'</label>'+inputHtml
-      +(f.hint?'<div class="hint">'+f.hint+'</div>':'')+'</div>';
+    return '<div class="'+boxClass+'"><label>'+tt(f.label)+'</label>'+inputHtml
+      +(f.hint?'<div class="hint">'+tt(f.hint)+'</div>':'')+'</div>';
   }).join('');
 }
 
@@ -179,9 +186,10 @@ async function loadPfe(){
 async function savePfeSection(){
   var sectionKey=getSectionKey();
   var section=PFE_SECTIONS[sectionKey];
+  var tt=(typeof t==='function')?t:function(k){return k;};
   var btn=document.getElementById('pfeSaveBtn'), errEl=document.getElementById('pfeErr');
   errEl.style.display='none';
-  if(!PFE_USER){ errEl.textContent='Not signed in.'; errEl.style.display='block'; return; }
+  if(!PFE_USER){ errEl.textContent=tt('profileedit.notSignedIn'); errEl.style.display='block'; return; }
   var updates={};
   section.fields.forEach(function(f){
     if(f.disabled) return; // e.g. email — not editable here, not sent
@@ -191,13 +199,13 @@ async function savePfeSection(){
     updates[f.field]=v===''?null:v;
   });
   var orig=btn.textContent;
-  btn.disabled=true; btn.textContent='Saving…';
+  btn.disabled=true; btn.textContent=tt('profileedit.saving');
   try{
     await mpSaveProfile(PFE_USER.id, updates);
-    pfeToast('Saved successfully');
+    pfeToast(tt('profileedit.savedSuccessfully'));
     setTimeout(function(){ window.location.replace('profile.html'); },600);
   }catch(e){
-    errEl.textContent='Save failed: '+(e&&e.message||'Unknown error — some fields may not be supported by the database yet.');
+    errEl.textContent=tt('profileedit.saveFailed')+(e&&e.message||'Unknown error — some fields may not be supported by the database yet.');
     errEl.style.display='block';
     btn.disabled=false; btn.textContent=orig;
   }

@@ -44,9 +44,10 @@ function zyInstrumentSubline(ticker,code){
 
 function openMktSearch(){
   SEARCH_MODE='navigate';
-  document.getElementById('globalSearchInput').placeholder='Search stocks, indices, crypto…';
+  var tt=(typeof t==='function')?t:function(k){return k;};
+  document.getElementById('globalSearchInput').placeholder=tt('search.placeholder');
   var label=document.getElementById('searchRecentLabel');
-  if(label) label.textContent='Recent';
+  if(label) label.textContent=tt('search.recent');
   openSearchOverlay();
 }
 function openSearchOverlay(){
@@ -129,7 +130,7 @@ function globalSearch(q){
   });
   var body=hits.length
     ? hits.map(function(d,i){return instrumentSearchRowHTML(d,i,hits.length);}).join('')
-    : '<div style="padding:24px 16px;text-align:center;font-size:.8rem;color:var(--fg-3);">No matching instruments</div>';
+    : '<div style="padding:24px 16px;text-align:center;font-size:.8rem;color:var(--fg-3);">'+((typeof t==='function')?t('search.noMatching'):'No matching instruments')+'</div>';
   // ZY-Invest is always the first result in navigate mode, regardless of
   // query — it's the one thing on this single-fund platform worth
   // surfacing no matter what was typed. It isn't offered in
@@ -222,7 +223,7 @@ function renderInstrumentDetailSummary(q){
   var el=document.getElementById('instSummary');
   if(!el) return;
   if(!q){
-    el.innerHTML='<div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;">No data available</div>';
+    el.innerHTML='<div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;">'+((typeof t==='function')?t('market.noDataAvailable'):'No data available')+'</div>';
     return;
   }
   var chg=mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent);
@@ -231,8 +232,8 @@ function renderInstrumentDetailSummary(q){
     +'<div style="font-size:1.6rem;font-weight:700;color:var(--fg-1);">'+mktFmtPrice(q.regularMarketPrice)+'</div>'
     +'<div style="font-size:.82rem;font-weight:600;color:'+chg.color+';margin-top:2px;">'+chg.txt+'</div>'
     +'</div>'
-    +mktSummaryRow('Previous Close',mktFmtPrice(q.previousClose))
-    +mktSummaryRow('Day Range',mktFmtPrice(q.regularMarketDayLow)+' – '+mktFmtPrice(q.regularMarketDayHigh))
-    +mktSummaryRow('52-Week Range',mktFmtPrice(q.fiftyTwoWeekLow)+' – '+mktFmtPrice(q.fiftyTwoWeekHigh))
-    +mktSummaryRow('Currency',q.currency||'—');
+    +mktSummaryRow((typeof t==='function')?t('market.previousClose'):'Previous Close',mktFmtPrice(q.previousClose))
+    +mktSummaryRow((typeof t==='function')?t('market.dayRange'):'Day Range',mktFmtPrice(q.regularMarketDayLow)+' – '+mktFmtPrice(q.regularMarketDayHigh))
+    +mktSummaryRow((typeof t==='function')?t('market.wk52Range'):'52-Week Range',mktFmtPrice(q.fiftyTwoWeekLow)+' – '+mktFmtPrice(q.fiftyTwoWeekHigh))
+    +mktSummaryRow((typeof t==='function')?t('market.currency'):'Currency',q.currency||'—');
 }

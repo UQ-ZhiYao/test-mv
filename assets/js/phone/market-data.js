@@ -307,7 +307,7 @@ function drawDetailChart(canvasId,points){
     ctx.fillStyle='#94A3B8';
     ctx.font='12px sans-serif';
     ctx.textAlign='center';
-    ctx.fillText('No data available',W/2,H/2);
+    ctx.fillText((typeof t==='function')?t('market.noDataAvailable'):'No data available',W/2,H/2);
     return;
   }
   var mn=Math.min.apply(null,closes), mx=Math.max.apply(null,closes);
@@ -378,7 +378,7 @@ function renderIndexDetailSummary(q){
   var el=document.getElementById('mktIndexDetailSummary');
   if(!el) return;
   if(!q){
-    el.innerHTML='<div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;">No data available</div>';
+    el.innerHTML='<div style="padding:16px 0;text-align:center;color:var(--fg-3);font-size:.72rem;">'+((typeof t==='function')?t('market.noDataAvailable'):'No data available')+'</div>';
     return;
   }
   var chg=mktFmtChangeCombined(q.regularMarketChange,q.regularMarketChangePercent);
@@ -387,10 +387,10 @@ function renderIndexDetailSummary(q){
     +'<div style="font-size:1.6rem;font-weight:700;color:var(--fg-1);">'+mktFmtPrice(q.regularMarketPrice)+'</div>'
     +'<div style="font-size:.82rem;font-weight:600;color:'+chg.color+';margin-top:2px;">'+chg.txt+'</div>'
     +'</div>'
-    +mktSummaryRow('Previous Close',mktFmtPrice(q.previousClose))
-    +mktSummaryRow('Day Range',mktFmtPrice(q.regularMarketDayLow)+' – '+mktFmtPrice(q.regularMarketDayHigh))
-    +mktSummaryRow('52-Week Range',mktFmtPrice(q.fiftyTwoWeekLow)+' – '+mktFmtPrice(q.fiftyTwoWeekHigh))
-    +mktSummaryRow('Currency',q.currency||'—');
+    +mktSummaryRow((typeof t==='function')?t('market.previousClose'):'Previous Close',mktFmtPrice(q.previousClose))
+    +mktSummaryRow((typeof t==='function')?t('market.dayRange'):'Day Range',mktFmtPrice(q.regularMarketDayLow)+' – '+mktFmtPrice(q.regularMarketDayHigh))
+    +mktSummaryRow((typeof t==='function')?t('market.wk52Range'):'52-Week Range',mktFmtPrice(q.fiftyTwoWeekLow)+' – '+mktFmtPrice(q.fiftyTwoWeekHigh))
+    +mktSummaryRow((typeof t==='function')?t('market.currency'):'Currency',q.currency||'—');
 }
 
 // ── FOREX ────────────────────────────────────────────────────────────────

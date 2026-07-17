@@ -189,36 +189,36 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
         <button onclick="switchTab('portfolio')" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:4px;color:var(--fg-2);">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <div style="font-size:1rem;font-weight:700;color:var(--fg-1);">All Services</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--fg-1);" data-i18n="all.title">All Services</div>
       </div>
 
       <!-- Portfolio Section -->
       <div style="padding:0 16px 8px;">
-        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Portfolio</div>
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;" data-i18n="all.sectionPortfolio">Portfolio</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <div onclick="openSheet('subscribe')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:1.5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="16" x2="12" y2="8"/><polyline points="9 11 12 8 15 11"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Deposit</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="portfolio.deposit">Deposit</span>
           </div>
           <div onclick="openSheet('redeem')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke-width:1.5px"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><polyline points="15 13 12 16 9 13"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Withdrawal</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="portfolio.withdrawal">Withdrawal</span>
           </div>
           <div onclick="switchTab('transaction')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Transaction</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="transaction.pageTitle">Transaction</span>
           </div>
           <div onclick="switchTab('distribution')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Distribution</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="distribution.pageTitle">Distribution</span>
           </div>
         </div>
       </div>
@@ -227,37 +227,37 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
       <!-- Fund Section -->
       <div style="padding:0 16px 8px;">
-        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Fund</div>
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;" data-i18n="all.sectionFund">Fund</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <div onclick="switchTab('fund');setTimeout(function(){switchFundTab2('chart');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Chart</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="fund.tabChart">Chart</span>
           </div>
           <div onclick="switchTab('fund');setTimeout(function(){switchFundTab2('profile');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Profile</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="fund.tabProfile">Profile</span>
           </div>
           <div onclick="switchTab('fund');setTimeout(function(){switchFundTab2('results');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Results</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="fund.tabResults">Results</span>
           </div>
           <div onclick="switchTab('fund');setTimeout(function(){switchFundTab2('portfolio');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E65100" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Portfolio</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="fund.tabPortfolio">Portfolio</span>
           </div>
           <div onclick="switchTab('fund');setTimeout(function(){switchFundTab2('shareholder');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Shareholders</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="all.shareholders">Shareholders</span>
           </div>
         </div>
       </div>
@@ -266,25 +266,25 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
       <!-- Market Section -->
       <div style="padding:0 16px 8px;">
-        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Market</div>
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;" data-i18n="all.sectionMarket">Market</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <div onclick="switchTab('market');setTimeout(function(){switchMarketTab('indices');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Indices</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="market.indices">Indices</span>
           </div>
           <div onclick="switchTab('market');setTimeout(function(){switchMarketTab('forex');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10h11l-3-3"/><path d="M17 14H6l3 3"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Forex</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="market.forex">Forex</span>
           </div>
           <div onclick="switchTab('market');setTimeout(function(){switchMarketTab('crypto');},100)" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E65100" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10"/><path d="M9 9.7c0-1.1 1.2-1.7 3-1.7s3 .8 3 2-1.6 1.5-3 1.5-3 .4-3 1.7 1.4 2 3 2 3-.6 3-1.7"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Crypto</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="market.crypto">Crypto</span>
           </div>
         </div>
       </div>
@@ -293,25 +293,25 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
       <!-- Account Section -->
       <div style="padding:0 16px 8px;">
-        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Me</div>
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;" data-i18n="all.sectionMe">Me</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <div onclick="location.href='profile.html'" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Profile</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="all.profile">Profile</span>
           </div>
           <div onclick="switchTab('password')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E65100" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Security</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="all.security">Security</span>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:default;opacity:.5;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Nominees</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="me.nominee">Nominees</span>
           </div>
         </div>
       </div>
@@ -320,25 +320,25 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
       <!-- Others Section -->
       <div style="padding:0 16px 24px;">
-        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;">Others</div>
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-3);margin-bottom:10px;" data-i18n="all.sectionOthers">Others</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <div onclick="switchTab('inquiry')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Online Inquiry</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="me.onlineInquiry">Online Inquiry</span>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:default;opacity:.5;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">Help Center</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="me.helpCenter">Help Center</span>
           </div>
           <div onclick="switchTab('feedback')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
             <div style="width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E65100" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path d="M17.5 3.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 8.5-8.5z"/></svg>
             </div>
-            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;">App Feedback</span>
+            <span style="font-size:.72rem;font-weight:600;color:var(--fg-2);text-align:center;" data-i18n="me.appFeedback">App Feedback</span>
           </div>
         </div>
       </div>

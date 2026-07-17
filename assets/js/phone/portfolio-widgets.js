@@ -96,11 +96,12 @@ function renderTxList(){
   });
   var list=document.getElementById('txList');
   if(!list)return;
-  if(!rows.length){list.innerHTML='<div class="tx-empty">No transactions found</div>';return;}
+  var ttTxL=(typeof t==='function')?t:function(k){return k;};
+  if(!rows.length){list.innerHTML='<div class="tx-empty">'+ttTxL('transaction.noTransactionsFound')+'</div>';return;}
   list.innerHTML=rows.map(function(t){
     return '<div class="tx-row">'
       +'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.ref+'</div></div>'
-      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?(fmtTxRM(t.units)+' units'):'Pending')+'</div></div>'
+      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?(fmtTxRM(t.units)+ttTxL('sheet.unitsSuffix')):ttTxL('transaction.pending'))+'</div></div>'
       +'</div>';
   }).join('');
 }
@@ -130,7 +131,7 @@ async function loadDistributionHistory(){
         if(unitsAtExDate<=0.0001) return;
         var amt=unitsAtExDate*(parseFloat(d.dps)||0)/100; // dps in sen → RM
         var payDate=d.pay_date||d.ex_date;
-        rows.push({date:fmtTxDate(payDate), _sortDate:payDate, type:'Cash Payout', acct:acct, kind:'cash', amt:amt, units:0});
+        rows.push({date:fmtTxDate(payDate), _sortDate:payDate, type:'distribution.cashPayout', acct:acct, kind:'cash', amt:amt, units:0});
       });
     });
     rows.sort(function(a,b){ return a._sortDate<b._sortDate?1:(a._sortDate>b._sortDate?-1:0); });
@@ -154,11 +155,12 @@ function renderDxList(){
   });
   var list=document.getElementById('dxList');
   if(!list)return;
-  if(!rows.length){list.innerHTML='<div class="dx-empty">No distributions found</div>';return;}
+  var ttDxL=(typeof t==='function')?t:function(k){return k;};
+  if(!rows.length){list.innerHTML='<div class="dx-empty">'+ttDxL('distribution.noDistributionsFound')+'</div>';return;}
   list.innerHTML=rows.map(function(t){
     return '<div class="dx-row">'
-      +'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+t.type+'</div></div>'
-      +'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+' units':'—')+'</div></div>'
+      +'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+ttDxL(t.type)+'</div></div>'
+      +'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+ttDxL('sheet.unitsSuffix'):'—')+'</div></div>'
       +'</div>';
   }).join('');
 }
@@ -173,11 +175,12 @@ function renderPrincipalTab(){
   var rows=(TX_DATA||[]).filter(function(t){ return t.acct===AD_ACCT; });
   var list=document.getElementById('adTxList');
   if(!list) return;
-  if(!rows.length){ list.innerHTML='<div class="tx-empty">No transactions found</div>'; return; }
+  var ttAdTx=(typeof t==='function')?t:function(k){return k;};
+  if(!rows.length){ list.innerHTML='<div class="tx-empty">'+ttAdTx('transaction.noTransactionsFound')+'</div>'; return; }
   list.innerHTML=rows.map(function(t){
     return '<div class="tx-row">'
       +'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.ref+'</div></div>'
-      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?(fmtTxRM(t.units)+' units'):'Pending')+'</div></div>'
+      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?(fmtTxRM(t.units)+ttAdTx('sheet.unitsSuffix')):ttAdTx('transaction.pending'))+'</div></div>'
       +'</div>';
   }).join('');
 }
@@ -185,11 +188,12 @@ function renderDistributionTab(){
   var rows=(DX_DATA||[]).filter(function(t){ return t.acct===AD_ACCT; });
   var list=document.getElementById('adDxList');
   if(!list) return;
-  if(!rows.length){ list.innerHTML='<div class="dx-empty">No distributions found</div>'; return; }
+  var ttAdDx=(typeof t==='function')?t:function(k){return k;};
+  if(!rows.length){ list.innerHTML='<div class="dx-empty">'+ttAdDx('distribution.noDistributionsFound')+'</div>'; return; }
   list.innerHTML=rows.map(function(t){
     return '<div class="dx-row">'
-      +'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+t.type+'</div></div>'
-      +'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+' units':'—')+'</div></div>'
+      +'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+ttAdDx(t.type)+'</div></div>'
+      +'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+ttAdDx('sheet.unitsSuffix'):'—')+'</div></div>'
       +'</div>';
   }).join('');
 }
@@ -422,7 +426,7 @@ function openSheet(type){
     document.getElementById('subBankName').textContent=b.bank_name||'—';
     document.getElementById('subBankHolder').textContent=b.bank_account_holder||'—';
     document.getElementById('subBankAcctNo').textContent=b.bank_account_no||'—';
-    document.getElementById('subNtaLbl').textContent='Indicative Units (NTA '+(LATEST_NTA>0?LATEST_NTA.toFixed(4):'—')+')';
+    document.getElementById('subNtaLbl').textContent=((typeof t==='function')?t('sheet.indicativeUnits'):'Indicative Units (NTA ')+(LATEST_NTA>0?LATEST_NTA.toFixed(4):'—')+')';
     document.getElementById('mSubAmt').value='';
     document.getElementById('mSubUnits').value='—';
     subReceiptFile=null;
@@ -435,7 +439,7 @@ function openSheet(type){
     var acctNo=P.bank_account_no?('···· '+String(P.bank_account_no).slice(-4)):null;
     var parts=[P.bank_name,acctNo,P.bank_account_holder].filter(Boolean);
     document.getElementById('redPayoutBank').textContent=parts.length?parts.join(' · '):'—';
-    document.getElementById('redNtaLbl').textContent='Indicative Units to Redeem (NTA '+(LATEST_NTA>0?LATEST_NTA.toFixed(4):'—')+')';
+    document.getElementById('redNtaLbl').textContent=((typeof t==='function')?t('sheet.indicativeUnitsRedeem'):'Indicative Units to Redeem (NTA ')+(LATEST_NTA>0?LATEST_NTA.toFixed(4):'—')+')';
     document.getElementById('redErr').style.display='none';
     selectAcct('red','pa');
   }
@@ -467,24 +471,25 @@ function selectAcct(sheet,acct){
   refreshRequestRef(sheet,sheet==='sub'?'Subscription':'Redemption',acct);
 }
 function setSubAmt(v){document.getElementById('mSubAmt').value=v;calcSubUnits();}
-function calcSubUnits(){var a=parseFloat(document.getElementById('mSubAmt').value);document.getElementById('mSubUnits').value=(a>0&&LATEST_NTA>0)?fmtRM(a/LATEST_NTA)+' units':'—';}
-function setRedPct(p){var acc=acctData(redAcct);if(!acc)return;var a=acc.mv*p/100;document.getElementById('mRedAmt').value=a.toFixed(2);document.getElementById('mRedUnits').value=fmtRM(acc.units*p/100)+' units';}
-function calcRedUnits(){var acc=acctData(redAcct);var a=parseFloat(document.getElementById('mRedAmt').value);document.getElementById('mRedUnits').value=(a>0&&LATEST_NTA>0)?fmtRM(a/LATEST_NTA)+' units':'—';}
+function calcSubUnits(){var a=parseFloat(document.getElementById('mSubAmt').value);document.getElementById('mSubUnits').value=(a>0&&LATEST_NTA>0)?fmtRM(a/LATEST_NTA)+((typeof t==='function')?t('sheet.unitsSuffix'):' units'):'—';}
+function setRedPct(p){var acc=acctData(redAcct);if(!acc)return;var a=acc.mv*p/100;document.getElementById('mRedAmt').value=a.toFixed(2);document.getElementById('mRedUnits').value=fmtRM(acc.units*p/100)+((typeof t==='function')?t('sheet.unitsSuffix'):' units');}
+function calcRedUnits(){var acc=acctData(redAcct);var a=parseFloat(document.getElementById('mRedAmt').value);document.getElementById('mRedUnits').value=(a>0&&LATEST_NTA>0)?fmtRM(a/LATEST_NTA)+((typeof t==='function')?t('sheet.unitsSuffix'):' units'):'—';}
 function onSubReceiptChange(){
   var fileEl=document.getElementById('mSubReceipt');
   subReceiptFile=(fileEl.files&&fileEl.files[0])||null;
   if(subReceiptFile) document.getElementById('subReceiptErr').style.display='none';
 }
 async function submitSubM(){
+  var tt=(typeof t==='function')?t:function(k){return k;};
   var a=parseFloat(document.getElementById('mSubAmt').value);
   var errEl=document.getElementById('subErr');
   errEl.style.display='none';
   var ok=true;
-  if(!a||a<=0){errEl.textContent='Please enter an amount.';errEl.style.display='block';ok=false;}
+  if(!a||a<=0){errEl.textContent=tt('sheet.pleaseEnterAmount');errEl.style.display='block';ok=false;}
   if(!subReceiptFile){document.getElementById('subReceiptErr').style.display='block';ok=false;}
   if(!ok)return;
   var btn=document.getElementById('mSubBtn'),orig=btn.textContent;
-  btn.disabled=true;btn.textContent='Submitting…';
+  btn.disabled=true;btn.textContent=tt('sheet.submitting');
   try{
     var uid=acctUid(subAcct);
     var uploaderId=(PROFILE&&PROFILE.id)||(AUTH_USER&&AUTH_USER.id);
@@ -492,30 +497,31 @@ async function submitSubM(){
     var fullName=await acctFullName(subAcct);
     await mpSubmitCapitalInjectionRequest(uid,{fullName:fullName,type:'Subscription',amount:a,document:receiptUrl,referenceId:subRefId});
     closeSheet();
-    setTimeout(function(){showToastM('Subscription '+(subRefId||'')+' of RM '+fmtRM(a)+' submitted for review');},200);
+    setTimeout(function(){showToastM(tt('sheet.toastSubPrefix')+(subRefId||'')+tt('sheet.toastOfRM')+fmtRM(a)+tt('sheet.toastSubmittedReview'));},200);
   }catch(e){
-    errEl.textContent='Submission failed: '+((e&&e.message)||'Unknown error');
+    errEl.textContent=tt('sheet.submissionFailed')+((e&&e.message)||'Unknown error');
     errEl.style.display='block';
   }finally{
     btn.disabled=false;btn.textContent=orig;
   }
 }
 async function submitRedM(){
+  var tt=(typeof t==='function')?t:function(k){return k;};
   var acc=acctData(redAcct);
   var a=parseFloat(document.getElementById('mRedAmt').value);
   var errEl=document.getElementById('redErr');
   errEl.style.display='none';
-  if(!acc||!a||a<=0||a>acc.mv){errEl.textContent='Please enter a valid amount.';errEl.style.display='block';return;}
+  if(!acc||!a||a<=0||a>acc.mv){errEl.textContent=tt('sheet.pleaseEnterValidAmount');errEl.style.display='block';return;}
   var btn=document.getElementById('mRedBtn'),orig=btn.textContent;
-  btn.disabled=true;btn.textContent='Submitting…';
+  btn.disabled=true;btn.textContent=tt('sheet.submitting');
   try{
     var uid=acctUid(redAcct);
     var fullName=await acctFullName(redAcct);
     await mpSubmitCapitalInjectionRequest(uid,{fullName:fullName,type:'Redemption',amount:a,document:null,referenceId:redRefId});
     closeSheet();
-    setTimeout(function(){showToastM('Redemption '+(redRefId||'')+' of RM '+fmtRM(a)+' submitted — 15 business days');},200);
+    setTimeout(function(){showToastM(tt('sheet.toastRedPrefix')+(redRefId||'')+tt('sheet.toastOfRM')+fmtRM(a)+tt('sheet.toastSubmitted15Days'));},200);
   }catch(e){
-    errEl.textContent='Submission failed: '+((e&&e.message)||'Unknown error');
+    errEl.textContent=tt('sheet.submissionFailed')+((e&&e.message)||'Unknown error');
     errEl.style.display='block';
   }finally{
     btn.disabled=false;btn.textContent=orig;

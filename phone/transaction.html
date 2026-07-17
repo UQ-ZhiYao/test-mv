@@ -65,7 +65,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
     <button onclick="history.back()" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">Transaction</span>
+    <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);" data-i18n="transaction.pageTitle">Transaction</span>
     <div style="width:40px;"></div>
   </div>
 
@@ -76,23 +76,23 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
       <div class="back-bar">
         <button class="back-btn" onclick="typeof switchTab!=='undefined'?switchTab('all'):history.back()">
           <svg width="18" height="18" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-          Back
+          <span data-i18n="market.back">Back</span>
         </button>
-        <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);">Transaction</span>
+        <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);" data-i18n="transaction.pageTitle">Transaction</span>
         <div style="width:60px;"></div>
       </div>
 
       <!-- Filters -->
       <div class="tx-filters">
         <div class="tx-seg">
-          <button id="txf-all" class="on" onclick="setTxFilter('all')">All</button>
-          <button id="txf-deposit" onclick="setTxFilter('deposit')">Deposit</button>
-          <button id="txf-withdrawal" onclick="setTxFilter('withdrawal')">Withdrawal</button>
+          <button id="txf-all" class="on" onclick="setTxFilter('all')" data-i18n="transaction.filterAll">All</button>
+          <button id="txf-deposit" onclick="setTxFilter('deposit')" data-i18n="portfolio.deposit">Deposit</button>
+          <button id="txf-withdrawal" onclick="setTxFilter('withdrawal')" data-i18n="portfolio.withdrawal">Withdrawal</button>
         </div>
         <select id="txAcctSelect" class="tx-acct-select" onchange="renderTxList()">
-          <option value="all">All</option>
-          <option value="pa">Personal</option>
-          <option value="ja">Joint</option>
+          <option value="all" data-i18n="transaction.filterAll">All</option>
+          <option value="pa" data-i18n="transaction.acctPersonal">Personal</option>
+          <option value="ja" data-i18n="transaction.acctJoint">Joint</option>
         </select>
       </div>
 
@@ -129,11 +129,12 @@ window.renderTxList=function(){
     return (txFilter==='all'||t.kind===txFilter)&&(acct==='all'||t.acct===acct);
   });
   var list=document.getElementById('txList');
-  if(!rows.length){list.innerHTML='<div class="tx-empty">No transactions found</div>';return;}
+  var ttTx=(typeof t==='function')?t:function(k){return k;};
+  if(!rows.length){list.innerHTML='<div class="tx-empty">'+ttTx('transaction.noTransactionsFound')+'</div>';return;}
   list.innerHTML=rows.map(function(t){
     return '<div class="tx-row">'
       +'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.ref+'</div></div>'
-      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?(fmtTxRM(t.units)+' units'):'Pending')+'</div></div>'
+      +'<div class="txr-right"><div class="txr-amt '+(t.kind==='deposit'?'dep':'wd')+'">'+(t.kind==='deposit'?'+':'-')+'RM '+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?(fmtTxRM(t.units)+ttTx('sheet.unitsSuffix')):ttTx('transaction.pending'))+'</div></div>'
       +'</div>';
   }).join('');
 };

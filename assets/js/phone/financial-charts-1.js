@@ -14,7 +14,7 @@ function updateFundSummaryHeader(){
   var tfcSub=document.getElementById('tfcSub');
   if(tfcSub){ tfcSub.textContent=last.nta.toFixed(4)+' \u00a0'+(up?'+':'')+chg.toFixed(4)+' ('+(up?'+':'')+chgPct.toFixed(2)+'%)'; tfcSub.style.color=up?'var(--green)':'var(--red)'; }
   var updEl=document.getElementById('fsUpdated');
-  if(updEl){ updEl.textContent='Updated '+new Date(last.date+'T00:00:00').toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'}); }
+  if(updEl){ updEl.textContent=((typeof t==='function')?t('fund.updatedPrefix'):'Updated ')+new Date(last.date+'T00:00:00').toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'}); }
 
   var wSrc=FUND_NTA_WEEKLY.length?FUND_NTA_WEEKLY:FUND_NTA_MONTHLY;
   if(wSrc.length){
@@ -252,7 +252,7 @@ async function loadFundCorrelationAndSharpe(){
     var noticeEl=document.getElementById('corrDataNotice');
     if(noticeEl){
       if(missingNames.length){
-        noticeEl.textContent=missingNames.join(', ')+' data is temporarily unavailable.';
+        noticeEl.textContent=missingNames.join(', ')+((typeof t==='function')?t('fund.dataTemporarilyUnavailable'):' data is temporarily unavailable.');
         noticeEl.style.display='block';
       } else {
         noticeEl.style.display='none';
@@ -317,7 +317,7 @@ async function loadFundCorrelationAndSharpe(){
 function renderCorrMatrix(){
   var wrap=document.getElementById('corrMatrixWrap');
   if(!wrap)return;
-  if(!corrMatrixData){ wrap.innerHTML='<div style="padding:12px 0;color:var(--fg-3);font-size:.76rem;text-align:center">Loading…</div>'; return; }
+  if(!corrMatrixData){ wrap.innerHTML='<div style="padding:12px 0;color:var(--fg-3);font-size:.76rem;text-align:center">'+((typeof t==='function')?t('fund.loading'):'Loading…')+'</div>'; return; }
   var shortLabels=corrLabels.map(function(l){return l==='ZY-Invest'?'ZY':l==='FBM KLCI'?'KLCI':l;});
   var html='<div style="display:flex;justify-content:center;"><div style="display:grid;grid-template-columns:36px repeat('+shortLabels.length+',48px);gap:2px;box-sizing:border-box;overflow:hidden;">';
   html+='<div></div>';
