@@ -1204,3 +1204,26 @@ function appLockForgotPin(){
   if(typeof doLogout==='function') doLogout();
   else window.location.href='login.html';
 }
+
+// ── SETTINGS MODAL (Me tab) — currently just the language switcher (moved
+// here from login.html, which no longer has its own switcher — language
+// is a whole-app preference, chosen once and applied everywhere via
+// i18n.js's localStorage-backed i18nSetLang()/applyI18n()). The modal's
+// own markup lives inside me.html's #pg-profile fragment (loadPages()
+// only keeps that div's outerHTML on embed, same constraint as every
+// other in-app modal), these open/close functions live in the global
+// bundle since fragment scripts never execute once embedded. ──────────────
+function openSettingsModal(){
+  var scrim=document.getElementById('settingsScrim'), modal=document.getElementById('settingsModal');
+  if(scrim) scrim.style.display='block';
+  if(modal) modal.style.display='block';
+  // Re-sync the active-language button now, not just at page-load time —
+  // this fragment may not have existed yet when i18n.js's own initial
+  // applyI18n() call ran.
+  if(typeof applyI18n==='function') applyI18n();
+}
+function closeSettingsModal(){
+  var scrim=document.getElementById('settingsScrim'), modal=document.getElementById('settingsModal');
+  if(scrim) scrim.style.display='none';
+  if(modal) modal.style.display='none';
+}
