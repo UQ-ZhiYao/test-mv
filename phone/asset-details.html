@@ -35,6 +35,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .back-btn svg{stroke:var(--blue);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 
 /* Asset Details page */
+.menu-group-label{font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;padding:0 4px;}
 .ad-donut-wrap{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px;}
 .ad-donut-total-l{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3);}
 .ad-donut-total-v{font-size:1.5rem;font-weight:700;color:var(--fg-1);letter-spacing:-.02em;}
@@ -112,20 +113,26 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 
       <div style="border-top:1px solid var(--border);margin:32px 16px 0;"></div>
 
-      <!-- Asset Trends -->
+      <!-- Trend Analysis: Asset Trends and P/L Trends are sub-sections
+           sharing one period filter (they're the same underlying series —
+           P/L is just asset value minus deposit — so there's no case for
+           viewing them on different date ranges at once). No divider
+           between the two sub-sections, spacing only. -->
       <div style="padding:16px 16px 0;">
         <div style="height:1em;"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="assetdetails.assetTrends">Asset Trends</div>
-          <div class="ad-seg" id="adSeg">
-            <button class="on" onclick="switchAdPeriod('ytd',this)">YTD</button>
-            <button onclick="switchAdPeriod('1m',this)">1M</button>
-            <button onclick="switchAdPeriod('3m',this)">3M</button>
-            <button onclick="switchAdPeriod('1y',this)">1Y</button>
-            <button onclick="switchAdPeriod('all',this)">ALL</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="assetdetails.trendAnalysis">Trend Analysis</div>
+          <div class="ad-seg" id="trendSeg">
+            <button class="on" onclick="switchTrendPeriod('ytd',this)">YTD</button>
+            <button onclick="switchTrendPeriod('1m',this)">1M</button>
+            <button onclick="switchTrendPeriod('3m',this)">3M</button>
+            <button onclick="switchTrendPeriod('1y',this)">1Y</button>
+            <button onclick="switchTrendPeriod('all',this)">ALL</button>
           </div>
         </div>
-        <!-- Reserved-height hover readout, directly under the title row so
+
+        <div class="menu-group-label" data-i18n="assetdetails.assetTrends">Asset Trends</div>
+        <!-- Reserved-height hover readout, directly under the sub-heading so
              hovering the chart never shifts anything below it — defaults
              to the latest point, updates live on hover/touch. -->
         <div class="ad-trend-hover" id="adTrendHoverInfo">
@@ -142,23 +149,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
           <div class="ad-trend-legend-item"><span class="ad-trend-legend-sw" style="border-top:2px solid #1565C0;"></span><span data-i18n="assetdetails.assetValue">Asset Value</span></div>
           <div class="ad-trend-legend-item"><span class="ad-trend-legend-sw" style="border-top:2px dashed #78716C;"></span><span data-i18n="assetdetails.accumulatedDeposit">Accumulated Deposit</span></div>
         </div>
-        <div style="height:16px;"></div>
-      </div>
 
-      <div style="border-top:1px solid var(--border);margin:0 16px;"></div>
+        <div style="height:22px;"></div>
 
-      <!-- P/L Trends -->
-      <div style="padding:16px 16px 0;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="assetdetails.plTrends">P/L Trends</div>
-          <div class="ad-seg" id="plSeg">
-            <button class="on" onclick="switchPlPeriod('ytd',this)">YTD</button>
-            <button onclick="switchPlPeriod('1m',this)">1M</button>
-            <button onclick="switchPlPeriod('3m',this)">3M</button>
-            <button onclick="switchPlPeriod('1y',this)">1Y</button>
-            <button onclick="switchPlPeriod('all',this)">ALL</button>
-          </div>
-        </div>
+        <div class="menu-group-label" data-i18n="assetdetails.plTrends">P/L Trends</div>
         <div class="ad-trend-hover" id="plTrendHoverInfo">
           <div class="ad-trend-hover-date" id="plTrendHoverDate"></div>
           <div id="plTrendHoverRows"></div>
@@ -169,6 +163,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
           <span id="plTrendL1"></span>
           <span id="plTrendL2"></span>
         </div>
+
         <div style="height:16px;"></div>
       </div>
 
@@ -217,7 +212,7 @@ var AD_TREND={
   '1y':{v:[68200,71400,73900,76200,79850,83400,86300,88000],d:[65000,65000,70000,75000,75000,80000,80000,80000],l:["Jul '25",'Jan',"Jul '26"]},
   all:{v:[42000,51200,58900,66700,73900,79850,84900,88000],d:[40000,40000,50000,50000,60000,70000,75000,80000],l:['2022','2024','2026']}
 };
-var adPeriod='ytd';
+var trendPeriod='ytd';
 var adTrendState={};
 // Rounds an axis value to a "nice" figure (nearest 10/100/1000/10000/... based
 // on its own magnitude) and formats it compactly (K/M), instead of the raw
@@ -335,15 +330,8 @@ function adTrendHover(e){
   drawAdTrendFrame(idx);
 }
 function adTrendLeave(){ drawAdTrendFrame(null); }
-window.switchAdPeriod=function(p,btn){
-  adPeriod=p;
-  document.querySelectorAll('#adSeg button').forEach(function(b){b.classList.remove('on');});
-  btn.classList.add('on');
-  drawAdTrend(p);
-};
 // P/L Trends demo: derives P/L (asset value - deposit) from the same
 // AD_TREND series above, single line, same interaction pattern.
-var plPeriod='ytd';
 var plTrendState={};
 function drawPlTrend(period){
   var canvas=document.getElementById('plTrendChart');
@@ -446,14 +434,15 @@ function plTrendHover(e){
   drawPlTrendFrame(idx);
 }
 function plTrendLeave(){ drawPlTrendFrame(null); }
-window.switchPlPeriod=function(p,btn){
-  plPeriod=p;
-  document.querySelectorAll('#plSeg button').forEach(function(b){b.classList.remove('on');});
+window.switchTrendPeriod=function(p,btn){
+  trendPeriod=p;
+  document.querySelectorAll('#trendSeg button').forEach(function(b){b.classList.remove('on');});
   btn.classList.add('on');
+  drawAdTrend(p);
   drawPlTrend(p);
 };
 drawAdDonut();drawAdTrend('ytd');drawPlTrend('ytd');
-window.addEventListener('resize',function(){drawAdDonut();drawAdTrend(adPeriod);drawPlTrend(plPeriod);});
+window.addEventListener('resize',function(){drawAdDonut();drawAdTrend(trendPeriod);drawPlTrend(trendPeriod);});
 }
 </script>
 </body>
