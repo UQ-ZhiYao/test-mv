@@ -4,7 +4,7 @@
 // browser only re-checks this file for changes on its own schedule (at
 // most once ~24h per the service worker spec) and only clears the old
 // cache once it detects sw.js's own bytes changed.
-const CACHE = 'zy-v4';
+const CACHE = 'zy-v5';
 // member-api.js is NOT in this list on purpose. It used to be, and every
 // time it changed, visitors kept getting the old copy for a while even
 // after this cache was bumped — because the fetch handler below is
