@@ -4,11 +4,11 @@ function togglePortfolioValue(){portfolioVisible=!portfolioVisible;var icon=docu
 // any timezone ahead of UTC (e.g. MYT/UTC+8), making "YTD" start on Dec
 // 31 of the prior year instead of Jan 1.
 function ymdLocal(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
-// Cumulative asset value (units held x NTA, as before) AND cumulative
-// deposits (running total of approved subscription amounts only — never
-// reduced by withdrawals, since it tracks total principal contributed,
-// not current net position) for the same date axis, so the two can be
-// plotted as two lines on one chart. The date axis itself is clamped to
+// Cumulative asset value (units held x NTA, as before) AND cumulative net
+// deposits (running total of approved capital_injection amounts — both
+// subscriptions and withdrawals, since withdrawal rows already store
+// their amount signed negative) for the same date axis, so the two can
+// be plotted as two lines on one chart. The date axis itself is clamped to
 // this member's own first actual deposit (not just the earliest approved
 // capital_injection row of any type, which could be a redemption/
 // adjustment) — previously a period like "1Y"/"ALL" would query
@@ -36,7 +36,7 @@ async function loadAdTrendData(period){
       var u=parseFloat(allCi[idx].units)||0;
       var a=parseFloat(allCi[idx].amount)||0;
       cumUnits+=u;
-      if(u>0)cumDeposit+=a;
+      cumDeposit+=a;
       idx++
     }
     vals.push(cumUnits*(parseFloat(r.nta)||0));
@@ -48,11 +48,12 @@ async function loadAdTrendData(period){
 function sampleAdLabels(dates){if(!dates.length)return[];var fmt=function(d){return new Date(d+"T00:00:00").toLocaleDateString("en-MY",{month:"short",year:"2-digit"})};return[fmt(dates[0]),fmt(dates[Math.floor(dates.length/2)]),fmt(dates[dates.length-1])]}
 function niceAxisValue(v){var av=Math.abs(v);var step=av>=1e6?1e5:av>=1e5?1e4:av>=1e4?1e3:av>=1e3?100:av>=100?10:1;return Math.round(v/step)*step}
 function fmtAxisLabel(v){var r=niceAxisValue(v);if(Math.abs(r)>=1e6)return(r/1e6).toFixed(r%1e6?1:0)+"M";if(Math.abs(r)>=1e3)return(r/1e3).toFixed(r%1e3?1:0)+"K";return String(r)}
+function adHoverRow(label,val,cls){return'<div class="ad-trend-hover-row"><span class="lbl">'+label+'</span><span class="val'+(cls?" "+cls:"")+'">'+val+"</span></div>"}
 async function drawAdTrend(period){
   var canvas=document.getElementById("adTrendChart");
   if(!canvas)return;
   var l0e=document.getElementById("adTrendL0"),l1e=document.getElementById("adTrendL1"),l2e=document.getElementById("adTrendL2");
-  var hDate=document.getElementById("adTrendHoverDate"),hVals=document.getElementById("adTrendHoverVals");
+  var hDate=document.getElementById("adTrendHoverDate"),hRows=document.getElementById("adTrendHoverRows");
   var data;
   try{data=await loadAdTrendData(period)}catch(e){console.error("[Asset Trends] data load failed:",e&&e.message);data={v:[],d:[],l:[]}}
   var n=data.v.length;
@@ -62,7 +63,7 @@ async function drawAdTrend(period){
     if(l1e)l1e.textContent=typeof t==="function"?t("assetdetails.noData"):"No data";
     if(l2e)l2e.textContent="";
     if(hDate)hDate.textContent="";
-    if(hVals)hVals.innerHTML="";
+    if(hRows)hRows.innerHTML="";
     var ctx0=canvas.getContext("2d");
     ctx0.clearRect(0,0,canvas.width,canvas.height);
     return
@@ -143,8 +144,8 @@ function drawAdTrendFrame(hoverIdx){
     }
   }catch(e){console.error("[Asset Trends] hover marker draw failed:",e&&e.message)}
   try{
-    var hDate=document.getElementById("adTrendHoverDate"),hVals=document.getElementById("adTrendHoverVals");
-    if(hDate&&hVals){
+    var hDate=document.getElementById("adTrendHoverDate"),hRows=document.getElementById("adTrendHoverRows");
+    if(hDate&&hRows){
       var dt=new Date(s.data.l[idx]+"T00:00:00");
       hDate.textContent=dt.toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"});
       var visible=typeof portfolioVisible==="undefined"||portfolioVisible;
@@ -154,7 +155,7 @@ function drawAdTrendFrame(hoverIdx){
       var pnlStr=visible?(pnl>=0?"+":"-")+"RM "+fmtMoney(Math.abs(pnl)):"••••••";
       var pnlCls=pnl>=0?"pnl-pos":"pnl-neg";
       var tt=typeof t==="function"?t:function(k){return k};
-      hVals.innerHTML="<span>"+tt("assetdetails.assetValue")+" "+valStr+"</span>"+"<span>"+tt("assetdetails.accumulatedDeposit")+" "+depStr+"</span>"+"<span class=\""+pnlCls+"\">"+tt("assetdetails.pnl")+" "+pnlStr+"</span>"
+      hRows.innerHTML=adHoverRow(tt("assetdetails.assetValue"),valStr)+adHoverRow(tt("assetdetails.accumulatedDeposit"),depStr)+adHoverRow(tt("assetdetails.pnl"),pnlStr,pnlCls)
     }
   }catch(e){console.error("[Asset Trends] hover readout update failed:",e&&e.message)}
 }

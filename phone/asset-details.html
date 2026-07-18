@@ -47,12 +47,14 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .ad-seg button{font:inherit;font-size:.72rem;font-weight:600;padding:4px 8px;border:none;background:none;border-radius:6px;color:var(--fg-3);cursor:pointer;}
 .ad-seg button.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
 .ad-trend-lbls{display:flex;justify-content:space-between;margin-top:4px;font-size:.68rem;color:var(--fg-3);}
-.ad-trend-hover{min-height:32px;margin-bottom:6px;}
-.ad-trend-hover-date{font-size:.66rem;color:var(--fg-3);font-weight:600;line-height:1.3;}
-.ad-trend-hover-vals{display:flex;flex-wrap:wrap;gap:10px;font-size:.72rem;font-weight:700;color:var(--fg-1);line-height:1.4;}
-.ad-trend-hover-vals .pnl-pos{color:var(--green);}
-.ad-trend-hover-vals .pnl-neg{color:var(--red);}
-.ad-trend-legend{display:flex;gap:14px;margin-bottom:8px;}
+.ad-trend-hover{min-height:78px;margin-bottom:8px;}
+.ad-trend-hover-date{font-size:.66rem;color:var(--fg-3);font-weight:600;line-height:1.3;margin-bottom:3px;}
+.ad-trend-hover-row{display:flex;justify-content:space-between;align-items:center;font-size:.76rem;line-height:1.7;}
+.ad-trend-hover-row .lbl{color:var(--fg-3);}
+.ad-trend-hover-row .val{color:var(--fg-1);font-weight:700;}
+.ad-trend-hover-row .val.pnl-pos{color:var(--green);}
+.ad-trend-hover-row .val.pnl-neg{color:var(--red);}
+.ad-trend-legend{display:flex;justify-content:center;gap:14px;margin-top:10px;}
 .ad-trend-legend-item{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--fg-3);}
 .ad-trend-legend-sw{width:12px;height:0;flex-shrink:0;}
 </style>
@@ -128,17 +130,17 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
              to the latest point, updates live on hover/touch. -->
         <div class="ad-trend-hover" id="adTrendHoverInfo">
           <div class="ad-trend-hover-date" id="adTrendHoverDate"></div>
-          <div class="ad-trend-hover-vals" id="adTrendHoverVals"></div>
-        </div>
-        <div class="ad-trend-legend">
-          <div class="ad-trend-legend-item"><span class="ad-trend-legend-sw" style="border-top:2px solid #1565C0;"></span><span data-i18n="assetdetails.assetValue">Asset Value</span></div>
-          <div class="ad-trend-legend-item"><span class="ad-trend-legend-sw" style="border-top:2px dashed #94A3B8;"></span><span data-i18n="assetdetails.accumulatedDeposit">Accumulated Deposit</span></div>
+          <div id="adTrendHoverRows"></div>
         </div>
         <canvas id="adTrendChart" style="width:100%;height:150px;display:block;touch-action:none;"></canvas>
         <div class="ad-trend-lbls">
           <span id="adTrendL0"></span>
           <span id="adTrendL1"></span>
           <span id="adTrendL2"></span>
+        </div>
+        <div class="ad-trend-legend">
+          <div class="ad-trend-legend-item"><span class="ad-trend-legend-sw" style="border-top:2px solid #1565C0;"></span><span data-i18n="assetdetails.assetValue">Asset Value</span></div>
+          <div class="ad-trend-legend-item"><span class="ad-trend-legend-sw" style="border-top:2px dashed #78716C;"></span><span data-i18n="assetdetails.accumulatedDeposit">Accumulated Deposit</span></div>
         </div>
         <div style="height:16px;"></div>
       </div>
@@ -177,9 +179,10 @@ function drawAdDonut(){
   var jWrap=document.getElementById('adLegendJointWrap');
   if(jWrap) jWrap.style.display='';
 }
-// v = asset value (units x NTA), d = accumulated deposit (cumulative
-// principal only, never reduced by withdrawals) — same two series the
-// embedded page plots from real capital_injection/nta_daily rows.
+// v = asset value (units x NTA), d = accumulated net deposit (cumulative
+// capital_injection amount — subscriptions and withdrawals, withdrawals
+// signed negative) — same two series the embedded page plots from real
+// capital_injection/nta_daily rows.
 var AD_TREND={
   ytd:{v:[76200,78100,79850,81200,83400,85100,86300,88000],d:[75000,75000,75000,80000,80000,80000,80000,80000],l:['Jan','Mar','May','Jul']},
   '1m':{v:[85200,85900,86400,85800,86900,87500,87200,88000],d:[80000,80000,80000,80000,80000,80000,80000,80000],l:['Wk1','Wk2','Wk3','Wk4']},
@@ -204,6 +207,7 @@ function fmtAxisLabel(v){
   return String(r);
 }
 function fmtRMDemo(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function adHoverRowDemo(label,val,cls){ return '<div class="ad-trend-hover-row"><span class="lbl">'+label+'</span><span class="val'+(cls?' '+cls:'')+'">'+val+'</span></div>'; }
 function drawAdTrend(period){
   var canvas=document.getElementById('adTrendChart');
   var data=AD_TREND[period];
@@ -271,13 +275,13 @@ function drawAdTrendFrame(hoverIdx){
     ctx.beginPath();ctx.arc(px(idx),py(vals[idx]),4,0,Math.PI*2);ctx.fillStyle='#1565C0';ctx.fill();
     ctx.beginPath();ctx.arc(px(idx),py(deps[idx]),4,0,Math.PI*2);ctx.fillStyle='#78716C';ctx.fill();
   }
-  var hDate=document.getElementById('adTrendHoverDate'),hVals=document.getElementById('adTrendHoverVals');
-  if(hDate&&hVals){
+  var hDate=document.getElementById('adTrendHoverDate'),hRows=document.getElementById('adTrendHoverRows');
+  if(hDate&&hRows){
     hDate.textContent=s.data.l[idx]||'';
     var pnl=vals[idx]-deps[idx];
     var pnlCls=pnl>=0?'pnl-pos':'pnl-neg';
     var pnlStr=(pnl>=0?'+':'-')+'RM '+fmtRMDemo(Math.abs(pnl));
-    hVals.innerHTML='<span>Asset Value RM '+fmtRMDemo(vals[idx])+'</span>'+'<span>Accumulated Deposit RM '+fmtRMDemo(deps[idx])+'</span>'+'<span class="'+pnlCls+'">P/L '+pnlStr+'</span>';
+    hRows.innerHTML=adHoverRowDemo('Asset Value','RM '+fmtRMDemo(vals[idx]))+adHoverRowDemo('Accumulated Deposit','RM '+fmtRMDemo(deps[idx]))+adHoverRowDemo('P/L',pnlStr,pnlCls);
   }
 }
 function attachAdTrendListeners(){
