@@ -28,7 +28,14 @@ async function loadAdTrendData(period){
   else if(period==="ytd"){cutoff=new Date(today.getFullYear(),0,1)}
   var cutoffStr=cutoff?ymdLocal(cutoff):null;
   var effectiveCutoff=cutoffStr&&cutoffStr>firstDepositDate?cutoffStr:firstDepositDate;
-  var res=await sb.from("nta_daily").select("date,nta").order("date",{ascending:true}).gte("date",effectiveCutoff);
+  // Explicit .limit() — without it, "ALL" on an account with several
+  // years of daily nta_daily rows silently hit PostgREST's default
+  // max-rows cap, which (since the query is ascending from the start
+  // date) truncated the END of the range instead of the start: the
+  // chart looked correctly clamped to the first deposit but stopped
+  // updating years before today. 5000 rows covers ~13+ years of daily
+  // NTA history, far beyond any realistic account/fund age.
+  var res=await sb.from("nta_daily").select("date,nta").order("date",{ascending:true}).gte("date",effectiveCutoff).limit(5000);
   var ntaRows=res.data||[];
   var idx=0,cumUnits=0,cumDeposit=0,vals=[],deps=[],lbls=[];
   ntaRows.forEach(function(r){
@@ -184,4 +191,144 @@ function adTrendHover(e){
   drawAdTrendFrame(idx)
 }
 function adTrendLeave(){drawAdTrendFrame(null)}
-function switchAdPeriod(p,btn){adPeriod=p;document.querySelectorAll("#adSeg button").forEach(function(b){b.classList.remove("on")});btn.classList.add("on");drawAdTrend(p)}var subAcct="pa",redAcct="pa";var subReceiptFile=null;var subRefId=null,redRefId=null;var jaDisplayName=null;function fmtRM(n){return(n||0).toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2})}function acctData(a){return a==="ja"?JA_ACCT:PA_ACCT}function acctUid(a){return a==="ja"?PROFILE&&PROFILE.joint_account_id:PROFILE&&PROFILE.id}async function acctFullName(a){if(a==="pa")return PROFILE&&PROFILE.full_name||null;if(jaDisplayName===null&&PROFILE&&PROFILE.joint_account_id){try{jaDisplayName=await mpLoadJointAccountName(PROFILE.joint_account_id)}catch(e){console.warn("Joint account name lookup failed:",e.message)}}return jaDisplayName||null}function genRequestRef(type,uid,index){var d=new Date;var yy=String(d.getFullYear()).slice(-2);var mm=String(d.getMonth()+1).padStart(2,"0");var dd=String(d.getDate()).padStart(2,"0");var t=(type||"?").charAt(0).toUpperCase();var idHex=String(uid||"").replace(/[^0-9a-fA-F]/g,"");var idPart=(idHex.slice(-3)||"000").toUpperCase().padStart(3,"0");var idxPart=String(index%100).padStart(2,"0");return t+yy+mm+dd+idPart+idxPart}async function refreshRequestRef(prefix,type,acct){var uid=acctUid(acct);var el=document.getElementById(prefix+"Ref");if(el)el.textContent="—";var ref=null;if(uid){try{var count=await mpCountCapitalInjectionRequests(uid,type);ref=genRequestRef(type,uid,count+1)}catch(e){console.warn("Reference ID lookup failed:",e.message)}}if(prefix==="sub")subRefId=ref;else redRefId=ref;if(el)el.textContent=ref||"—"}function openSheet(type){if(typeof ACCOUNT_RESTRICTED!=="undefined"&&ACCOUNT_RESTRICTED){document.getElementById("sheetScrim").classList.add("vis");document.getElementById("restrictedSheet").classList.add("vis");return}var prefix=type==="subscribe"?"sub":"red";jaDisplayName=null;document.getElementById("sheetScrim").classList.add("vis");document.getElementById(type==="subscribe"?"subSheet":"redSheet").classList.add("vis");var jaBtn=document.getElementById(prefix+"Acct-ja");if(jaBtn)jaBtn.style.display=PROFILE&&PROFILE.joint_account_id?"":"none";if(type==="subscribe"){var b=ADMIN_BANK||{};document.getElementById("subBankName").textContent=b.bank_name||"—";document.getElementById("subBankHolder").textContent=b.bank_account_holder||"—";document.getElementById("subBankAcctNo").textContent=b.bank_account_no||"—";document.getElementById("subNtaLbl").textContent=(typeof t==="function"?t("sheet.indicativeUnits"):"Indicative Units (NTA ")+(LATEST_NTA>0?LATEST_NTA.toFixed(4):"—")+")";document.getElementById("mSubAmt").value="";document.getElementById("mSubUnits").value="—";subReceiptFile=null;var fileEl=document.getElementById("mSubReceipt");if(fileEl)fileEl.value="";document.getElementById("subReceiptErr").style.display="none";document.getElementById("subErr").style.display="none";selectAcct("sub","pa")}else{var P=PROFILE||{};var acctNo=P.bank_account_no?"···· "+String(P.bank_account_no).slice(-4):null;var parts=[P.bank_name,acctNo,P.bank_account_holder].filter(Boolean);document.getElementById("redPayoutBank").textContent=parts.length?parts.join(" · "):"—";document.getElementById("redNtaLbl").textContent=(typeof t==="function"?t("sheet.indicativeUnitsRedeem"):"Indicative Units to Redeem (NTA ")+(LATEST_NTA>0?LATEST_NTA.toFixed(4):"—")+")";document.getElementById("redErr").style.display="none";selectAcct("red","pa")}}function closeSheet(){document.querySelectorAll(".sheet").forEach(function(s){s.classList.remove("vis")});document.getElementById("sheetScrim").classList.remove("vis")}function selectAcct(sheet,acct){if(sheet==="sub")subAcct=acct;else redAcct=acct;["pa","ja"].forEach(function(a){var btn=document.getElementById(sheet+"Acct-"+a);if(!btn)return;var on=a===acct;btn.style.background=on?"#fff":"none";btn.style.color=on?"var(--blue)":"var(--fg-3)";btn.style.boxShadow=on?"0 1px 4px rgba(0,0,0,.1)":"none"});if(sheet==="red"){var acc=acctData(acct);document.getElementById("redHeldUnits").textContent=fmtRM(acc?acc.units:0);document.getElementById("redHeldValue").textContent=fmtRM(acc?acc.mv:0);document.getElementById("mRedAmt").value="";document.getElementById("mRedUnits").value="—"}refreshRequestRef(sheet,sheet==="sub"?"Subscription":"Redemption",acct)}function setSubAmt(v){document.getElementById("mSubAmt").value=v;calcSubUnits()}function calcSubUnits(){var a=parseFloat(document.getElementById("mSubAmt").value);document.getElementById("mSubUnits").value=a>0&&LATEST_NTA>0?fmtRM(a/LATEST_NTA)+(typeof t==="function"?t("sheet.unitsSuffix"):" units"):"—"}function setRedPct(p){var acc=acctData(redAcct);if(!acc)return;var a=acc.mv*p/100;document.getElementById("mRedAmt").value=a.toFixed(2);document.getElementById("mRedUnits").value=fmtRM(acc.units*p/100)+(typeof t==="function"?t("sheet.unitsSuffix"):" units")}function calcRedUnits(){var acc=acctData(redAcct);var a=parseFloat(document.getElementById("mRedAmt").value);document.getElementById("mRedUnits").value=a>0&&LATEST_NTA>0?fmtRM(a/LATEST_NTA)+(typeof t==="function"?t("sheet.unitsSuffix"):" units"):"—"}function onSubReceiptChange(){var fileEl=document.getElementById("mSubReceipt");subReceiptFile=fileEl.files&&fileEl.files[0]||null;if(subReceiptFile)document.getElementById("subReceiptErr").style.display="none"}async function submitSubM(){var tt=typeof t==="function"?t:function(k){return k};var a=parseFloat(document.getElementById("mSubAmt").value);var errEl=document.getElementById("subErr");errEl.style.display="none";var ok=true;if(!a||a<=0){errEl.textContent=tt("sheet.pleaseEnterAmount");errEl.style.display="block";ok=false}if(!subReceiptFile){document.getElementById("subReceiptErr").style.display="block";ok=false}if(!ok)return;var btn=document.getElementById("mSubBtn"),orig=btn.textContent;btn.disabled=true;btn.textContent=tt("sheet.submitting");try{var uid=acctUid(subAcct);var uploaderId=PROFILE&&PROFILE.id||AUTH_USER&&AUTH_USER.id;var receiptUrl=await mpUploadReceipt(uploaderId,subReceiptFile);var fullName=await acctFullName(subAcct);await mpSubmitCapitalInjectionRequest(uid,{fullName:fullName,type:"Subscription",amount:a,document:receiptUrl,referenceId:subRefId});closeSheet();setTimeout(function(){showToastM(tt("sheet.toastSubPrefix")+(subRefId||"")+tt("sheet.toastOfRM")+fmtRM(a)+tt("sheet.toastSubmittedReview"))},200)}catch(e){errEl.textContent=tt("sheet.submissionFailed")+(e&&e.message||"Unknown error");errEl.style.display="block"}finally{btn.disabled=false;btn.textContent=orig}}async function submitRedM(){var tt=typeof t==="function"?t:function(k){return k};var acc=acctData(redAcct);var a=parseFloat(document.getElementById("mRedAmt").value);var errEl=document.getElementById("redErr");errEl.style.display="none";if(!acc||!a||a<=0||a>acc.mv){errEl.textContent=tt("sheet.pleaseEnterValidAmount");errEl.style.display="block";return}var btn=document.getElementById("mRedBtn"),orig=btn.textContent;btn.disabled=true;btn.textContent=tt("sheet.submitting");try{var uid=acctUid(redAcct);var fullName=await acctFullName(redAcct);await mpSubmitCapitalInjectionRequest(uid,{fullName:fullName,type:"Redemption",amount:a,document:null,referenceId:redRefId});closeSheet();setTimeout(function(){showToastM(tt("sheet.toastRedPrefix")+(redRefId||"")+tt("sheet.toastOfRM")+fmtRM(a)+tt("sheet.toastSubmitted15Days"))},200)}catch(e){errEl.textContent=tt("sheet.submissionFailed")+(e&&e.message||"Unknown error");errEl.style.display="block"}finally{btn.disabled=false;btn.textContent=orig}}var MARKETS={asia:[{n:"FBM KLCI",ex:"Bursa",v:1524.38,c:8.72,cp:.57,up:true},{n:"Nikkei 225",ex:"JPX",v:38947.01,c:312.5,cp:.81,up:true},{n:"Hang Seng",ex:"HKEX",v:17651.82,c:-124.3,cp:-.7,up:false},{n:"Shanghai Comp.",ex:"SSE",v:3089.26,c:-18.44,cp:-.59,up:false},{n:"Straits Times",ex:"SGX",v:3421.75,c:21.08,cp:.62,up:true},{n:"KOSPI",ex:"KRX",v:2642.36,c:15.88,cp:.6,up:true},{n:"Nifty 50",ex:"NSE",v:24601.4,c:185.2,cp:.76,up:true},{n:"ASX 200",ex:"ASX",v:8241.6,c:38.4,cp:.47,up:true}],us:[{n:"S&P 500",ex:"NYSE",v:5482.87,c:38.24,cp:.7,up:true},{n:"Nasdaq",ex:"NASDAQ",v:17857.02,c:142.68,cp:.8,up:true},{n:"Dow Jones",ex:"NYSE",v:42847.36,c:-120.14,cp:-.28,up:false},{n:"Russell 2000",ex:"NYSE",v:2081.44,c:14.22,cp:.69,up:true},{n:"S&P/TSX Comp.",ex:"TSX",v:24312.8,c:98.5,cp:.41,up:true},{n:"Bovespa",ex:"B3",v:127841,c:-540.2,cp:-.42,up:false}],eu:[{n:"FTSE 100",ex:"LSE",v:8447.12,c:32.18,cp:.38,up:true},{n:"DAX",ex:"Xetra",v:18892.34,c:124.56,cp:.66,up:true},{n:"CAC 40",ex:"Euronext",v:7681.25,c:-38.44,cp:-.5,up:false},{n:"Euro Stoxx 50",ex:"Euronext",v:4981.88,c:28.34,cp:.57,up:true},{n:"AEX",ex:"AMS",v:924.44,c:5.88,cp:.64,up:true},{n:"SMI",ex:"SIX",v:12284.77,c:-44.21,cp:-.36,up:false}],crypto:[{n:"Bitcoin",ex:"BTC",v:98421,c:1842,cp:1.91,up:true},{n:"Ethereum",ex:"ETH",v:3814.2,c:-82.4,cp:-2.12,up:false},{n:"Solana",ex:"SOL",v:182.44,c:8.22,cp:4.72,up:true},{n:"XRP",ex:"XRP",v:.5842,c:.0124,cp:2.17,up:true},{n:"BNB",ex:"BNB",v:612.8,c:14.4,cp:2.4,up:true},{n:"USDT",ex:"USDT",v:1.0001,c:1e-4,cp:.01,up:true}]};var mktRegion="asia";function mktTab(r,btn){mktRegion=r;document.querySelectorAll('[id^="mkt-tab-"]').forEach(function(b){b.classList.remove("on")});btn.classList.add("on");renderMktList()}function fmtNum(n){return n>=1e3?n.toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2}):n>=1?n.toFixed(2):n.toFixed(4)}function renderMktList(){var data=MARKETS[mktRegion];var el=document.getElementById("mktList");if(!el)return;el.innerHTML=data.map(function(d,i){var clr=d.up?"var(--green)":"var(--red)";var sign=d.up?"+":"";return'<div style="display:flex;align-items:center;padding:12px 16px;border-bottom:'+(i<data.length-1?"1px solid var(--border)":"none")+'">'+'<div style="width:36px;height:36px;border-radius:9px;background:'+(d.up?"var(--green-bg)":"var(--red-bg)")+";display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;font-size:.6rem;font-weight:700;color:"+clr+';text-align:center;line-height:1.2">'+d.ex+"</div>"+'<div style="flex:1;min-width:0"><div style="font-size:.86rem;font-weight:600;color:var(--fg-1)">'+d.n+"</div></div>"+'<div style="text-align:right"><div style="font-size:.88rem;font-weight:700;font-family:monospace;color:var(--fg-1)">'+fmtNum(d.v)+"</div>"+'<div style="font-size:.72rem;font-weight:700;color:'+clr+'">'+sign+d.cp.toFixed(2)+"%</div></div>"+"</div>"}).join("")}function drawKlciSparkline(){var c=document.getElementById("klciSparkline");if(!c)return;var ctx=c.getContext("2d");var v=[1514,1516,1512,1519,1521,1515,1518,1522,1520,1524];var mn=Math.min.apply(null,v),mx=Math.max.apply(null,v),rng=mx-mn;var W=120,H=36,n=v.length;ctx.clearRect(0,0,W,H);ctx.beginPath();ctx.strokeStyle="rgba(255,255,255,.9)";ctx.lineWidth=1.5;ctx.lineJoin="round";v.forEach(function(val,i){var x=i/(n-1)*(W-4)+2,y=H-4-(val-mn)/rng*(H-8);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()}function updateMktTime(){var el=document.getElementById("mktTime");if(!el)return;var d=new Date,h=d.getHours(),m=d.getMinutes(),s=d.getSeconds();el.textContent=(h%12||12)+":"+(m<10?"0":"")+m+":"+(s<10?"0":"")+s+(h>=12?" PM":" AM")}
+function switchAdPeriod(p,btn){adPeriod=p;document.querySelectorAll("#adSeg button").forEach(function(b){b.classList.remove("on")});btn.classList.add("on");drawAdTrend(p)}
+var plPeriod="ytd";var plTrendState={};
+// Reuses the same asset-value/deposit series loadAdTrendData() already
+// fetches (one network round trip covers both Asset Trends and P/L
+// Trends) and derives P/L = asset value - net deposit for each point,
+// plus the deposit figure needed to compute Return % on hover.
+async function loadPlTrendData(period){
+  var data=await loadAdTrendData(period);
+  var pnl=data.v.map(function(v,i){return v-data.d[i]});
+  return{p:pnl,dep:data.d,l:data.l}
+}
+async function drawPlTrend(period){
+  var canvas=document.getElementById("plTrendChart");
+  if(!canvas)return;
+  var l0e=document.getElementById("plTrendL0"),l1e=document.getElementById("plTrendL1"),l2e=document.getElementById("plTrendL2");
+  var hDate=document.getElementById("plTrendHoverDate"),hRows=document.getElementById("plTrendHoverRows");
+  var data;
+  try{data=await loadPlTrendData(period)}catch(e){console.error("[P/L Trends] data load failed:",e&&e.message);data={p:[],dep:[],l:[]}}
+  var n=data.p.length;
+  if(n<2){
+    plTrendState={};
+    if(l0e)l0e.textContent="";
+    if(l1e)l1e.textContent=typeof t==="function"?t("assetdetails.noData"):"No data";
+    if(l2e)l2e.textContent="";
+    if(hDate)hDate.textContent="";
+    if(hRows)hRows.innerHTML="";
+    var ctx0=canvas.getContext("2d");
+    ctx0.clearRect(0,0,canvas.width,canvas.height);
+    return
+  }
+  var dpr=window.devicePixelRatio||1;
+  var W=canvas.clientWidth||canvas.getBoundingClientRect().width,H=150;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+"px";canvas.style.height=H+"px";
+  canvas.getContext("2d").scale(dpr,dpr);
+  var mn=Math.min.apply(null,data.p),mx=Math.max.apply(null,data.p);
+  if(mn>0)mn=0;if(mx<0)mx=0; // always include the zero line for a P/L chart
+  var rng=mx-mn||1;
+  var padX=6,padY=10;
+  plTrendState={data:data,n:n,W:W,H:H,mn:mn,mx:mx,rng:rng,padX:padX,padY:padY};
+  var lbls=sampleAdLabels(data.l);
+  if(l0e)l0e.textContent=lbls[0]||"";
+  if(l1e)l1e.textContent=lbls[1]||"";
+  if(l2e)l2e.textContent=lbls[2]||"";
+  attachPlTrendListeners();
+  drawPlTrendFrame(null)
+}
+function drawPlTrendFrame(hoverIdx){
+  var s=plTrendState;
+  if(!s.data)return;
+  var canvas=document.getElementById("plTrendChart");
+  if(!canvas)return;
+  var ctx=canvas.getContext("2d");
+  var W=s.W,H=s.H,padX=s.padX,padY=s.padY,mn=s.mn,mx=s.mx,rng=s.rng,n=s.n;
+  var pnl=s.data.p;
+  ctx.clearRect(0,0,W,H);
+  function px(i){return padX+i/(n-1)*(W-padX*2)}
+  function py(v){return H-padY-(v-mn)/rng*(H-padY*2)}
+  try{
+    var grad=ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,"rgba(21,101,192,.18)");
+    grad.addColorStop(1,"rgba(21,101,192,0)");
+    ctx.beginPath();ctx.moveTo(px(0),py(pnl[0]));
+    for(var i=1;i<n;i++)ctx.lineTo(px(i),py(pnl[i]));
+    ctx.lineTo(px(n-1),H-padY);ctx.lineTo(px(0),H-padY);ctx.closePath();
+    ctx.fillStyle=grad;ctx.fill();
+    ctx.beginPath();ctx.strokeStyle="#1565C0";ctx.lineWidth=2;ctx.lineJoin="round";ctx.lineCap="round";
+    ctx.moveTo(px(0),py(pnl[0]));
+    for(var i=1;i<n;i++)ctx.lineTo(px(i),py(pnl[i]));
+    ctx.stroke()
+  }catch(e){console.error("[P/L Trends] line draw failed:",e&&e.message)}
+  try{
+    if(mn<0&&mx>0){
+      ctx.save();ctx.setLineDash([2,3]);ctx.strokeStyle="rgba(100,116,139,.5)";ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(padX,py(0));ctx.lineTo(W-padX,py(0));ctx.stroke();
+      ctx.restore()
+    }
+  }catch(e){console.error("[P/L Trends] zero-line draw failed:",e&&e.message)}
+  try{
+    ctx.beginPath();ctx.arc(px(n-1),py(pnl[n-1]),3.5,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.strokeStyle="#1565C0";ctx.lineWidth=2;ctx.stroke()
+  }catch(e){console.error("[P/L Trends] endpoint dot draw failed:",e&&e.message)}
+  try{
+    ctx.font="700 10px DM Sans,sans-serif";ctx.textAlign="left";
+    [mx,(mn+mx)/2,mn].forEach(function(v,gi){
+      var yy=padY+gi*((H-padY*2)/2);
+      var txt=(typeof portfolioVisible==="undefined"||portfolioVisible)?fmtAxisLabel(v):"••••";
+      var tw=ctx.measureText(txt).width;
+      ctx.fillStyle="rgba(255,255,255,.9)";ctx.fillRect(padX-2,yy-9,tw+8,14);
+      ctx.fillStyle="#334155";ctx.fillText(txt,padX+2,yy+2)
+    })
+  }catch(e){console.error("[P/L Trends] axis labels draw failed:",e&&e.message)}
+  var idx=hoverIdx!=null?hoverIdx:n-1;
+  try{
+    if(hoverIdx!=null){
+      ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle="rgba(100,116,139,.6)";ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(px(idx),padY);ctx.lineTo(px(idx),H-padY);ctx.stroke();
+      ctx.restore();
+      ctx.beginPath();ctx.arc(px(idx),py(pnl[idx]),4,0,Math.PI*2);ctx.fillStyle="#1565C0";ctx.fill()
+    }
+  }catch(e){console.error("[P/L Trends] hover marker draw failed:",e&&e.message)}
+  try{
+    var hDate=document.getElementById("plTrendHoverDate"),hRows=document.getElementById("plTrendHoverRows");
+    if(hDate&&hRows){
+      var dt=new Date(s.data.l[idx]+"T00:00:00");
+      hDate.textContent=dt.toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"});
+      var visible=typeof portfolioVisible==="undefined"||portfolioVisible;
+      var dep=s.data.dep[idx],val=pnl[idx];
+      var pnlCls=val>=0?"pnl-pos":"pnl-neg";
+      var pnlStr=visible?(val>=0?"+":"-")+"RM "+fmtMoney(Math.abs(val)):"••••••";
+      var retPct=dep>0?val/dep*100:null;
+      var retStr=!visible?"••••••":retPct==null?"—":(retPct>=0?"+":"")+retPct.toFixed(2)+"%";
+      var tt=typeof t==="function"?t:function(k){return k};
+      hRows.innerHTML=adHoverRow(tt("assetdetails.plValue"),pnlStr,pnlCls)+adHoverRow(tt("assetdetails.returnPct"),retStr,retPct==null?"":pnlCls)
+    }
+  }catch(e){console.error("[P/L Trends] hover readout update failed:",e&&e.message)}
+}
+function attachPlTrendListeners(){
+  var canvas=document.getElementById("plTrendChart");
+  if(!canvas||canvas._al)return;
+  canvas._al=true;
+  canvas.style.touchAction="none";
+  canvas.addEventListener("mousemove",plTrendHover);
+  canvas.addEventListener("touchstart",function(e){e.preventDefault();plTrendHover(e)},{passive:false});
+  canvas.addEventListener("touchmove",function(e){e.preventDefault();plTrendHover(e)},{passive:false});
+  canvas.addEventListener("mouseleave",plTrendLeave);
+  canvas.addEventListener("touchend",plTrendLeave);
+  canvas.addEventListener("touchcancel",plTrendLeave)
+}
+function plTrendHover(e){
+  var s=plTrendState;
+  if(!s.data)return;
+  var canvas=document.getElementById("plTrendChart");
+  if(!canvas)return;
+  var rect=canvas.getBoundingClientRect();
+  var clientX=e.touches&&e.touches.length?e.touches[0].clientX:e.clientX;
+  var xRel=clientX-rect.left;
+  var idx=Math.round((xRel-s.padX)/(s.W-s.padX*2)*(s.n-1));
+  idx=Math.max(0,Math.min(s.n-1,idx));
+  drawPlTrendFrame(idx)
+}
+function plTrendLeave(){drawPlTrendFrame(null)}
+function switchPlPeriod(p,btn){plPeriod=p;document.querySelectorAll("#plSeg button").forEach(function(b){b.classList.remove("on")});btn.classList.add("on");drawPlTrend(p)}var subAcct="pa",redAcct="pa";var subReceiptFile=null;var subRefId=null,redRefId=null;var jaDisplayName=null;function fmtRM(n){return(n||0).toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2})}function acctData(a){return a==="ja"?JA_ACCT:PA_ACCT}function acctUid(a){return a==="ja"?PROFILE&&PROFILE.joint_account_id:PROFILE&&PROFILE.id}async function acctFullName(a){if(a==="pa")return PROFILE&&PROFILE.full_name||null;if(jaDisplayName===null&&PROFILE&&PROFILE.joint_account_id){try{jaDisplayName=await mpLoadJointAccountName(PROFILE.joint_account_id)}catch(e){console.warn("Joint account name lookup failed:",e.message)}}return jaDisplayName||null}function genRequestRef(type,uid,index){var d=new Date;var yy=String(d.getFullYear()).slice(-2);var mm=String(d.getMonth()+1).padStart(2,"0");var dd=String(d.getDate()).padStart(2,"0");var t=(type||"?").charAt(0).toUpperCase();var idHex=String(uid||"").replace(/[^0-9a-fA-F]/g,"");var idPart=(idHex.slice(-3)||"000").toUpperCase().padStart(3,"0");var idxPart=String(index%100).padStart(2,"0");return t+yy+mm+dd+idPart+idxPart}async function refreshRequestRef(prefix,type,acct){var uid=acctUid(acct);var el=document.getElementById(prefix+"Ref");if(el)el.textContent="—";var ref=null;if(uid){try{var count=await mpCountCapitalInjectionRequests(uid,type);ref=genRequestRef(type,uid,count+1)}catch(e){console.warn("Reference ID lookup failed:",e.message)}}if(prefix==="sub")subRefId=ref;else redRefId=ref;if(el)el.textContent=ref||"—"}function openSheet(type){if(typeof ACCOUNT_RESTRICTED!=="undefined"&&ACCOUNT_RESTRICTED){document.getElementById("sheetScrim").classList.add("vis");document.getElementById("restrictedSheet").classList.add("vis");return}var prefix=type==="subscribe"?"sub":"red";jaDisplayName=null;document.getElementById("sheetScrim").classList.add("vis");document.getElementById(type==="subscribe"?"subSheet":"redSheet").classList.add("vis");var jaBtn=document.getElementById(prefix+"Acct-ja");if(jaBtn)jaBtn.style.display=PROFILE&&PROFILE.joint_account_id?"":"none";if(type==="subscribe"){var b=ADMIN_BANK||{};document.getElementById("subBankName").textContent=b.bank_name||"—";document.getElementById("subBankHolder").textContent=b.bank_account_holder||"—";document.getElementById("subBankAcctNo").textContent=b.bank_account_no||"—";document.getElementById("subNtaLbl").textContent=(typeof t==="function"?t("sheet.indicativeUnits"):"Indicative Units (NTA ")+(LATEST_NTA>0?LATEST_NTA.toFixed(4):"—")+")";document.getElementById("mSubAmt").value="";document.getElementById("mSubUnits").value="—";subReceiptFile=null;var fileEl=document.getElementById("mSubReceipt");if(fileEl)fileEl.value="";document.getElementById("subReceiptErr").style.display="none";document.getElementById("subErr").style.display="none";selectAcct("sub","pa")}else{var P=PROFILE||{};var acctNo=P.bank_account_no?"···· "+String(P.bank_account_no).slice(-4):null;var parts=[P.bank_name,acctNo,P.bank_account_holder].filter(Boolean);document.getElementById("redPayoutBank").textContent=parts.length?parts.join(" · "):"—";document.getElementById("redNtaLbl").textContent=(typeof t==="function"?t("sheet.indicativeUnitsRedeem"):"Indicative Units to Redeem (NTA ")+(LATEST_NTA>0?LATEST_NTA.toFixed(4):"—")+")";document.getElementById("redErr").style.display="none";selectAcct("red","pa")}}function closeSheet(){document.querySelectorAll(".sheet").forEach(function(s){s.classList.remove("vis")});document.getElementById("sheetScrim").classList.remove("vis")}function selectAcct(sheet,acct){if(sheet==="sub")subAcct=acct;else redAcct=acct;["pa","ja"].forEach(function(a){var btn=document.getElementById(sheet+"Acct-"+a);if(!btn)return;var on=a===acct;btn.style.background=on?"#fff":"none";btn.style.color=on?"var(--blue)":"var(--fg-3)";btn.style.boxShadow=on?"0 1px 4px rgba(0,0,0,.1)":"none"});if(sheet==="red"){var acc=acctData(acct);document.getElementById("redHeldUnits").textContent=fmtRM(acc?acc.units:0);document.getElementById("redHeldValue").textContent=fmtRM(acc?acc.mv:0);document.getElementById("mRedAmt").value="";document.getElementById("mRedUnits").value="—"}refreshRequestRef(sheet,sheet==="sub"?"Subscription":"Redemption",acct)}function setSubAmt(v){document.getElementById("mSubAmt").value=v;calcSubUnits()}function calcSubUnits(){var a=parseFloat(document.getElementById("mSubAmt").value);document.getElementById("mSubUnits").value=a>0&&LATEST_NTA>0?fmtRM(a/LATEST_NTA)+(typeof t==="function"?t("sheet.unitsSuffix"):" units"):"—"}function setRedPct(p){var acc=acctData(redAcct);if(!acc)return;var a=acc.mv*p/100;document.getElementById("mRedAmt").value=a.toFixed(2);document.getElementById("mRedUnits").value=fmtRM(acc.units*p/100)+(typeof t==="function"?t("sheet.unitsSuffix"):" units")}function calcRedUnits(){var acc=acctData(redAcct);var a=parseFloat(document.getElementById("mRedAmt").value);document.getElementById("mRedUnits").value=a>0&&LATEST_NTA>0?fmtRM(a/LATEST_NTA)+(typeof t==="function"?t("sheet.unitsSuffix"):" units"):"—"}function onSubReceiptChange(){var fileEl=document.getElementById("mSubReceipt");subReceiptFile=fileEl.files&&fileEl.files[0]||null;if(subReceiptFile)document.getElementById("subReceiptErr").style.display="none"}async function submitSubM(){var tt=typeof t==="function"?t:function(k){return k};var a=parseFloat(document.getElementById("mSubAmt").value);var errEl=document.getElementById("subErr");errEl.style.display="none";var ok=true;if(!a||a<=0){errEl.textContent=tt("sheet.pleaseEnterAmount");errEl.style.display="block";ok=false}if(!subReceiptFile){document.getElementById("subReceiptErr").style.display="block";ok=false}if(!ok)return;var btn=document.getElementById("mSubBtn"),orig=btn.textContent;btn.disabled=true;btn.textContent=tt("sheet.submitting");try{var uid=acctUid(subAcct);var uploaderId=PROFILE&&PROFILE.id||AUTH_USER&&AUTH_USER.id;var receiptUrl=await mpUploadReceipt(uploaderId,subReceiptFile);var fullName=await acctFullName(subAcct);await mpSubmitCapitalInjectionRequest(uid,{fullName:fullName,type:"Subscription",amount:a,document:receiptUrl,referenceId:subRefId});closeSheet();setTimeout(function(){showToastM(tt("sheet.toastSubPrefix")+(subRefId||"")+tt("sheet.toastOfRM")+fmtRM(a)+tt("sheet.toastSubmittedReview"))},200)}catch(e){errEl.textContent=tt("sheet.submissionFailed")+(e&&e.message||"Unknown error");errEl.style.display="block"}finally{btn.disabled=false;btn.textContent=orig}}async function submitRedM(){var tt=typeof t==="function"?t:function(k){return k};var acc=acctData(redAcct);var a=parseFloat(document.getElementById("mRedAmt").value);var errEl=document.getElementById("redErr");errEl.style.display="none";if(!acc||!a||a<=0||a>acc.mv){errEl.textContent=tt("sheet.pleaseEnterValidAmount");errEl.style.display="block";return}var btn=document.getElementById("mRedBtn"),orig=btn.textContent;btn.disabled=true;btn.textContent=tt("sheet.submitting");try{var uid=acctUid(redAcct);var fullName=await acctFullName(redAcct);await mpSubmitCapitalInjectionRequest(uid,{fullName:fullName,type:"Redemption",amount:a,document:null,referenceId:redRefId});closeSheet();setTimeout(function(){showToastM(tt("sheet.toastRedPrefix")+(redRefId||"")+tt("sheet.toastOfRM")+fmtRM(a)+tt("sheet.toastSubmitted15Days"))},200)}catch(e){errEl.textContent=tt("sheet.submissionFailed")+(e&&e.message||"Unknown error");errEl.style.display="block"}finally{btn.disabled=false;btn.textContent=orig}}var MARKETS={asia:[{n:"FBM KLCI",ex:"Bursa",v:1524.38,c:8.72,cp:.57,up:true},{n:"Nikkei 225",ex:"JPX",v:38947.01,c:312.5,cp:.81,up:true},{n:"Hang Seng",ex:"HKEX",v:17651.82,c:-124.3,cp:-.7,up:false},{n:"Shanghai Comp.",ex:"SSE",v:3089.26,c:-18.44,cp:-.59,up:false},{n:"Straits Times",ex:"SGX",v:3421.75,c:21.08,cp:.62,up:true},{n:"KOSPI",ex:"KRX",v:2642.36,c:15.88,cp:.6,up:true},{n:"Nifty 50",ex:"NSE",v:24601.4,c:185.2,cp:.76,up:true},{n:"ASX 200",ex:"ASX",v:8241.6,c:38.4,cp:.47,up:true}],us:[{n:"S&P 500",ex:"NYSE",v:5482.87,c:38.24,cp:.7,up:true},{n:"Nasdaq",ex:"NASDAQ",v:17857.02,c:142.68,cp:.8,up:true},{n:"Dow Jones",ex:"NYSE",v:42847.36,c:-120.14,cp:-.28,up:false},{n:"Russell 2000",ex:"NYSE",v:2081.44,c:14.22,cp:.69,up:true},{n:"S&P/TSX Comp.",ex:"TSX",v:24312.8,c:98.5,cp:.41,up:true},{n:"Bovespa",ex:"B3",v:127841,c:-540.2,cp:-.42,up:false}],eu:[{n:"FTSE 100",ex:"LSE",v:8447.12,c:32.18,cp:.38,up:true},{n:"DAX",ex:"Xetra",v:18892.34,c:124.56,cp:.66,up:true},{n:"CAC 40",ex:"Euronext",v:7681.25,c:-38.44,cp:-.5,up:false},{n:"Euro Stoxx 50",ex:"Euronext",v:4981.88,c:28.34,cp:.57,up:true},{n:"AEX",ex:"AMS",v:924.44,c:5.88,cp:.64,up:true},{n:"SMI",ex:"SIX",v:12284.77,c:-44.21,cp:-.36,up:false}],crypto:[{n:"Bitcoin",ex:"BTC",v:98421,c:1842,cp:1.91,up:true},{n:"Ethereum",ex:"ETH",v:3814.2,c:-82.4,cp:-2.12,up:false},{n:"Solana",ex:"SOL",v:182.44,c:8.22,cp:4.72,up:true},{n:"XRP",ex:"XRP",v:.5842,c:.0124,cp:2.17,up:true},{n:"BNB",ex:"BNB",v:612.8,c:14.4,cp:2.4,up:true},{n:"USDT",ex:"USDT",v:1.0001,c:1e-4,cp:.01,up:true}]};var mktRegion="asia";function mktTab(r,btn){mktRegion=r;document.querySelectorAll('[id^="mkt-tab-"]').forEach(function(b){b.classList.remove("on")});btn.classList.add("on");renderMktList()}function fmtNum(n){return n>=1e3?n.toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2}):n>=1?n.toFixed(2):n.toFixed(4)}function renderMktList(){var data=MARKETS[mktRegion];var el=document.getElementById("mktList");if(!el)return;el.innerHTML=data.map(function(d,i){var clr=d.up?"var(--green)":"var(--red)";var sign=d.up?"+":"";return'<div style="display:flex;align-items:center;padding:12px 16px;border-bottom:'+(i<data.length-1?"1px solid var(--border)":"none")+'">'+'<div style="width:36px;height:36px;border-radius:9px;background:'+(d.up?"var(--green-bg)":"var(--red-bg)")+";display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-right:12px;font-size:.6rem;font-weight:700;color:"+clr+';text-align:center;line-height:1.2">'+d.ex+"</div>"+'<div style="flex:1;min-width:0"><div style="font-size:.86rem;font-weight:600;color:var(--fg-1)">'+d.n+"</div></div>"+'<div style="text-align:right"><div style="font-size:.88rem;font-weight:700;font-family:monospace;color:var(--fg-1)">'+fmtNum(d.v)+"</div>"+'<div style="font-size:.72rem;font-weight:700;color:'+clr+'">'+sign+d.cp.toFixed(2)+"%</div></div>"+"</div>"}).join("")}function drawKlciSparkline(){var c=document.getElementById("klciSparkline");if(!c)return;var ctx=c.getContext("2d");var v=[1514,1516,1512,1519,1521,1515,1518,1522,1520,1524];var mn=Math.min.apply(null,v),mx=Math.max.apply(null,v),rng=mx-mn;var W=120,H=36,n=v.length;ctx.clearRect(0,0,W,H);ctx.beginPath();ctx.strokeStyle="rgba(255,255,255,.9)";ctx.lineWidth=1.5;ctx.lineJoin="round";v.forEach(function(val,i){var x=i/(n-1)*(W-4)+2,y=H-4-(val-mn)/rng*(H-8);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke()}function updateMktTime(){var el=document.getElementById("mktTime");if(!el)return;var d=new Date,h=d.getHours(),m=d.getMinutes(),s=d.getSeconds();el.textContent=(h%12||12)+":"+(m<10?"0":"")+m+":"+(s<10?"0":"")+s+(h>=12?" PM":" AM")}
