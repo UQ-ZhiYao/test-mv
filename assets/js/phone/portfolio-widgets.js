@@ -1,24 +1,32 @@
 function togglePortfolioValue(){portfolioVisible=!portfolioVisible;var icon=document.getElementById("eyeIcon");if(icon)icon.innerHTML=portfolioVisible?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>':'<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';applyEyeVisibility()}function drawSparkline(){var c=document.getElementById("sparkChart");if(!c)return;var w=100,h=44;c.width=w;c.height=h;var ctx=c.getContext("2d");var pts=[56224,58100,59800,61200,60400,59100,57800,58700,60200,59600,60800,61228];var min=Math.min.apply(null,pts),max=Math.max.apply(null,pts);var pX=2,pY=6;function sx(i){return pX+i/(pts.length-1)*(w-pX*2)}function sy(v){return h-pY-(v-min)/(max-min)*(h-pY*2)}var avgY=sy(pts.reduce(function(a,b){return a+b},0)/pts.length);ctx.save();ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(pX,avgY);ctx.lineTo(w-pX,avgY);ctx.strokeStyle="rgba(0,0,0,.2)";ctx.lineWidth=1;ctx.stroke();ctx.restore();var grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,"rgba(21,101,192,0.25)");grad.addColorStop(1,"rgba(21,101,192,0.02)");ctx.beginPath();ctx.moveTo(sx(0),sy(pts[0]));for(var i=1;i<pts.length;i++)ctx.lineTo(sx(i),sy(pts[i]));ctx.lineTo(sx(pts.length-1),h);ctx.lineTo(sx(0),h);ctx.closePath();ctx.fillStyle=grad;ctx.fill();ctx.beginPath();ctx.moveTo(sx(0),sy(pts[0]));for(var i=1;i<pts.length;i++)ctx.lineTo(sx(i),sy(pts[i]));ctx.strokeStyle="#1565C0";ctx.lineWidth=2;ctx.lineJoin="round";ctx.lineCap="round";ctx.stroke();ctx.beginPath();ctx.arc(sx(pts.length-1),sy(pts[pts.length-1]),3,0,Math.PI*2);ctx.fillStyle="#1565C0";ctx.fill()}var TX_DATA=[];function fmtTxDate(d){var dt=new Date(d+"T00:00:00");return dt.toLocaleDateString("en-MY",{day:"2-digit",month:"short",year:"numeric"})}function buildTxDataFromCi(){var rows=[];function addRows(ciRows,acct){(ciRows||[]).forEach(function(r){var u=parseFloat(r.units)||0,a=parseFloat(r.amount)||0;var type=r.type||(u>=0?"Subscription":"Redemption");rows.push({date:fmtTxDate(r.date),_sortDate:r.date,ref:r.reference_id||"—",acct:acct,kind:type==="Redemption"?"withdrawal":"deposit",approved:r.status==="Approved",amt:Math.abs(a),units:Math.abs(u)})})}addRows(PA_CI_ROWS,"pa");addRows(JA_CI_ROWS,"ja");rows.sort(function(a,b){return a._sortDate<b._sortDate?1:a._sortDate>b._sortDate?-1:0});return rows}var txFilter="all";function setTxFilter(f){txFilter=f;["all","deposit","withdrawal"].forEach(function(k){var b=document.getElementById("txf-"+k);if(b)b.classList.toggle("on",k===f)});renderTxList()}function fmtTxRM(n){return n.toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2})}function renderTxList(){var sel=document.getElementById("txAcctSelect");if(!sel)return;var acct=sel.value;var rows=TX_DATA.filter(function(t){return(txFilter==="all"||t.kind===txFilter)&&(acct==="all"||t.acct===acct)});var list=document.getElementById("txList");if(!list)return;var ttTxL=typeof t==="function"?t:function(k){return k};if(!rows.length){list.innerHTML='<div class="tx-empty">'+ttTxL("transaction.noTransactionsFound")+"</div>";return}list.innerHTML=rows.map(function(t){return'<div class="tx-row">'+'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.ref+"</div></div>"+'<div class="txr-right"><div class="txr-amt '+(t.kind==="deposit"?"dep":"wd")+'">'+(t.kind==="deposit"?"+":"-")+"RM "+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?fmtTxRM(t.units)+ttTxL("sheet.unitsSuffix"):ttTxL("transaction.pending"))+"</div></div>"+"</div>"}).join("")}var DX_DATA=[];async function loadDistributionHistory(){try{if(typeof sb==="undefined"||!sb)return;var res=await sb.from("distributions").select("dps, ex_date, pay_date, status").eq("status","Paid").order("pay_date",{ascending:false});if(res.error){console.warn("[Distributions] load failed:",res.error.message);return}var distRows=res.data||[];var rows=[];distRows.forEach(function(d){[["pa",PA_CI_ROWS],["ja",JA_CI_ROWS]].forEach(function(pair){var acct=pair[0],ciRows=pair[1];if(!ciRows||!ciRows.length)return;var unitsAtExDate=0;ciRows.forEach(function(r){if(r.date<=d.ex_date)unitsAtExDate+=parseFloat(r.units)||0});if(unitsAtExDate<=1e-4)return;var amt=unitsAtExDate*(parseFloat(d.dps)||0)/100;var payDate=d.pay_date||d.ex_date;rows.push({date:fmtTxDate(payDate),_sortDate:payDate,type:"distribution.cashPayout",acct:acct,kind:"cash",amt:amt,units:0})})});rows.sort(function(a,b){return a._sortDate<b._sortDate?1:a._sortDate>b._sortDate?-1:0});DX_DATA=rows;if(document.getElementById("dxList"))renderDxList()}catch(e){console.warn("[Distributions] load failed:",e.message)}}var dxFilter="all";function setDxFilter(f){dxFilter=f;["all","cash","reinvest"].forEach(function(k){var b=document.getElementById("dxf-"+k);if(b)b.classList.toggle("on",k===f)});renderDxList()}function fmtDxRM(n){return n.toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2})}function renderDxList(){var sel=document.getElementById("dxAcctSelect");if(!sel)return;var acct=sel.value;var rows=DX_DATA.filter(function(t){return(dxFilter==="all"||t.kind===dxFilter)&&(acct==="all"||t.acct===acct)});var list=document.getElementById("dxList");if(!list)return;var ttDxL=typeof t==="function"?t:function(k){return k};if(!rows.length){list.innerHTML='<div class="dx-empty">'+ttDxL("distribution.noDistributionsFound")+"</div>";return}list.innerHTML=rows.map(function(t){return'<div class="dx-row">'+'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+ttDxL(t.type)+"</div></div>"+'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+ttDxL("sheet.unitsSuffix"):"—")+"</div></div>"+"</div>"}).join("")}function renderPrincipalTab(){var rows=(TX_DATA||[]).filter(function(t){return t.acct===AD_ACCT});var list=document.getElementById("adTxList");if(!list)return;var ttAdTx=typeof t==="function"?t:function(k){return k};if(!rows.length){list.innerHTML='<div class="tx-empty">'+ttAdTx("transaction.noTransactionsFound")+"</div>";return}list.innerHTML=rows.map(function(t){return'<div class="tx-row">'+'<div class="txr-left"><div class="txr-date">'+t.date+'</div><div class="txr-type">'+t.ref+"</div></div>"+'<div class="txr-right"><div class="txr-amt '+(t.kind==="deposit"?"dep":"wd")+'">'+(t.kind==="deposit"?"+":"-")+"RM "+fmtTxRM(t.amt)+'</div><div class="tx-units">'+(t.approved?fmtTxRM(t.units)+ttAdTx("sheet.unitsSuffix"):ttAdTx("transaction.pending"))+"</div></div>"+"</div>"}).join("")}function renderDistributionTab(){var rows=(DX_DATA||[]).filter(function(t){return t.acct===AD_ACCT});var list=document.getElementById("adDxList");if(!list)return;var ttAdDx=typeof t==="function"?t:function(k){return k};if(!rows.length){list.innerHTML='<div class="dx-empty">'+ttAdDx("distribution.noDistributionsFound")+"</div>";return}list.innerHTML=rows.map(function(t){return'<div class="dx-row">'+'<div class="dxr-left"><div class="dxr-date">'+t.date+'</div><div class="dxr-type">'+ttAdDx(t.type)+"</div></div>"+'<div class="dxr-right"><div class="dxr-amt">+RM '+fmtDxRM(t.amt)+'</div><div class="dx-units">'+(t.units>0?fmtDxRM(t.units)+ttAdDx("sheet.unitsSuffix"):"—")+"</div></div>"+"</div>"}).join("")}function drawAdDonut(retriesLeft){var c=document.getElementById("adDonut");if(!c)return;var paMv=PA_ACCT?PA_ACCT.mv:0,jaMv=JA_ACCT?JA_ACCT.mv:0;var total=paMv+jaMv;var paPct=total?paMv/total*100:0,jaPct=total?jaMv/total*100:0;var totalEl=document.getElementById("adDonutTotal");if(totalEl){totalEl.setAttribute("data-real",fmtMoney(total));totalEl.textContent=portfolioVisible?fmtMoney(total):"••••••"}var pEl=document.getElementById("adLegendPersonal");if(pEl)pEl.textContent=paPct.toFixed(1)+"%";var jEl=document.getElementById("adLegendJoint");if(jEl)jEl.textContent=jaPct.toFixed(1)+"%";var jWrap=document.getElementById("adLegendJointWrap");if(jWrap)jWrap.style.display=JA_ACCT?"":"none";var dpr=window.devicePixelRatio||1;var W=c.parentElement.parentElement.clientWidth-32;var size=Math.min(W,260);if(size<=0){if(retriesLeft===undefined)retriesLeft=10;if(retriesLeft>0)setTimeout(function(){drawAdDonut(retriesLeft-1)},100);return}var H=size*.58;c.width=size*dpr;c.height=H*dpr;c.style.width=size+"px";c.style.height=H+"px";var ctx=c.getContext("2d");ctx.scale(dpr,dpr);var cx=size/2,cy=H*.96,r=size*.42,lw=r*.11;var segs=JA_ACCT?[{v:paPct,c:"#64B5F6"},{v:jaPct,c:"#B39DDB"}]:[{v:paPct||100,c:"#64B5F6"}];var start=Math.PI;ctx.lineCap="butt";segs.forEach(function(s){var ang=s.v/100*Math.PI;ctx.beginPath();ctx.arc(cx,cy,r,start,start+ang);ctx.lineWidth=lw;ctx.strokeStyle=s.c;ctx.stroke();start+=ang});var txt=document.getElementById("adDonutText");if(txt){txt.style.top=cy-6+"px";txt.style.transform="translateY(-100%)"}}var adPeriod="ytd";var adTrendState={};
+// Local (not UTC) YYYY-MM-DD — Date#toISOString() converts to UTC first,
+// which silently shifts a local-midnight cutoff back a calendar day for
+// any timezone ahead of UTC (e.g. MYT/UTC+8), making "YTD" start on Dec
+// 31 of the prior year instead of Jan 1.
+function ymdLocal(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 // Cumulative asset value (units held x NTA, as before) AND cumulative
 // deposits (running total of approved subscription amounts only — never
 // reduced by withdrawals, since it tracks total principal contributed,
 // not current net position) for the same date axis, so the two can be
 // plotted as two lines on one chart. The date axis itself is clamped to
-// this member's own first (earliest approved) capital_injection row —
-// previously a period like "1Y"/"ALL" would query nta_daily from a fixed
-// calendar cutoff (or the fund's whole history for "all"), which for a
-// newer investor showed a long flat stretch of zero predating when they
-// actually joined.
+// this member's own first actual deposit (not just the earliest approved
+// capital_injection row of any type, which could be a redemption/
+// adjustment) — previously a period like "1Y"/"ALL" would query
+// nta_daily from a fixed calendar cutoff (or the fund's whole history
+// for "all"), which for a newer investor showed a long flat stretch of
+// zero predating when they actually joined.
 async function loadAdTrendData(period){
   var allCi=(PA_CI_ROWS||[]).concat(JA_CI_ROWS||[]).filter(function(r){return r.status==="Approved"}).slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0});
   if(!allCi.length)return{v:[],d:[],l:[]};
-  var firstDepositDate=allCi[0].date;
+  var deposits=allCi.filter(function(r){return(parseFloat(r.units)||0)>0});
+  if(!deposits.length)return{v:[],d:[],l:[]};
+  var firstDepositDate=deposits[0].date;
   var today=new Date;var cutoff=null;
   if(period==="1m"){cutoff=new Date(today);cutoff.setMonth(cutoff.getMonth()-1)}
   else if(period==="3m"){cutoff=new Date(today);cutoff.setMonth(cutoff.getMonth()-3)}
   else if(period==="1y"){cutoff=new Date(today);cutoff.setFullYear(cutoff.getFullYear()-1)}
   else if(period==="ytd"){cutoff=new Date(today.getFullYear(),0,1)}
-  var cutoffStr=cutoff?cutoff.toISOString().slice(0,10):null;
+  var cutoffStr=cutoff?ymdLocal(cutoff):null;
   var effectiveCutoff=cutoffStr&&cutoffStr>firstDepositDate?cutoffStr:firstDepositDate;
   var res=await sb.from("nta_daily").select("date,nta").order("date",{ascending:true}).gte("date",effectiveCutoff);
   var ntaRows=res.data||[];
@@ -43,16 +51,18 @@ function fmtAxisLabel(v){var r=niceAxisValue(v);if(Math.abs(r)>=1e6)return(r/1e6
 async function drawAdTrend(period){
   var canvas=document.getElementById("adTrendChart");
   if(!canvas)return;
-  var data=await loadAdTrendData(period);
-  var n=data.v.length;
   var l0e=document.getElementById("adTrendL0"),l1e=document.getElementById("adTrendL1"),l2e=document.getElementById("adTrendL2");
-  var hi=document.getElementById("adTrendHoverInfo");
+  var hDate=document.getElementById("adTrendHoverDate"),hVals=document.getElementById("adTrendHoverVals");
+  var data;
+  try{data=await loadAdTrendData(period)}catch(e){console.error("[Asset Trends] data load failed:",e&&e.message);data={v:[],d:[],l:[]}}
+  var n=data.v.length;
   if(n<2){
     adTrendState={};
     if(l0e)l0e.textContent="";
     if(l1e)l1e.textContent=typeof t==="function"?t("assetdetails.noData"):"No data";
     if(l2e)l2e.textContent="";
-    if(hi)hi.textContent="";
+    if(hDate)hDate.textContent="";
+    if(hVals)hVals.innerHTML="";
     var ctx0=canvas.getContext("2d");
     ctx0.clearRect(0,0,canvas.width,canvas.height);
     return
@@ -63,7 +73,7 @@ async function drawAdTrend(period){
   canvas.getContext("2d").scale(dpr,dpr);
   var allVals=data.v.concat(data.d);
   var mn=Math.min.apply(null,allVals),mx=Math.max.apply(null,allVals),rng=mx-mn||1;
-  var padX=4,padY=10;
+  var padX=6,padY=10;
   adTrendState={data:data,n:n,W:W,H:H,mn:mn,mx:mx,rng:rng,padX:padX,padY:padY};
   var lbls=sampleAdLabels(data.l);
   if(l0e)l0e.textContent=lbls[0]||"";
@@ -75,6 +85,8 @@ async function drawAdTrend(period){
 // Repaints from the already-fetched adTrendState — never re-hits the
 // network — so hover can redraw on every pointer move. hoverIdx null
 // means "no hover", which paints the latest point's readout by default.
+// Each visual piece is wrapped separately so a problem in one (e.g. an
+// unexpected data shape) can't silently blank out the rest of the chart.
 function drawAdTrendFrame(hoverIdx){
   var s=adTrendState;
   if(!s.data)return;
@@ -86,58 +98,77 @@ function drawAdTrendFrame(hoverIdx){
   ctx.clearRect(0,0,W,H);
   function px(i){return padX+i/(n-1)*(W-padX*2)}
   function py(v){return H-padY-(v-mn)/rng*(H-padY*2)}
-  var grad=ctx.createLinearGradient(0,0,0,H);
-  grad.addColorStop(0,"rgba(21,101,192,.18)");
-  grad.addColorStop(1,"rgba(21,101,192,0)");
-  ctx.beginPath();ctx.moveTo(px(0),py(vals[0]));
-  for(var i=1;i<n;i++)ctx.lineTo(px(i),py(vals[i]));
-  ctx.lineTo(px(n-1),H-padY);ctx.lineTo(px(0),H-padY);ctx.closePath();
-  ctx.fillStyle=grad;ctx.fill();
-  ctx.beginPath();ctx.strokeStyle="#1565C0";ctx.lineWidth=2;ctx.lineJoin="round";ctx.lineCap="round";
-  ctx.moveTo(px(0),py(vals[0]));
-  for(var i=1;i<n;i++)ctx.lineTo(px(i),py(vals[i]));
-  ctx.stroke();
-  ctx.beginPath();ctx.strokeStyle="#94A3B8";ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.lineJoin="round";ctx.lineCap="round";
-  ctx.moveTo(px(0),py(deps[0]));
-  for(var i=1;i<n;i++)ctx.lineTo(px(i),py(deps[i]));
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.beginPath();ctx.arc(px(n-1),py(vals[n-1]),3.5,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.strokeStyle="#1565C0";ctx.lineWidth=2;ctx.stroke();
-  ctx.beginPath();ctx.arc(px(n-1),py(deps[n-1]),3,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.strokeStyle="#94A3B8";ctx.lineWidth=1.5;ctx.stroke();
-  ctx.font="bold 9px DM Sans,sans-serif";ctx.textAlign="left";
-  [mx,(mn+mx)/2,mn].forEach(function(v,gi){
-    var yy=padY+gi*((H-padY*2)/2);
-    var txt=portfolioVisible?fmtAxisLabel(v):"••••";
-    var tw=ctx.measureText(txt).width;
-    ctx.fillStyle="rgba(255,255,255,.82)";ctx.fillRect(padX,yy-8,tw+6,12);
-    ctx.fillStyle="#64748B";ctx.fillText(txt,padX+2,yy+2)
-  });
+  try{
+    var grad=ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,"rgba(21,101,192,.18)");
+    grad.addColorStop(1,"rgba(21,101,192,0)");
+    ctx.beginPath();ctx.moveTo(px(0),py(vals[0]));
+    for(var i=1;i<n;i++)ctx.lineTo(px(i),py(vals[i]));
+    ctx.lineTo(px(n-1),H-padY);ctx.lineTo(px(0),H-padY);ctx.closePath();
+    ctx.fillStyle=grad;ctx.fill();
+    ctx.beginPath();ctx.strokeStyle="#1565C0";ctx.lineWidth=2;ctx.lineJoin="round";ctx.lineCap="round";
+    ctx.moveTo(px(0),py(vals[0]));
+    for(var i=1;i<n;i++)ctx.lineTo(px(i),py(vals[i]));
+    ctx.stroke()
+  }catch(e){console.error("[Asset Trends] value-line draw failed:",e&&e.message)}
+  try{
+    ctx.beginPath();ctx.strokeStyle="#78716C";ctx.lineWidth=2;ctx.setLineDash([5,3]);ctx.lineJoin="round";ctx.lineCap="round";
+    ctx.moveTo(px(0),py(deps[0]));
+    for(var i=1;i<n;i++)ctx.lineTo(px(i),py(deps[i]));
+    ctx.stroke();
+    ctx.setLineDash([])
+  }catch(e){console.error("[Asset Trends] deposit-line draw failed:",e&&e.message)}
+  try{
+    ctx.beginPath();ctx.arc(px(n-1),py(vals[n-1]),3.5,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.strokeStyle="#1565C0";ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.arc(px(n-1),py(deps[n-1]),3.5,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.strokeStyle="#78716C";ctx.lineWidth=2;ctx.stroke()
+  }catch(e){console.error("[Asset Trends] endpoint dots draw failed:",e&&e.message)}
+  try{
+    ctx.font="700 10px DM Sans,sans-serif";ctx.textAlign="left";
+    [mx,(mn+mx)/2,mn].forEach(function(v,gi){
+      var yy=padY+gi*((H-padY*2)/2);
+      var txt=(typeof portfolioVisible==="undefined"||portfolioVisible)?fmtAxisLabel(v):"••••";
+      var tw=ctx.measureText(txt).width;
+      ctx.fillStyle="rgba(255,255,255,.9)";ctx.fillRect(padX-2,yy-9,tw+8,14);
+      ctx.fillStyle="#334155";ctx.fillText(txt,padX+2,yy+2)
+    })
+  }catch(e){console.error("[Asset Trends] axis labels draw failed:",e&&e.message)}
   var idx=hoverIdx!=null?hoverIdx:n-1;
-  if(hoverIdx!=null){
-    ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle="rgba(100,116,139,.6)";ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(px(idx),padY);ctx.lineTo(px(idx),H-padY);ctx.stroke();
-    ctx.restore();
-    ctx.beginPath();ctx.arc(px(idx),py(vals[idx]),4,0,Math.PI*2);ctx.fillStyle="#1565C0";ctx.fill();
-    ctx.beginPath();ctx.arc(px(idx),py(deps[idx]),3.5,0,Math.PI*2);ctx.fillStyle="#94A3B8";ctx.fill()
-  }
-  var hi=document.getElementById("adTrendHoverInfo");
-  if(hi){
-    var dt=new Date(s.data.l[idx]+"T00:00:00");
-    var dtStr=dt.toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"});
-    var valStr=portfolioVisible?"RM "+fmtMoney(vals[idx]):"••••••";
-    var depStr=portfolioVisible?"RM "+fmtMoney(deps[idx]):"••••••";
-    var tt=typeof t==="function"?t:function(k){return k};
-    hi.textContent=dtStr+"   "+tt("assetdetails.assetValue")+" "+valStr+"   "+tt("assetdetails.accumulatedDeposit")+" "+depStr
-  }
+  try{
+    if(hoverIdx!=null){
+      ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle="rgba(100,116,139,.6)";ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(px(idx),padY);ctx.lineTo(px(idx),H-padY);ctx.stroke();
+      ctx.restore();
+      ctx.beginPath();ctx.arc(px(idx),py(vals[idx]),4,0,Math.PI*2);ctx.fillStyle="#1565C0";ctx.fill();
+      ctx.beginPath();ctx.arc(px(idx),py(deps[idx]),4,0,Math.PI*2);ctx.fillStyle="#78716C";ctx.fill()
+    }
+  }catch(e){console.error("[Asset Trends] hover marker draw failed:",e&&e.message)}
+  try{
+    var hDate=document.getElementById("adTrendHoverDate"),hVals=document.getElementById("adTrendHoverVals");
+    if(hDate&&hVals){
+      var dt=new Date(s.data.l[idx]+"T00:00:00");
+      hDate.textContent=dt.toLocaleDateString("en-MY",{day:"numeric",month:"short",year:"numeric"});
+      var visible=typeof portfolioVisible==="undefined"||portfolioVisible;
+      var pnl=vals[idx]-deps[idx];
+      var valStr=visible?"RM "+fmtMoney(vals[idx]):"••••••";
+      var depStr=visible?"RM "+fmtMoney(deps[idx]):"••••••";
+      var pnlStr=visible?(pnl>=0?"+":"-")+"RM "+fmtMoney(Math.abs(pnl)):"••••••";
+      var pnlCls=pnl>=0?"pnl-pos":"pnl-neg";
+      var tt=typeof t==="function"?t:function(k){return k};
+      hVals.innerHTML="<span>"+tt("assetdetails.assetValue")+" "+valStr+"</span>"+"<span>"+tt("assetdetails.accumulatedDeposit")+" "+depStr+"</span>"+"<span class=\""+pnlCls+"\">"+tt("assetdetails.pnl")+" "+pnlStr+"</span>"
+    }
+  }catch(e){console.error("[Asset Trends] hover readout update failed:",e&&e.message)}
 }
 function attachAdTrendListeners(){
   var canvas=document.getElementById("adTrendChart");
   if(!canvas||canvas._al)return;
   canvas._al=true;
+  canvas.style.touchAction="none";
   canvas.addEventListener("mousemove",adTrendHover);
+  canvas.addEventListener("touchstart",function(e){e.preventDefault();adTrendHover(e)},{passive:false});
   canvas.addEventListener("touchmove",function(e){e.preventDefault();adTrendHover(e)},{passive:false});
   canvas.addEventListener("mouseleave",adTrendLeave);
-  canvas.addEventListener("touchend",adTrendLeave)
+  canvas.addEventListener("touchend",adTrendLeave);
+  canvas.addEventListener("touchcancel",adTrendLeave)
 }
 function adTrendHover(e){
   var s=adTrendState;
@@ -145,7 +176,7 @@ function adTrendHover(e){
   var canvas=document.getElementById("adTrendChart");
   if(!canvas)return;
   var rect=canvas.getBoundingClientRect();
-  var clientX=e.touches?e.touches[0].clientX:e.clientX;
+  var clientX=e.touches&&e.touches.length?e.touches[0].clientX:e.clientX;
   var xRel=clientX-rect.left;
   var idx=Math.round((xRel-s.padX)/(s.W-s.padX*2)*(s.n-1));
   idx=Math.max(0,Math.min(s.n-1,idx));
