@@ -145,6 +145,33 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
         <div style="height:16px;"></div>
       </div>
 
+      <div style="border-top:1px solid var(--border);margin:0 16px;"></div>
+
+      <!-- P/L Trends -->
+      <div style="padding:16px 16px 0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="assetdetails.plTrends">P/L Trends</div>
+          <div class="ad-seg" id="plSeg">
+            <button class="on" onclick="switchPlPeriod('ytd',this)">YTD</button>
+            <button onclick="switchPlPeriod('1m',this)">1M</button>
+            <button onclick="switchPlPeriod('3m',this)">3M</button>
+            <button onclick="switchPlPeriod('1y',this)">1Y</button>
+            <button onclick="switchPlPeriod('all',this)">ALL</button>
+          </div>
+        </div>
+        <div class="ad-trend-hover" id="plTrendHoverInfo">
+          <div class="ad-trend-hover-date" id="plTrendHoverDate"></div>
+          <div id="plTrendHoverRows"></div>
+        </div>
+        <canvas id="plTrendChart" style="width:100%;height:150px;display:block;touch-action:none;"></canvas>
+        <div class="ad-trend-lbls">
+          <span id="plTrendL0"></span>
+          <span id="plTrendL1"></span>
+          <span id="plTrendL2"></span>
+        </div>
+        <div style="height:16px;"></div>
+      </div>
+
     </div>  </div>
 </div>
 <script>
@@ -314,8 +341,119 @@ window.switchAdPeriod=function(p,btn){
   btn.classList.add('on');
   drawAdTrend(p);
 };
-drawAdDonut();drawAdTrend('ytd');
-window.addEventListener('resize',function(){drawAdDonut();drawAdTrend(adPeriod);});
+// P/L Trends demo: derives P/L (asset value - deposit) from the same
+// AD_TREND series above, single line, same interaction pattern.
+var plPeriod='ytd';
+var plTrendState={};
+function drawPlTrend(period){
+  var canvas=document.getElementById('plTrendChart');
+  var src=AD_TREND[period];
+  var pnl=src.v.map(function(v,i){return v-src.d[i];});
+  var data={p:pnl,dep:src.d,l:src.l};
+  var n=pnl.length;
+  var dpr=window.devicePixelRatio||1;
+  var W=canvas.clientWidth||canvas.getBoundingClientRect().width,H=150;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  canvas.getContext('2d').scale(dpr,dpr);
+  var mn=Math.min.apply(null,pnl),mx=Math.max.apply(null,pnl);
+  if(mn>0)mn=0; if(mx<0)mx=0;
+  var rng=(mx-mn)||1;
+  var padX=6,padY=10;
+  plTrendState={data:data,n:n,W:W,H:H,mn:mn,mx:mx,rng:rng,padX:padX,padY:padY};
+  document.getElementById('plTrendL0').textContent=data.l[0]||'';
+  document.getElementById('plTrendL1').textContent=data.l[Math.floor(data.l.length/2)]||'';
+  document.getElementById('plTrendL2').textContent=data.l[data.l.length-1]||'';
+  attachPlTrendListeners();
+  drawPlTrendFrame(null);
+}
+function drawPlTrendFrame(hoverIdx){
+  var s=plTrendState;
+  if(!s.data) return;
+  var canvas=document.getElementById('plTrendChart');
+  var ctx=canvas.getContext('2d');
+  var W=s.W,H=s.H,padX=s.padX,padY=s.padY,mn=s.mn,mx=s.mx,rng=s.rng,n=s.n;
+  var pnl=s.data.p;
+  ctx.clearRect(0,0,W,H);
+  function px(i){return padX+(i/(n-1))*(W-padX*2);}
+  function py(v){return H-padY-((v-mn)/rng)*(H-padY*2);}
+  var grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(21,101,192,.18)');
+  grad.addColorStop(1,'rgba(21,101,192,0)');
+  ctx.beginPath();
+  ctx.moveTo(px(0),py(pnl[0]));
+  for(var i=1;i<n;i++) ctx.lineTo(px(i),py(pnl[i]));
+  ctx.lineTo(px(n-1),H-padY);ctx.lineTo(px(0),H-padY);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();ctx.strokeStyle='#1565C0';ctx.lineWidth=2;ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.moveTo(px(0),py(pnl[0]));
+  for(var i=1;i<n;i++) ctx.lineTo(px(i),py(pnl[i]));
+  ctx.stroke();
+  if(mn<0&&mx>0){
+    ctx.save();ctx.setLineDash([2,3]);ctx.strokeStyle='rgba(100,116,139,.5)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(padX,py(0));ctx.lineTo(W-padX,py(0));ctx.stroke();
+    ctx.restore();
+  }
+  ctx.beginPath();ctx.arc(px(n-1),py(pnl[n-1]),3.5,0,Math.PI*2);
+  ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#1565C0';ctx.lineWidth=2;ctx.stroke();
+  ctx.font='700 10px DM Sans,sans-serif';ctx.textAlign='left';
+  [mx,(mn+mx)/2,mn].forEach(function(v,gi){
+    var yy=padY+gi*((H-padY*2)/2);
+    var txt=fmtAxisLabel(v);
+    var tw=ctx.measureText(txt).width;
+    ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(padX-2,yy-9,tw+8,14);
+    ctx.fillStyle='#334155';ctx.fillText(txt,padX+2,yy+2);
+  });
+  var idx=hoverIdx!=null?hoverIdx:n-1;
+  if(hoverIdx!=null){
+    ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle='rgba(100,116,139,.6)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(px(idx),padY);ctx.lineTo(px(idx),H-padY);ctx.stroke();
+    ctx.restore();
+    ctx.beginPath();ctx.arc(px(idx),py(pnl[idx]),4,0,Math.PI*2);ctx.fillStyle='#1565C0';ctx.fill();
+  }
+  var hDate=document.getElementById('plTrendHoverDate'),hRows=document.getElementById('plTrendHoverRows');
+  if(hDate&&hRows){
+    hDate.textContent=s.data.l[idx]||'';
+    var dep=s.data.dep[idx],val=pnl[idx];
+    var pnlCls=val>=0?'pnl-pos':'pnl-neg';
+    var pnlStr=(val>=0?'+':'-')+'RM '+fmtRMDemo(Math.abs(val));
+    var retPct=dep>0?val/dep*100:null;
+    var retStr=retPct==null?'—':(retPct>=0?'+':'')+retPct.toFixed(2)+'%';
+    hRows.innerHTML=adHoverRowDemo('P/L Value',pnlStr,pnlCls)+adHoverRowDemo('Return',retStr,retPct==null?'':pnlCls);
+  }
+}
+function attachPlTrendListeners(){
+  var canvas=document.getElementById('plTrendChart');
+  if(!canvas||canvas._al) return;
+  canvas._al=true;
+  canvas.style.touchAction='none';
+  canvas.addEventListener('mousemove',plTrendHover);
+  canvas.addEventListener('touchstart',function(e){e.preventDefault();plTrendHover(e);},{passive:false});
+  canvas.addEventListener('touchmove',function(e){e.preventDefault();plTrendHover(e);},{passive:false});
+  canvas.addEventListener('mouseleave',plTrendLeave);
+  canvas.addEventListener('touchend',plTrendLeave);
+  canvas.addEventListener('touchcancel',plTrendLeave);
+}
+function plTrendHover(e){
+  var s=plTrendState;
+  if(!s.data) return;
+  var canvas=document.getElementById('plTrendChart');
+  var rect=canvas.getBoundingClientRect();
+  var clientX=e.touches&&e.touches.length?e.touches[0].clientX:e.clientX;
+  var xRel=clientX-rect.left;
+  var idx=Math.round((xRel-s.padX)/(s.W-s.padX*2)*(s.n-1));
+  idx=Math.max(0,Math.min(s.n-1,idx));
+  drawPlTrendFrame(idx);
+}
+function plTrendLeave(){ drawPlTrendFrame(null); }
+window.switchPlPeriod=function(p,btn){
+  plPeriod=p;
+  document.querySelectorAll('#plSeg button').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  drawPlTrend(p);
+};
+drawAdDonut();drawAdTrend('ytd');drawPlTrend('ytd');
+window.addEventListener('resize',function(){drawAdDonut();drawAdTrend(adPeriod);drawPlTrend(plPeriod);});
 }
 </script>
 </body>
