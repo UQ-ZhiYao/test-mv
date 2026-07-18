@@ -46,10 +46,11 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
 .ad-seg{display:flex;gap:2px;background:var(--gray-100);border-radius:8px;padding:3px;}
 .ad-seg button{font:inherit;font-size:.72rem;font-weight:600;padding:4px 8px;border:none;background:none;border-radius:6px;color:var(--fg-3);cursor:pointer;}
 .ad-seg button.on{background:#fff;color:var(--blue);box-shadow:0 1px 4px rgba(0,0,0,.1);}
-.ad-trend-lbls{display:flex;justify-content:space-between;margin-top:4px;font-size:.68rem;color:var(--fg-3);padding-left:38px;}
-.ad-trend-row{display:flex;align-items:stretch;gap:6px;}
-.ad-trend-yaxis{width:32px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between;padding:2px 0;box-sizing:border-box;}
-.ad-trend-yaxis span{font-size:.62rem;color:var(--fg-3);line-height:1;text-align:right;white-space:nowrap;}
+.ad-trend-lbls{display:flex;justify-content:space-between;margin-top:4px;font-size:.68rem;color:var(--fg-3);}
+.ad-trend-hover{min-height:15px;font-size:.7rem;color:var(--fg-2);font-weight:600;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ad-trend-legend{display:flex;gap:14px;margin-bottom:8px;}
+.ad-trend-legend-item{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--fg-3);}
+.ad-trend-legend-sw{width:12px;height:0;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -108,7 +109,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
       <!-- Asset Trends -->
       <div style="padding:16px 16px 0;">
         <div style="height:1em;"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <div style="font-size:.85rem;font-weight:700;color:var(--fg-1);" data-i18n="assetdetails.assetTrends">Asset Trends</div>
           <div class="ad-seg" id="adSeg">
             <button class="on" onclick="switchAdPeriod('ytd',this)">YTD</button>
@@ -118,14 +119,15 @@ html,body{height:100%;overflow:hidden;font-family:var(--font-body);background:va
             <button onclick="switchAdPeriod('all',this)">ALL</button>
           </div>
         </div>
-        <div class="ad-trend-row">
-          <div class="ad-trend-yaxis">
-            <span id="adTrendY0"></span>
-            <span id="adTrendY1"></span>
-            <span id="adTrendY2"></span>
-          </div>
-          <canvas id="adTrendChart" style="flex:1;min-width:0;height:150px;display:block;"></canvas>
+        <!-- Reserved-height hover readout, directly under the title row so
+             hovering the chart never shifts anything below it — defaults
+             to the latest point, updates live on hover/touch. -->
+        <div class="ad-trend-hover" id="adTrendHoverInfo"></div>
+        <div class="ad-trend-legend">
+          <div class="ad-trend-legend-item"><span class="ad-trend-legend-sw" style="border-top:2px solid #1565C0;"></span><span data-i18n="assetdetails.assetValue">Asset Value</span></div>
+          <div class="ad-trend-legend-item"><span class="ad-trend-legend-sw" style="border-top:2px dashed #94A3B8;"></span><span data-i18n="assetdetails.accumulatedDeposit">Accumulated Deposit</span></div>
         </div>
+        <canvas id="adTrendChart" style="width:100%;height:150px;display:block;"></canvas>
         <div class="ad-trend-lbls">
           <span id="adTrendL0"></span>
           <span id="adTrendL1"></span>
@@ -168,14 +170,18 @@ function drawAdDonut(){
   var jWrap=document.getElementById('adLegendJointWrap');
   if(jWrap) jWrap.style.display='';
 }
+// v = asset value (units x NTA), d = accumulated deposit (cumulative
+// principal only, never reduced by withdrawals) — same two series the
+// embedded page plots from real capital_injection/nta_daily rows.
 var AD_TREND={
-  ytd:{v:[76200,78100,79850,81200,83400,85100,86300,88000],l:['Jan','Mar','May','Jul']},
-  '1m':{v:[85200,85900,86400,85800,86900,87500,87200,88000],l:['Wk1','Wk2','Wk3','Wk4']},
-  '3m':{v:[80800,82100,83400,84900,86000,87100,87600,88000],l:['May','Jun','Jul']},
-  '1y':{v:[68200,71400,73900,76200,79850,83400,86300,88000],l:["Jul '25",'Jan',"Jul '26"]},
-  all:{v:[42000,51200,58900,66700,73900,79850,84900,88000],l:['2022','2024','2026']}
+  ytd:{v:[76200,78100,79850,81200,83400,85100,86300,88000],d:[75000,75000,75000,80000,80000,80000,80000,80000],l:['Jan','Mar','May','Jul']},
+  '1m':{v:[85200,85900,86400,85800,86900,87500,87200,88000],d:[80000,80000,80000,80000,80000,80000,80000,80000],l:['Wk1','Wk2','Wk3','Wk4']},
+  '3m':{v:[80800,82100,83400,84900,86000,87100,87600,88000],d:[80000,80000,80000,80000,80000,80000,80000,80000],l:['May','Jun','Jul']},
+  '1y':{v:[68200,71400,73900,76200,79850,83400,86300,88000],d:[65000,65000,70000,75000,75000,80000,80000,80000],l:["Jul '25",'Jan',"Jul '26"]},
+  all:{v:[42000,51200,58900,66700,73900,79850,84900,88000],d:[40000,40000,50000,50000,60000,70000,75000,80000],l:['2022','2024','2026']}
 };
 var adPeriod='ytd';
+var adTrendState={};
 // Rounds an axis value to a "nice" figure (nearest 10/100/1000/10000/... based
 // on its own magnitude) and formats it compactly (K/M), instead of the raw
 // value with two decimal places (e.g. 12123.32 -> "12K").
@@ -190,26 +196,35 @@ function fmtAxisLabel(v){
   if(Math.abs(r)>=1000) return (r/1000).toFixed(r%1000?1:0)+'K';
   return String(r);
 }
+function fmtRMDemo(v){ return (v||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function drawAdTrend(period){
   var canvas=document.getElementById('adTrendChart');
-  var ctx=canvas.getContext('2d');
   var data=AD_TREND[period];
+  var n=data.v.length;
   var dpr=window.devicePixelRatio||1;
-  // Measured directly off the canvas's own flex-resolved box (it sits next
-  // to the Y-axis label column in a flex row) rather than computed from a
-  // fixed padding offset, so the chart's drawing area is exactly whatever
-  // space is actually available to it — unchanged by adding the axis.
   var W=canvas.clientWidth||canvas.getBoundingClientRect().width,H=150;
   canvas.width=W*dpr;canvas.height=H*dpr;
   canvas.style.width=W+'px';canvas.style.height=H+'px';
-  ctx.scale(dpr,dpr);
-  var vals=data.v,n=vals.length;
-  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),rng=(mx-mn)||1;
-  var y0=document.getElementById('adTrendY0'),y1=document.getElementById('adTrendY1'),y2=document.getElementById('adTrendY2');
-  if(y0)y0.textContent=fmtAxisLabel(mx);
-  if(y1)y1.textContent=fmtAxisLabel((mn+mx)/2);
-  if(y2)y2.textContent=fmtAxisLabel(mn);
+  canvas.getContext('2d').scale(dpr,dpr);
+  var allVals=data.v.concat(data.d);
+  var mn=Math.min.apply(null,allVals),mx=Math.max.apply(null,allVals),rng=(mx-mn)||1;
   var padX=4,padY=10;
+  adTrendState={data:data,n:n,W:W,H:H,mn:mn,mx:mx,rng:rng,padX:padX,padY:padY};
+  var lbls=data.l;
+  document.getElementById('adTrendL0').textContent=lbls[0]||'';
+  document.getElementById('adTrendL1').textContent=lbls[Math.floor(lbls.length/2)]||'';
+  document.getElementById('adTrendL2').textContent=lbls[lbls.length-1]||'';
+  attachAdTrendListeners();
+  drawAdTrendFrame(null);
+}
+function drawAdTrendFrame(hoverIdx){
+  var s=adTrendState;
+  if(!s.data) return;
+  var canvas=document.getElementById('adTrendChart');
+  var ctx=canvas.getContext('2d');
+  var W=s.W,H=s.H,padX=s.padX,padY=s.padY,mn=s.mn,mx=s.mx,rng=s.rng,n=s.n;
+  var vals=s.data.v,deps=s.data.d;
+  ctx.clearRect(0,0,W,H);
   function px(i){return padX+(i/(n-1))*(W-padX*2);}
   function py(v){return H-padY-((v-mn)/rng)*(H-padY*2);}
   var grad=ctx.createLinearGradient(0,0,0,H);
@@ -224,13 +239,55 @@ function drawAdTrend(period){
   ctx.moveTo(px(0),py(vals[0]));
   for(var i=1;i<n;i++) ctx.lineTo(px(i),py(vals[i]));
   ctx.stroke();
+  ctx.beginPath();ctx.strokeStyle='#94A3B8';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.moveTo(px(0),py(deps[0]));
+  for(var i=1;i<n;i++) ctx.lineTo(px(i),py(deps[i]));
+  ctx.stroke();
+  ctx.setLineDash([]);
   ctx.beginPath();ctx.arc(px(n-1),py(vals[n-1]),3.5,0,Math.PI*2);
   ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#1565C0';ctx.lineWidth=2;ctx.stroke();
-  var lbls=data.l;
-  document.getElementById('adTrendL0').textContent=lbls[0]||'';
-  document.getElementById('adTrendL1').textContent=lbls[Math.floor(lbls.length/2)]||'';
-  document.getElementById('adTrendL2').textContent=lbls[lbls.length-1]||'';
+  ctx.beginPath();ctx.arc(px(n-1),py(deps[n-1]),3,0,Math.PI*2);
+  ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#94A3B8';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.font='bold 9px DM Sans,sans-serif';ctx.textAlign='left';
+  [mx,(mn+mx)/2,mn].forEach(function(v,gi){
+    var yy=padY+gi*((H-padY*2)/2);
+    var txt=fmtAxisLabel(v);
+    var tw=ctx.measureText(txt).width;
+    ctx.fillStyle='rgba(255,255,255,.82)';ctx.fillRect(padX,yy-8,tw+6,12);
+    ctx.fillStyle='#64748B';ctx.fillText(txt,padX+2,yy+2);
+  });
+  var idx=hoverIdx!=null?hoverIdx:n-1;
+  if(hoverIdx!=null){
+    ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle='rgba(100,116,139,.6)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(px(idx),padY);ctx.lineTo(px(idx),H-padY);ctx.stroke();
+    ctx.restore();
+    ctx.beginPath();ctx.arc(px(idx),py(vals[idx]),4,0,Math.PI*2);ctx.fillStyle='#1565C0';ctx.fill();
+    ctx.beginPath();ctx.arc(px(idx),py(deps[idx]),3.5,0,Math.PI*2);ctx.fillStyle='#94A3B8';ctx.fill();
+  }
+  var hi=document.getElementById('adTrendHoverInfo');
+  if(hi) hi.textContent=(s.data.l[idx]||'')+'   Asset Value RM '+fmtRMDemo(vals[idx])+'   Accumulated Deposit RM '+fmtRMDemo(deps[idx]);
 }
+function attachAdTrendListeners(){
+  var canvas=document.getElementById('adTrendChart');
+  if(!canvas||canvas._al) return;
+  canvas._al=true;
+  canvas.addEventListener('mousemove',adTrendHover);
+  canvas.addEventListener('touchmove',function(e){e.preventDefault();adTrendHover(e);},{passive:false});
+  canvas.addEventListener('mouseleave',adTrendLeave);
+  canvas.addEventListener('touchend',adTrendLeave);
+}
+function adTrendHover(e){
+  var s=adTrendState;
+  if(!s.data) return;
+  var canvas=document.getElementById('adTrendChart');
+  var rect=canvas.getBoundingClientRect();
+  var clientX=e.touches?e.touches[0].clientX:e.clientX;
+  var xRel=clientX-rect.left;
+  var idx=Math.round((xRel-s.padX)/(s.W-s.padX*2)*(s.n-1));
+  idx=Math.max(0,Math.min(s.n-1,idx));
+  drawAdTrendFrame(idx);
+}
+function adTrendLeave(){ drawAdTrendFrame(null); }
 window.switchAdPeriod=function(p,btn){
   adPeriod=p;
   document.querySelectorAll('#adSeg button').forEach(function(b){b.classList.remove('on');});
