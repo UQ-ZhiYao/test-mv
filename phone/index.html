@@ -438,12 +438,14 @@ setTimeout(function(){
      transaction/distribution row (openZyStatement() in portfolio-widgets.js).
      Lives here (outside #pages-mount) so it stays available no matter which
      tab is active, same as #appLockOverlay above. -->
-<div id="stmtViewerOverlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:9990;flex-direction:column;">
-  <div style="height:calc(52px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 8px 0 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-    <span style="font-size:.92rem;font-weight:700;color:var(--fg-1);" data-i18n="statement.viewerTitle">Statement</span>
-    <button onclick="closeZyStatementViewer()" style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);font-size:1.15rem;">✕</button>
+<div id="stmtViewerOverlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:9990;flex-direction:column;touch-action:auto;">
+  <div style="height:calc(52px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 16px 0 4px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:2px;flex-shrink:0;">
+    <button onclick="closeZyStatementViewer()" style="width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span id="stmtViewerName" style="font-size:.9rem;font-weight:700;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Statement</span>
   </div>
-  <iframe id="stmtViewerFrame" src="" title="Statement" style="flex:1;border:none;width:100%;background:#fff;"></iframe>
+  <iframe id="stmtViewerFrame" src="" title="Statement" style="flex:1;border:none;width:100%;background:#fff;touch-action:auto;"></iframe>
 </div>
 
 <!-- Sheet scrim -->
