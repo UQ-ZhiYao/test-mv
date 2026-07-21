@@ -50,6 +50,7 @@
         <button id="adtab-assets-btn" onclick="switchAcctDetailTab('assets')" data-i18n="accountdetails.tabAssets" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--blue);background:none;border:none;border-bottom:2px solid var(--blue);padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Assets</button>
         <button id="adtab-principal-btn" onclick="switchAcctDetailTab('principal')" data-i18n="accountdetails.tabPrincipal" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Principal</button>
         <button id="adtab-distribution-btn" onclick="switchAcctDetailTab('distribution')" data-i18n="accountdetails.tabDistribution" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Distribution</button>
+        <button id="adtab-statement-btn" onclick="switchAcctDetailTab('statement')" data-i18n="accountdetails.tabStatement" style="font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Statement</button>
         <button id="adtab-profile-btn" onclick="switchAcctDetailTab('profile')" data-i18n="accountdetails.tabProfile" style="display:none;font:inherit;font-size:.82rem;font-weight:600;color:var(--fg-3);background:none;border:none;border-bottom:2px solid transparent;padding:12px 12px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">Profile</button>
       </div>
 
@@ -105,6 +106,14 @@
            no filter tabs. ── -->
       <div id="adtab-distribution-body" style="display:none;">
         <div class="dx-list" id="adDxList" style="margin-top:16px;"></div>
+      </div>
+
+      <!-- ── STATEMENT TAB — same data/markup as the Statement page
+           (buildStmtDataFromStatements()/STMT_DATA, .tx-row), fixed
+           account, no filter tabs — lists this account's Investment
+           Account (Annual) Statements. ── -->
+      <div id="adtab-statement-body" style="display:none;">
+        <div class="tx-list" id="adStmtList" style="margin-top:16px;"></div>
       </div>
 
       <!-- ── PROFILE TAB (joint account only) — gated behind the centered
