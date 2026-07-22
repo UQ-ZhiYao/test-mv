@@ -437,7 +437,12 @@ setTimeout(function(){
 <!-- Statement Viewer — full-screen in-app PDF preview opened from a linked
      transaction/distribution row (openZyStatement() in portfolio-widgets.js).
      Lives here (outside #pages-mount) so it stays available no matter which
-     tab is active, same as #appLockOverlay above. -->
+     tab is active, same as #appLockOverlay above. #stmtViewerFrame is a
+     plain scrolling div, not an <iframe> — Mobile Safari's built-in PDF
+     plugin inside an iframe can lock the frame's height to page 1 and
+     never scroll further; openZyStatement() renders every page itself
+     with pdf.js into full-width canvases stacked here instead, so this
+     is just ordinary DOM scrolling. -->
 <div id="stmtViewerOverlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:9990;flex-direction:column;touch-action:auto;">
   <div style="height:calc(52px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 16px 0 4px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:2px;flex-shrink:0;">
     <button onclick="closeZyStatementViewer()" style="width:40px;height:40px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--fg-2);">
@@ -445,7 +450,7 @@ setTimeout(function(){
     </button>
     <span id="stmtViewerName" style="font-size:.9rem;font-weight:700;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Statement</span>
   </div>
-  <iframe id="stmtViewerFrame" src="" title="Statement" style="flex:1;border:none;width:100%;background:#fff;touch-action:auto;"></iframe>
+  <div id="stmtViewerFrame" style="flex:1;width:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#e9edf0;padding:10px 8px 24px;box-sizing:border-box;"></div>
 </div>
 
 <!-- Sheet scrim -->
@@ -570,7 +575,7 @@ setTimeout(function(){
 <script src="../assets/js/supabase-auth.js?v=1" defer></script>
 <script src="../assets/js/member-api.js?v=14" defer></script>
 <script src="../assets/js/phone/profile-account.js?v=23" defer></script>
-<script src="../assets/js/phone/portfolio-widgets.js?v=14" defer></script>
+<script src="../assets/js/phone/portfolio-widgets.js?v=15" defer></script>
 <script src="../assets/js/phone/markets-actions.js?v=5" defer></script>
 <script src="../assets/js/phone/financial-charts-1.js?v=5" defer></script>
 <script src="../assets/js/phone/financial-charts-2.js?v=3" defer></script>
