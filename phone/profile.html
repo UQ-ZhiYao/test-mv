@@ -128,6 +128,7 @@ a,a:hover{color:var(--blue);text-decoration:none;}
         <div class="info-row"><span class="info-label" data-i18n="profile.mobileNo">Mobile No.</span><span class="info-value" data-field="phone">•••••</span></div>
         <div class="info-row"><span class="info-label" data-i18n="profile.email">Email</span><span class="info-value" data-field="email">•••••</span></div>
         <div class="info-row"><span class="info-label" data-i18n="profile.address">Address</span><span class="info-value" data-field="address">•••••</span></div>
+        <div class="info-row"><span class="info-label" data-i18n="profile.address2">Address Line 2</span><span class="info-value" data-field="address2">•••••</span></div>
         <div class="info-row"><span class="info-label" data-i18n="profile.postcode">Postcode</span><span class="info-value" data-field="postcode">•••••</span></div>
         <div class="info-row"><span class="info-label" data-i18n="profile.city">City</span><span class="info-value" data-field="city">•••••</span></div>
         <div class="info-row"><span class="info-label" data-i18n="profile.state">State</span><span class="info-value" data-field="state">•••••</span></div>
@@ -182,10 +183,10 @@ a,a:hover{color:var(--blue);text-decoration:none;}
 <!-- Loaded first (not deferred) so the [data-i18n] markup above gets
      translated before the rest of the page's scripts run — see
      assets/js/i18n.js. -->
-<script src="../assets/js/i18n.js?v=17"></script>
+<script src="../assets/js/i18n.js?v=19"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/supabase-auth.js"></script>
-<script src="../assets/js/member-api.js?v=7"></script>
+<script src="../assets/js/member-api.js?v=15"></script>
 <script>
 // This page is a genuine standalone navigation (not an in-app SPA tab, by
 // original design) — it needs its own auth check and its own data fetch,
@@ -236,6 +237,7 @@ async function loadProfilePage(){
     pfSetField('phone',P.phone);
     pfSetField('email',PF_USER.email);
     pfSetField('address',P.address);
+    pfSetField('address2',P.address2);
     pfSetField('postcode',P.postcode);
     pfSetField('city',P.city);
     pfSetField('state',P.state);

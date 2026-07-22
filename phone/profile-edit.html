@@ -38,6 +38,11 @@ input,textarea,select{-webkit-user-select:text;user-select:text;}
 .field-box{margin:0 16px 12px;background:var(--gray-50);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;}
 .field-box label{display:block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--fg-3);margin-bottom:6px;}
 .field-box input,.field-box select{width:100%;font:inherit;font-size:.92rem;font-weight:600;color:var(--fg-1);background:none;border:none;outline:none;padding:0;}
+/* WebKit centers a date input's displayed value by default regardless of
+   text-align on the input itself — the actual value lives in a shadow
+   ::-webkit-date-and-time-value pseudo-element that needs its own rule. */
+.field-box input[type="date"]{text-align:left;}
+.field-box input[type="date"]::-webkit-date-and-time-value{text-align:left;}
 .field-box.disabled{background:var(--gray-100);}
 .field-box.disabled input{color:var(--fg-3);}
 .field-box .hint{font-size:.7rem;color:var(--fg-3);margin-top:4px;font-weight:400;text-transform:none;letter-spacing:0;}
@@ -75,10 +80,10 @@ input,textarea,select{-webkit-user-select:text;user-select:text;}
 
 <div id="pfeToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#0F172A;color:#fff;font-size:.82rem;font-weight:600;padding:10px 20px;border-radius:99px;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;z-index:102;"></div>
 
-<script src="../assets/js/i18n.js?v=17"></script>
+<script src="../assets/js/i18n.js?v=19"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../assets/js/supabase-auth.js"></script>
-<script src="../assets/js/member-api.js?v=7"></script>
+<script src="../assets/js/member-api.js?v=15"></script>
 <script>
 // Tell index.html's App Lock (assets/js/phone/profile-account.js) that
 // whenever the app is next reached again, it got here via a real round
@@ -102,7 +107,7 @@ var PFE_SECTIONS={
       {field:'nric_passport',label:'profile.icPassport',type:'text',placeholder:'profileedit.icPassportPlaceholder'},
       {field:'date_of_birth',label:'profile.dob',type:'date'},
       {field:'gender',label:'profile.gender',type:'select',options:[['Male','profileedit.male'],['Female','profileedit.female']]},
-      {field:'nationality',label:'profile.nationality',type:'select',options:[['Malaysian','profileedit.malaysian'],['Singaporean','profileedit.singaporean'],['Permanent Resident','profileedit.permanentResident'],['Other','profileedit.other']]}
+      {field:'nationality',label:'profile.nationality',type:'select',options:[['Malaysian','profileedit.malaysian'],['Singaporean','profileedit.singaporean'],['Other','profileedit.other']]}
     ]
   },
   contact:{
@@ -112,6 +117,7 @@ var PFE_SECTIONS={
       {field:'phone',label:'profile.mobileNo',type:'text',placeholder:'profileedit.mobilePlaceholder'},
       {field:'email',label:'profile.email',type:'text',disabled:true,hint:'profileedit.emailHint'},
       {field:'address',label:'profile.address',type:'text',placeholder:'profileedit.addressPlaceholder'},
+      {field:'address2',label:'profile.address2',type:'text',placeholder:'profileedit.address2Placeholder'},
       {field:'postcode',label:'profile.postcode',type:'text'},
       {field:'city',label:'profile.city',type:'text'},
       {field:'state',label:'profile.state',type:'text'}
