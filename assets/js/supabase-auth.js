@@ -79,3 +79,20 @@ async function zyResend(email) {
   if (r.error) throw r.error;
   return {};
 }
+function zyResetPasswordRedirect() { return location.origin + location.pathname.replace(/[^/]*$/, '') + 'reset-password.html'; }
+async function zyRequestPasswordReset(email) {
+  if (ZY_DEMO || !sb) { await new Promise(function(r){ setTimeout(r,600); }); return { demo:true }; }
+  var r=await sb.auth.resetPasswordForEmail(email, { redirectTo:zyResetPasswordRedirect() });
+  if (r.error) throw r.error;
+  return {};
+}
+// Only valid right after zyVerifyFromUrl() succeeds for a type=recovery
+// link — that call is what actually signs the visitor into the short-lived
+// recovery session updateUser() needs to be allowed to change the password
+// without knowing the old one.
+async function zyUpdatePassword(newPassword) {
+  if (ZY_DEMO || !sb) { await new Promise(function(r){ setTimeout(r,600); }); return { demo:true }; }
+  var r=await sb.auth.updateUser({ password:newPassword });
+  if (r.error) throw r.error;
+  return {};
+}
