@@ -279,14 +279,6 @@ if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.
         <a href="login.html" class="btn btn-white">Access Dashboard →</a>
         <a href="mailto:nzy.invest@gmail.com" class="btn" style="background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.4);">Contact Us</a>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;">
-        <button class="pwa-btn" id="pwaInstallBtn">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Install as Web App
-        </button>
-        <div class="pwa-installed" id="pwaInstalled">✓ App installed — launch from your home screen</div>
-        <div class="pwa-ios" id="pwaIos">📲 To install on iPhone: tap <b>Share</b> then <b>Add to Home Screen</b></div>
-      </div>
     </div>
   </div>
 </section>
@@ -320,6 +312,5 @@ if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.
 </footer>
 
 <script src="assets/js/site.js"></script>
-<script>window.zyInitPwaInstall();</script>
 </body>
 </html>
