@@ -12,7 +12,17 @@
 <body>
 <div class="standalone-shell">
   <div class="scroll" style="flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;">
-<div class="page" id="pg-fund" style="position:relative;overflow:hidden;">
+<!-- No overflow here (deliberately, not even overflow-x) — this element
+     used to have overflow:hidden, which made IT the nearest "scroll
+     container" the spec resolves position:sticky's top:0 against, even
+     though nothing here actually scrolls, so the FUND TABS bar below
+     never found the real scrolling ancestor (.scroll) and never stuck.
+     Tried overflow-x:hidden;overflow-y:visible next, but per spec a
+     non-visible value on one axis upgrades 'visible' on the other axis
+     to 'auto' — still a scroll container, sticky still broke. .scroll
+     itself already has overflow-x:hidden, so horizontal clipping doesn't
+     need to be repeated here. -->
+<div class="page" id="pg-fund" style="position:relative;">
 
       <!-- ── FUND SUMMARY ── -->
       <div style="padding:20px 16px 0;">
