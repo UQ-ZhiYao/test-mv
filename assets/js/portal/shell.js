@@ -20,18 +20,26 @@
 // real session always wins. A valid session heals the local flags instead
 // of triggering a bounce; only a genuinely absent session (or no session at
 // all, with no flags either) redirects to login.
+// The desktop member portal is currently in system upgrading — every real
+// content page (loaded via this file) redirects an authenticated visitor
+// straight to maintenance.html instead of rendering, whether they arrived
+// via a fresh login, desktop/index.html, or a direct/bookmarked URL. Actual
+// authentication still runs fully (session check, flag healing) so login
+// itself is never broken — only the post-auth destination changes.
 (function(){
   var hasFlags = !!(localStorage.getItem('zy-session') || localStorage.getItem('zy_token'));
   function toLogin(){ window.location.href='../login.html'; }
-  if (typeof sb === 'undefined' || !sb) { if (!hasFlags) toLogin(); return; }
+  function toMaintenance(){ window.location.href='maintenance.html'; }
+  if (typeof sb === 'undefined' || !sb) { if (!hasFlags) toLogin(); else toMaintenance(); return; }
   sb.auth.getSession().then(function(s){
     if (s && s.data && s.data.session) {
       try{ localStorage.setItem('zy-session','1'); }catch(e){}
+      toMaintenance();
     } else {
       try{ localStorage.removeItem('zy-session'); localStorage.removeItem('zy_token'); }catch(e){}
       toLogin();
     }
-  }).catch(function(){ if (!hasFlags) toLogin(); });
+  }).catch(function(){ if (!hasFlags) toLogin(); else toMaintenance(); });
 })();
 function navigate(pg){
   var map={fundoverview:'fund-overview',ntahistory:'nta-history',financialresults:'financial-results'};
